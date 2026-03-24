@@ -44,6 +44,7 @@ type FilteredLayerId =
   | "room-hit-area"
   | "wall-extrusion"
   | "door-line"
+  | "connector-structure"
   | "furniture-extrusion"
   | "poi-circle"
   | "poi-labels"
@@ -58,6 +59,7 @@ const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "room-hit-area",
   "wall-extrusion",
   "door-line",
+  "connector-structure",
   "furniture-extrusion",
   "poi-circle",
   "poi-labels",
@@ -91,6 +93,32 @@ const floorFilter = (
   ["in", ["get", "kind"], ["literal", kinds]],
 ];
 
+const departmentFilter = (
+  level: LevelId,
+  kinds: FeatureKind[],
+  geometryType: "Point" | "Polygon" | "LineString",
+  department: string,
+): FilterSpecification => [
+  "all",
+  ["==", ["geometry-type"], geometryType],
+  ["==", ["get", "level"], level],
+  ["in", ["get", "kind"], ["literal", kinds]],
+  ["==", ["get", "department"], department],
+];
+
+const excludedDepartmentFilter = (
+  level: LevelId,
+  kinds: FeatureKind[],
+  geometryType: "Point" | "Polygon" | "LineString",
+  department: string,
+): FilterSpecification => [
+  "all",
+  ["==", ["geometry-type"], geometryType],
+  ["==", ["get", "level"], level],
+  ["in", ["get", "kind"], ["literal", kinds]],
+  ["!=", ["get", "department"], department],
+];
+
 const firstLevel = levels[0];
 
 if (!firstLevel) {
@@ -119,7 +147,7 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   }
 
   if (hasLayer("room-hit-area")) {
-    map.setFilter("room-hit-area", floorFilter(level, ["room", "meeting_room", "amenity", "zone"], "Polygon"));
+    map.setFilter("room-hit-area", floorFilter(level, ["room", "meeting_room", "amenity"], "Polygon"));
   }
 
   if (hasLayer("wall-extrusion")) {
@@ -130,8 +158,12 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
     map.setFilter("door-line", floorFilter(level, ["door"], "LineString"));
   }
 
+  if (hasLayer("connector-structure")) {
+    map.setFilter("connector-structure", departmentFilter(level, ["furniture"], "Polygon", "Vertical circulation"));
+  }
+
   if (hasLayer("furniture-extrusion")) {
-    map.setFilter("furniture-extrusion", floorFilter(level, ["furniture"], "Polygon"));
+    map.setFilter("furniture-extrusion", excludedDepartmentFilter(level, ["furniture"], "Polygon", "Vertical circulation"));
   }
 
   if (hasLayer("poi-circle")) {
@@ -165,8 +197,8 @@ const popupHtml = (featureId: string) => {
 };
 
 const interactiveLayerOrder: string[] = ["poi-circle", "poi-labels", "room-labels", "room-fill", "zone-fill", "room-hit-area"];
-const selectableFeatureKinds: FeatureKind[] = ["room", "meeting_room", "amenity", "zone"];
-const preferredInteractiveKinds: FeatureKind[] = ["workstation", "connector", "meeting_room", "room", "amenity", "zone"];
+const selectableFeatureKinds: FeatureKind[] = ["room", "meeting_room", "amenity"];
+const preferredInteractiveKinds: FeatureKind[] = ["workstation", "connector", "meeting_room", "room", "amenity"];
 
 const toFeatureId = (featureId: string | number | undefined): string | null => {
   if (typeof featureId === "string") {
@@ -354,6 +386,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
   const [pitch, setPitch] = useState<number>(SCENE_PRESETS.explore.pitch);
   const [bearing, setBearing] = useState<number>(SCENE_PRESETS.explore.bearing);
   const [orbitEnabled, setOrbitEnabled] = useState(false);
+  const [controlsHidden, setControlsHidden] = useState(true);
+  const selectedFeature = selectedFeatureId ? featureById.get(selectedFeatureId) ?? null : null;
+  const normalizedBearing = ((Math.round(bearing) % 360) + 360) % 360;
+  const roundedPitch = Math.round(pitch);
 
   const clearFocusPulseTimer = () => {
     const timerId = focusPulseTimerRef.current;
@@ -550,7 +586,7 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         id: "room-hit-area",
         type: "fill",
         source: SPACE_SOURCE,
-        filter: floorFilter(activeLevel, ["room", "meeting_room", "amenity", "zone"], "Polygon"),
+        filter: floorFilter(activeLevel, ["room", "meeting_room", "amenity"], "Polygon"),
         paint: {
           "fill-color": "#000000",
           "fill-opacity": 0.001,
@@ -561,12 +597,30 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         id: "furniture-extrusion",
         type: "fill-extrusion",
         source: STRUCTURE_SOURCE,
-        filter: floorFilter(activeLevel, ["furniture"], "Polygon"),
+        filter: excludedDepartmentFilter(activeLevel, ["furniture"], "Polygon", "Vertical circulation"),
         paint: {
           "fill-extrusion-color": "#8b949e",
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
           "fill-extrusion-height": ["coalesce", ["get", "height"], 1],
           "fill-extrusion-opacity": 0.56,
+        },
+      });
+
+      map.addLayer({
+        id: "connector-structure",
+        type: "fill-extrusion",
+        source: STRUCTURE_SOURCE,
+        filter: departmentFilter(activeLevel, ["furniture"], "Polygon", "Vertical circulation"),
+        paint: {
+          "fill-extrusion-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#ffcc73",
+            "#bfc7cf",
+          ],
+          "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
+          "fill-extrusion-height": ["coalesce", ["get", "height"], 1],
+          "fill-extrusion-opacity": 0.92,
         },
       });
 
@@ -599,7 +653,12 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         source: POI_SOURCE,
         filter: floorFilter(activeLevel, ["workstation", "connector"], "Point"),
         paint: {
-          "circle-radius": ["case", ["==", ["get", "kind"], "connector"], 7, 5],
+          "circle-radius": [
+            "case",
+            ["==", ["get", "kind"], "connector"],
+            5.5,
+            5,
+          ],
           "circle-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
@@ -627,8 +686,18 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
             ["get", "name"],
             ["coalesce", ["get", "employee"], ["get", "name"]],
           ],
-          "text-size": 10.5,
-          "text-offset": [0, 1.2],
+          "text-size": [
+            "case",
+            ["==", ["get", "kind"], "connector"],
+            10,
+            10.5,
+          ],
+          "text-offset": [
+            "case",
+            ["==", ["get", "kind"], "connector"],
+            ["literal", [0, 0.85]],
+            ["literal", [0, 1.2]],
+          ],
           "text-font": ["Open Sans Semibold"],
           "text-max-width": 9,
         },
@@ -918,50 +987,113 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
   return (
     <div className="map-frame">
       <div className="map-shell" ref={containerRef} />
-      <div className="map-toolbar">
-        <div className="map-toolbar-group">
-          {SCENE_MODES.map((mode) => (
+      <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
+        <div className="map-toolbar-header">
+          <div className="map-toolbar-copy">
+            <span className="map-toolbar-kicker">View Control</span>
+            <strong>Scene Deck</strong>
+          </div>
+          <div className="map-toolbar-header-actions">
+            {!controlsHidden ? (
+              <div className="map-toolbar-meta">
+                <span>{activeLevel}</span>
+                <span>{sceneMode}</span>
+              </div>
+            ) : null}
             <button
-              className={mode === sceneMode ? "map-tool map-tool-active" : "map-tool"}
-              key={mode}
-              onClick={() => applySceneMode(mode)}
+              aria-expanded={!controlsHidden}
+              className="map-tool map-toolbar-toggle"
+              onClick={() => setControlsHidden((current) => !current)}
               type="button"
             >
-              {mode}
+              {controlsHidden ? "Open deck" : "Hide deck"}
             </button>
-          ))}
+          </div>
         </div>
-        <div className="map-toolbar-group">
-          <button className="map-tool" onClick={() => rotateBy(-20)} type="button">
-            Rotate -
-          </button>
-          <button className="map-tool" onClick={() => rotateBy(20)} type="button">
-            Rotate +
-          </button>
-          <button
-            className={orbitEnabled ? "map-tool map-tool-active" : "map-tool"}
-            onClick={() => setOrbitEnabled((current) => !current)}
-            type="button"
-          >
-            Orbit
-          </button>
-        </div>
-        <label className="map-slider">
-          <span>Tilt</span>
-          <input
-            max="75"
-            min="0"
-            onChange={(event) => {
-              setSceneMode("explore");
-              setPitch(Number(event.target.value));
-            }}
-            type="range"
-            value={pitch}
-          />
-        </label>
-        <button className="map-tool focus-tool" onClick={focusSelection} type="button">
-          Focus selection
-        </button>
+        {!controlsHidden ? (
+          <div className="map-toolbar-grid">
+            <section className="map-toolbar-section">
+              <div className="map-toolbar-section-head">
+                <span>Scene Preset</span>
+                <strong>{sceneMode}</strong>
+              </div>
+              <div className="map-toolbar-group map-toolbar-group-segmented">
+                {SCENE_MODES.map((mode) => (
+                  <button
+                    className={mode === sceneMode ? "map-tool map-tool-active" : "map-tool"}
+                    key={mode}
+                    onClick={() => applySceneMode(mode)}
+                    type="button"
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="map-toolbar-section">
+              <div className="map-toolbar-section-head">
+                <span>Orientation</span>
+                <strong>{orbitEnabled ? "orbit" : "manual"}</strong>
+              </div>
+              <div className="map-readout-grid">
+                <div className="map-readout">
+                  <span>Bearing</span>
+                  <strong>{normalizedBearing}deg</strong>
+                </div>
+                <div className="map-readout">
+                  <span>Tilt</span>
+                  <strong>{roundedPitch}deg</strong>
+                </div>
+              </div>
+              <div className="map-toolbar-group">
+                <button className="map-tool" onClick={() => rotateBy(-20)} type="button">
+                  Left 20
+                </button>
+                <button className="map-tool" onClick={() => rotateBy(20)} type="button">
+                  Right 20
+                </button>
+                <button
+                  className={orbitEnabled ? "map-tool map-tool-active" : "map-tool"}
+                  onClick={() => setOrbitEnabled((current) => !current)}
+                  type="button"
+                >
+                  Orbit
+                </button>
+              </div>
+            </section>
+
+            <section className="map-toolbar-section map-toolbar-section-wide">
+              <div className="map-toolbar-section-head">
+                <span>Focus Target</span>
+                <strong>{selectedFeature ? "ready" : "idle"}</strong>
+              </div>
+              <label className="map-slider">
+                <span>Camera tilt</span>
+                <input
+                  max="75"
+                  min="0"
+                  onChange={(event) => {
+                    setSceneMode("explore");
+                    setPitch(Number(event.target.value));
+                  }}
+                  type="range"
+                  value={pitch}
+                />
+              </label>
+              <div className="map-focus-row">
+                <div className="map-focus-copy">
+                  <span className="map-focus-label">Selection</span>
+                  <strong>{selectedFeature?.properties.name ?? "No feature selected"}</strong>
+                  <span>{selectedFeature?.id ?? "select a room, desk, or connector from the map"}</span>
+                </div>
+                <button className="map-tool focus-tool" disabled={!selectedFeature} onClick={focusSelection} type="button">
+                  Focus selection
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -1,12 +1,42 @@
 import type { FeatureCollection, LineString } from "geojson";
-import type { LevelId, RouteResult, RouteSummary, RoutingGraph, RoutingOptions } from "./types";
+import type { Coordinate, LevelId, RouteResult, RouteSummary, RoutingEdge, RoutingGraph, RoutingOptions } from "./types";
 
 interface QueueItem {
   nodeId: string;
   distance: number;
 }
 
+interface EdgeTraversalMeta {
+  edge: RoutingEdge;
+  distance: number;
+  connectorType?: "stairs" | "elevator";
+}
+
 const edgeKey = (from: string, to: string) => `${from}::${to}`;
+
+const coordinatesEqual = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
+
+const reversePath = (coordinates: Coordinate[]): Coordinate[] => [...coordinates].reverse();
+
+const directedEdgePath = (edge: RoutingEdge, fromNodeId: string, toNodeId: string): Coordinate[] => {
+  if (edge.from === fromNodeId && edge.to === toNodeId) {
+    return edge.path;
+  }
+
+  return reversePath(edge.path);
+};
+
+const appendCoordinates = (target: Coordinate[], nextCoordinates: Coordinate[]) => {
+  for (const coordinate of nextCoordinates) {
+    const lastCoordinate = target.at(-1);
+
+    if (lastCoordinate && coordinatesEqual(lastCoordinate, coordinate)) {
+      continue;
+    }
+
+    target.push(coordinate);
+  }
+};
 
 export const computeRoute = (
   graph: RoutingGraph,
@@ -35,7 +65,7 @@ export const computeRoute = (
 
   const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
   const adjacency = new Map<string, QueueItem[]>();
-  const edgeMeta = new Map<string, { connectorType?: "stairs" | "elevator"; distance: number }>();
+  const edgeMeta = new Map<string, EdgeTraversalMeta>();
 
   for (const edge of graph.edges) {
     if (options.accessibleOnly && !edge.accessible) {
@@ -44,8 +74,8 @@ export const computeRoute = (
 
     adjacency.set(edge.from, [...(adjacency.get(edge.from) ?? []), { nodeId: edge.to, distance: edge.weight }]);
     adjacency.set(edge.to, [...(adjacency.get(edge.to) ?? []), { nodeId: edge.from, distance: edge.weight }]);
-    edgeMeta.set(edgeKey(edge.from, edge.to), { connectorType: edge.connectorType, distance: edge.weight });
-    edgeMeta.set(edgeKey(edge.to, edge.from), { connectorType: edge.connectorType, distance: edge.weight });
+    edgeMeta.set(edgeKey(edge.from, edge.to), { edge, connectorType: edge.connectorType, distance: edge.weight });
+    edgeMeta.set(edgeKey(edge.to, edge.from), { edge, connectorType: edge.connectorType, distance: edge.weight });
   }
 
   const distances = new Map<string, number>(graph.nodes.map((node) => [node.id, Number.POSITIVE_INFINITY]));
@@ -95,7 +125,6 @@ export const computeRoute = (
 
   const segments: RouteResult["segments"] = [];
   const legs: RouteResult["legs"] = [];
-  let activeSegment: RouteResult["segments"][number] | null = null;
   const levels: LevelId[] = [];
   const connectorTypes = new Set<"stairs" | "elevator">();
 
@@ -116,16 +145,6 @@ export const computeRoute = (
       levels.push(currentNode.level);
     }
 
-    if (!activeSegment || activeSegment.level !== currentNode.level) {
-      activeSegment = {
-        level: currentNode.level,
-        coordinates: [currentNode.point],
-      };
-      segments.push(activeSegment);
-    } else {
-      activeSegment.coordinates.push(currentNode.point);
-    }
-
     if (index < path.length - 1) {
       const nextId = path[index + 1];
 
@@ -137,22 +156,37 @@ export const computeRoute = (
       const nextNode = nodeById.get(nextId);
 
       if (nextNode && connector) {
+        const edgePath = directedEdgePath(connector.edge, currentId, nextId);
+
         legs.push({
-          id: `leg-${index}`,
+          id: connector.edge.id,
           level: currentNode.level,
           fromNodeId: currentId,
           toNodeId: nextId,
           distance: connector.distance,
+          path: edgePath,
           connectorType: connector.connectorType,
         });
+
+        if (!connector.connectorType) {
+          const activeSegment = segments.at(-1);
+
+          if (!activeSegment || activeSegment.level !== currentNode.level) {
+            const segment: RouteResult["segments"][number] = {
+              level: currentNode.level,
+              coordinates: [],
+            };
+
+            appendCoordinates(segment.coordinates, edgePath);
+            segments.push(segment);
+          } else {
+            appendCoordinates(activeSegment.coordinates, edgePath);
+          }
+        }
       }
 
       if (connector?.connectorType) {
         connectorTypes.add(connector.connectorType);
-      }
-
-      if (nextNode && nextNode.level !== currentNode.level) {
-        activeSegment = null;
       }
     }
   }

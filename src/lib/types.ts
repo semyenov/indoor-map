@@ -88,6 +88,7 @@ export interface RoutingEdge {
   from: string;
   to: string;
   weight: number;
+  path: Coordinate[];
   connectorType?: "stairs" | "elevator";
   accessible: boolean;
 }
@@ -112,6 +113,7 @@ export interface RouteLeg {
   fromNodeId: string;
   toNodeId: string;
   distance: number;
+  path: Coordinate[];
   connectorType?: "stairs" | "elevator";
 }
 
