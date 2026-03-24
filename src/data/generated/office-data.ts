@@ -408,6 +408,7 @@ interface OpeningSpec {
   center: number;
   width: number;
   kind: OpeningKind;
+  traversable?: boolean;
   connectsTo?: string;
 }
 
@@ -1473,100 +1474,523 @@ const searchEntryData: SearchEntry[] = [
   },
 ];
 
-const routeTargetData: RouteTarget[] = [
-  { id: "target-lobby", label: "Lobby", level: "L1", featureId: "room-l1-lobby", routeNodeId: "n-l1-lobby" },
-  { id: "target-reception", label: "Reception Desk", level: "L1", featureId: "room-l1-reception", routeNodeId: "n-l1-reception" },
-  { id: "target-ocean", label: "Ocean Room", level: "L1", featureId: "room-l1-ocean", routeNodeId: "n-l1-ocean" },
-  { id: "target-harbor", label: "Harbor Room", level: "L1", featureId: "room-l1-harbor", routeNodeId: "n-l1-harbor" },
-  { id: "target-wellness", label: "Wellness Room", level: "L1", featureId: "room-l1-wellness", routeNodeId: "n-l1-wellness" },
-  { id: "target-kitchen", label: "Kitchen", level: "L1", featureId: "room-l1-kitchen", routeNodeId: "n-l1-kitchen" },
-  { id: "target-huddle", label: "Huddle 1", level: "L1", featureId: "room-l1-huddle", routeNodeId: "n-l1-huddle" },
-  { id: "target-summit", label: "Summit Room", level: "L1", featureId: "room-l1-summit", routeNodeId: "n-l1-summit" },
-  { id: "target-engineering", label: "Engineering North", level: "L1", featureId: "zone-l1-engineering-north", routeNodeId: "n-l1-eng-north" },
-  { id: "target-ops", label: "Operations Bay", level: "L1", featureId: "zone-l1-operations", routeNodeId: "n-l1-ops" },
-  { id: "target-cedar", label: "Cedar Room", level: "L2", featureId: "room-l2-cedar", routeNodeId: "n-l2-cedar" },
-  { id: "target-birch", label: "Birch Room", level: "L2", featureId: "room-l2-birch", routeNodeId: "n-l2-birch" },
-  { id: "target-war-room", label: "War Room", level: "L2", featureId: "room-l2-war-room", routeNodeId: "n-l2-war-room" },
-  { id: "target-library", label: "Library", level: "L2", featureId: "room-l2-library", routeNodeId: "n-l2-library" },
-  { id: "target-product", label: "Product Studio", level: "L2", featureId: "zone-l2-product", routeNodeId: "n-l2-product" },
-  { id: "target-design", label: "Design Bay", level: "L2", featureId: "zone-l2-design", routeNodeId: "n-l2-design" },
-  { id: "target-pods", label: "Focus Pods", level: "L2", featureId: "room-l2-pods", routeNodeId: "n-l2-pods" },
-  { id: "target-lounge", label: "Lounge", level: "L2", featureId: "room-l2-lounge", routeNodeId: "n-l2-lounge" },
-  { id: "target-maker", label: "Maker Bench", level: "L2", featureId: "room-l2-maker", routeNodeId: "n-l2-maker" },
+const roomSpecById = new Map(allRoomSpecs.map((spec) => [spec.id, spec]));
+const levelRankById = new Map(levels.map((level) => [level.id, level.order]));
+
+interface DerivedPortalNode {
+  id: string;
+  roomId: string;
+  level: LevelId;
+  point: Coordinate;
+}
+
+interface DerivedPortalConnection {
+  id: string;
+  fromPortalId: string;
+  toPortalId: string;
+  boundaryPoint: Coordinate;
+}
+
+const roomAnchorNodeId = (roomId: string) => `node-room-${roomId}`;
+const poiNodeId = (featureId: string) => `node-poi-${featureId}`;
+const autoPortalNodeId = (roomId: string, openingId: string) => `node-portal-${roomId}-${openingId}`;
+const derivedTargetId = (featureId: string) => `target-${featureId}`;
+const PORTAL_INSET = 0.45;
+
+const localPoint = (x: number, y: number): Coordinate => [x, y];
+
+const mapCoordinateToGrid = (coordinate: Coordinate): Coordinate => [
+  (coordinate[0] - origin[0]) / xStep,
+  (coordinate[1] - origin[1]) / yStep,
 ];
 
-const routingGraphData: RoutingGraph = {
-  nodes: [
-    { id: "n-l1-lobby", level: "L1", point: point(6, 8), kind: "room_anchor", featureRef: "room-l1-lobby" },
-    { id: "n-l1-reception", level: "L1", point: point(13, 8), kind: "room_anchor", featureRef: "room-l1-reception" },
-    { id: "n-l1-wellness", level: "L1", point: point(24, 8), kind: "room_anchor", featureRef: "room-l1-wellness" },
-    { id: "n-l1-support", level: "L1", point: point(33, 8), kind: "room_anchor", featureRef: "room-l1-it-bar" },
-    { id: "n-l1-ocean", level: "L1", point: point(12, 18), kind: "room_anchor", featureRef: "room-l1-ocean" },
-    { id: "n-l1-harbor", level: "L1", point: point(12, 25), kind: "room_anchor", featureRef: "room-l1-harbor" },
-    { id: "n-l1-west-hall", level: "L1", point: point(12, 11), kind: "junction" },
-    { id: "n-l1-south-hall", level: "L1", point: point(26, 9), kind: "junction" },
-    { id: "n-l1-core", level: "L1", point: point(26, 12), kind: "junction" },
-    { id: "n-l1-eng-north", level: "L1", point: point(22, 14), kind: "room_anchor", featureRef: "zone-l1-engineering-north" },
-    { id: "n-l1-eng-south", level: "L1", point: point(24, 22), kind: "room_anchor", featureRef: "zone-l1-engineering-south" },
-    { id: "n-l1-ops", level: "L1", point: point(34, 14), kind: "room_anchor", featureRef: "zone-l1-operations" },
-    { id: "n-l1-kitchen", level: "L1", point: point(46, 10), kind: "room_anchor", featureRef: "room-l1-kitchen" },
-    { id: "n-l1-east-hall", level: "L1", point: point(40, 12), kind: "junction" },
-    { id: "n-l1-huddle", level: "L1", point: point(40, 18), kind: "room_anchor", featureRef: "room-l1-huddle" },
-    { id: "n-l1-summit", level: "L1", point: point(40, 25), kind: "room_anchor", featureRef: "room-l1-summit" },
-    { id: "n-l1-elevator", level: "L1", point: point(42.15, 24.2), kind: "connector", featureRef: "connector-l1-elevator" },
-    { id: "n-l1-stairs", level: "L1", point: point(49.2, 24.2), kind: "connector", featureRef: "connector-l1-stairs" },
-    { id: "n-l2-cedar", level: "L2", point: point(12, 18), kind: "room_anchor", featureRef: "room-l2-cedar" },
-    { id: "n-l2-birch", level: "L2", point: point(12, 25), kind: "room_anchor", featureRef: "room-l2-birch" },
-    { id: "n-l2-war-room", level: "L2", point: point(18, 8), kind: "room_anchor", featureRef: "room-l2-war-room" },
-    { id: "n-l2-library", level: "L2", point: point(26, 8), kind: "room_anchor", featureRef: "room-l2-library" },
-    { id: "n-l2-west-hall", level: "L2", point: point(12, 11), kind: "junction" },
-    { id: "n-l2-south-hall", level: "L2", point: point(26, 9), kind: "junction" },
-    { id: "n-l2-core", level: "L2", point: point(26, 12), kind: "junction" },
-    { id: "n-l2-product", level: "L2", point: point(22, 14), kind: "room_anchor", featureRef: "zone-l2-product" },
-    { id: "n-l2-design", level: "L2", point: point(34, 14), kind: "room_anchor", featureRef: "zone-l2-design" },
-    { id: "n-l2-touchdown", level: "L2", point: point(30, 26), kind: "room_anchor", featureRef: "zone-l2-touchdown" },
-    { id: "n-l2-pods", level: "L2", point: point(46, 10), kind: "room_anchor", featureRef: "room-l2-pods" },
-    { id: "n-l2-east-hall", level: "L2", point: point(40, 12), kind: "junction" },
-    { id: "n-l2-lounge", level: "L2", point: point(40, 18), kind: "room_anchor", featureRef: "room-l2-lounge" },
-    { id: "n-l2-maker", level: "L2", point: point(40, 25), kind: "room_anchor", featureRef: "room-l2-maker" },
-    { id: "n-l2-elevator", level: "L2", point: point(42.15, 24.2), kind: "connector", featureRef: "connector-l2-elevator" },
-    { id: "n-l2-stairs", level: "L2", point: point(49.2, 24.2), kind: "connector", featureRef: "connector-l2-stairs" },
-  ],
-  edges: [
-    routeEdge("e-l1-lobby-west", "n-l1-lobby", "n-l1-west-hall", 6, [[6, 8], [6, 11], [12, 11]], { accessible: true }),
-    routeEdge("e-l1-reception-south", "n-l1-reception", "n-l1-south-hall", 13, [[13, 8], [13, 9], [26, 9]], { accessible: true }),
-    routeEdge("e-l1-wellness-south", "n-l1-wellness", "n-l1-south-hall", 2, [[24, 8], [24, 9], [26, 9]], { accessible: true }),
-    routeEdge("e-l1-support-south", "n-l1-support", "n-l1-south-hall", 7, [[33, 8], [33, 9], [26, 9]], { accessible: true }),
-    routeEdge("e-l1-west-south", "n-l1-west-hall", "n-l1-south-hall", 14, [[12, 11], [12, 9], [26, 9]], { accessible: true }),
-    routeEdge("e-l1-south-core", "n-l1-south-hall", "n-l1-core", 3, [[26, 9], [26, 10], [26, 12]], { accessible: true }),
-    routeEdge("e-l1-ocean-west", "n-l1-ocean", "n-l1-west-hall", 7, [[12, 18], [13, 18], [13, 14], [13, 11], [12, 11]], { accessible: true }),
-    routeEdge("e-l1-harbor-west", "n-l1-harbor", "n-l1-west-hall", 14, [[12, 25], [13, 25], [13, 14], [13, 11], [12, 11]], { accessible: true }),
-    routeEdge("e-l1-eng-north-core", "n-l1-eng-north", "n-l1-core", 4, [[22, 14], [22, 13], [26, 13], [26, 12]], { accessible: true }),
-    routeEdge("e-l1-ops-core", "n-l1-ops", "n-l1-core", 8, [[34, 14], [34, 13], [26, 13], [26, 12]], { accessible: true }),
-    routeEdge("e-l1-core-east", "n-l1-core", "n-l1-east-hall", 14, [[26, 12], [38, 12], [40, 12]], { accessible: true }),
-    routeEdge("e-l1-east-kitchen", "n-l1-east-hall", "n-l1-kitchen", 7, [[40, 12], [46, 12], [46, 10]], { accessible: true }),
-    routeEdge("e-l1-east-huddle", "n-l1-east-hall", "n-l1-huddle", 6, [[40, 12], [39, 12], [39, 18], [40, 18]], { accessible: true }),
-    routeEdge("e-l1-east-summit", "n-l1-east-hall", "n-l1-summit", 13, [[40, 12], [39, 12], [39, 25], [40, 25]], { accessible: true }),
-    routeEdge("e-l1-summit-elevator", "n-l1-summit", "n-l1-elevator", 3, [[40, 25], [42.15, 25], [42.15, 24.2]], { accessible: true }),
-    routeEdge("e-l1-summit-stairs", "n-l1-summit", "n-l1-stairs", 9, [[40, 25], [49.2, 25], [49.2, 24.2]], { accessible: true }),
-    routeEdge("e-l2-war-south", "n-l2-war-room", "n-l2-south-hall", 8, [[18, 8], [18, 9], [26, 9]], { accessible: true }),
-    routeEdge("e-l2-library-south", "n-l2-library", "n-l2-south-hall", 4, [[26, 8], [26, 9]], { accessible: true }),
-    routeEdge("e-l2-west-south", "n-l2-west-hall", "n-l2-south-hall", 14, [[12, 11], [12, 9], [26, 9]], { accessible: true }),
-    routeEdge("e-l2-south-core", "n-l2-south-hall", "n-l2-core", 3, [[26, 9], [26, 10], [26, 12]], { accessible: true }),
-    routeEdge("e-l2-cedar-west", "n-l2-cedar", "n-l2-west-hall", 7, [[12, 18], [13, 18], [13, 14], [13, 11], [12, 11]], { accessible: true }),
-    routeEdge("e-l2-birch-west", "n-l2-birch", "n-l2-west-hall", 14, [[12, 25], [13, 25], [13, 14], [13, 11], [12, 11]], { accessible: true }),
-    routeEdge("e-l2-product-core", "n-l2-product", "n-l2-core", 4, [[22, 14], [22, 13], [26, 13], [26, 12]], { accessible: true }),
-    routeEdge("e-l2-design-core", "n-l2-design", "n-l2-core", 8, [[34, 14], [34, 13], [26, 13], [26, 12]], { accessible: true }),
-    routeEdge("e-l2-core-east", "n-l2-core", "n-l2-east-hall", 14, [[26, 12], [38, 12], [40, 12]], { accessible: true }),
-    routeEdge("e-l2-east-pods", "n-l2-east-hall", "n-l2-pods", 7, [[40, 12], [46, 12], [46, 10]], { accessible: true }),
-    routeEdge("e-l2-east-lounge", "n-l2-east-hall", "n-l2-lounge", 6, [[40, 12], [39, 12], [39, 18], [40, 18]], { accessible: true }),
-    routeEdge("e-l2-east-maker", "n-l2-east-hall", "n-l2-maker", 13, [[40, 12], [39, 12], [39, 25], [40, 25]], { accessible: true }),
-    routeEdge("e-l2-maker-elevator", "n-l2-maker", "n-l2-elevator", 3, [[40, 25], [42.15, 25], [42.15, 24.2]], { accessible: true }),
-    routeEdge("e-l2-maker-stairs", "n-l2-maker", "n-l2-stairs", 9, [[40, 25], [49.2, 25], [49.2, 24.2]], { accessible: true }),
-    routeEdge("e-elevator", "n-l1-elevator", "n-l2-elevator", 6, [[42.15, 24.2], [42.15, 24.2]], { connectorType: "elevator", accessible: true }),
-    routeEdge("e-stairs", "n-l1-stairs", "n-l2-stairs", 10, [[49.2, 24.2], [49.2, 24.2]], { connectorType: "stairs", accessible: false }),
-  ],
+const localRoomCenter = (bounds: RectBounds): Coordinate => localPoint((bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2);
+
+const routeAnchorPoint = (spec: RoomSpec): Coordinate => (spec.focusPoint ? mapCoordinateToGrid(spec.focusPoint) : localRoomCenter(spec.bounds));
+
+const localOpeningBoundaryPoint = (bounds: RectBounds, opening: OpeningSpec): Coordinate => {
+  const [x1, y1, x2, y2] = bounds;
+
+  switch (opening.side) {
+    case "north":
+      return localPoint(opening.center, y2);
+    case "south":
+      return localPoint(opening.center, y1);
+    case "west":
+      return localPoint(x1, opening.center);
+    case "east":
+      return localPoint(x2, opening.center);
+  }
 };
+
+const localPortalPoint = (bounds: RectBounds, opening: OpeningSpec, inset = PORTAL_INSET): Coordinate => {
+  const [x1, y1, x2, y2] = bounds;
+
+  switch (opening.side) {
+    case "north":
+      return localPoint(opening.center, y2 - inset);
+    case "south":
+      return localPoint(opening.center, y1 + inset);
+    case "west":
+      return localPoint(x1 + inset, opening.center);
+    case "east":
+      return localPoint(x2 - inset, opening.center);
+  }
+};
+
+const withinBounds = (coordinate: Coordinate, bounds: RectBounds, padding = 0) =>
+  coordinate[0] >= bounds[0] - padding &&
+  coordinate[0] <= bounds[2] + padding &&
+  coordinate[1] >= bounds[1] - padding &&
+  coordinate[1] <= bounds[3] + padding;
+
+const clampToBounds = (coordinate: Coordinate, bounds: RectBounds, inset = 0.2): Coordinate => [
+  Math.min(Math.max(coordinate[0], bounds[0] + inset), bounds[2] - inset),
+  Math.min(Math.max(coordinate[1], bounds[1] + inset), bounds[3] - inset),
+];
+
+const manhattanDistance = (start: Coordinate, end: Coordinate) => Math.abs(end[0] - start[0]) + Math.abs(end[1] - start[1]);
+
+const orthogonalRoomPath = (start: Coordinate, end: Coordinate, bounds: RectBounds): Coordinate[] => {
+  if (start[0] === end[0] || start[1] === end[1]) {
+    return [start, end];
+  }
+
+  const horizontalFirst = localPoint(end[0], start[1]);
+  const verticalFirst = localPoint(start[0], end[1]);
+
+  if (withinBounds(horizontalFirst, bounds, 0.001)) {
+    return [start, horizontalFirst, end];
+  }
+
+  if (withinBounds(verticalFirst, bounds, 0.001)) {
+    return [start, verticalFirst, end];
+  }
+
+  const startClamp = clampToBounds(start, bounds);
+  const endClamp = clampToBounds(end, bounds);
+  const pivot = localPoint(endClamp[0], startClamp[1]);
+
+  return [startClamp, pivot, endClamp];
+};
+
+const coordinatesMatch = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
+
+const appendRoomPathPoint = (target: Coordinate[], coordinate: Coordinate) => {
+  const lastCoordinate = target.at(-1);
+
+  if (lastCoordinate && coordinatesMatch(lastCoordinate, coordinate)) {
+    return;
+  }
+
+  target.push(coordinate);
+};
+
+const centerlineRoomPath = (start: Coordinate, end: Coordinate, bounds: RectBounds): Coordinate[] => {
+  const center = localRoomCenter(bounds);
+  const width = bounds[2] - bounds[0];
+  const height = bounds[3] - bounds[1];
+  const points: Coordinate[] = [];
+
+  appendRoomPathPoint(points, start);
+
+  if (width >= height) {
+    appendRoomPathPoint(points, localPoint(start[0], center[1]));
+    appendRoomPathPoint(points, localPoint(end[0], center[1]));
+  } else {
+    appendRoomPathPoint(points, localPoint(center[0], start[1]));
+    appendRoomPathPoint(points, localPoint(center[0], end[1]));
+  }
+
+  appendRoomPathPoint(points, end);
+
+  return points;
+};
+
+const roomTraversalPath = (spec: RoomSpec, start: Coordinate, end: Coordinate): Coordinate[] => {
+  if (spec.department === "Circulation") {
+    return centerlineRoomPath(start, end, spec.bounds);
+  }
+
+  return orthogonalRoomPath(start, end, spec.bounds);
+};
+
+const officePointCoordinate = (feature: OfficePointFeature): Coordinate => {
+  const longitude = feature.geometry.coordinates[0];
+  const latitude = feature.geometry.coordinates[1];
+
+  if (longitude === undefined || latitude === undefined) {
+    throw new Error(`Point feature ${feature.id} is missing coordinates.`);
+  }
+
+  return [longitude, latitude];
+};
+
+const roomContainingCoordinate = (level: LevelId, coordinate: Coordinate): RoomSpec | null => {
+  const localCoordinate = mapCoordinateToGrid(coordinate);
+
+  for (const spec of allRoomSpecs) {
+    if (spec.level !== level) {
+      continue;
+    }
+
+    if (withinBounds(localCoordinate, spec.bounds, 0.001)) {
+      return spec;
+    }
+  }
+
+  return null;
+};
+
+const connectorGroupId = (featureId: string) => featureId.replace(/^connector-l[12]-/, "");
+const connectorTypeForFeature = (feature: OfficePointFeature): "stairs" | "elevator" =>
+  feature.properties.name.toLowerCase().includes("elevator") ? "elevator" : "stairs";
+
+const openingPairKey = (spec: RoomSpec, opening: OpeningSpec) => {
+  const [x, y] = localOpeningBoundaryPoint(spec.bounds, opening);
+  const axis = opening.side === "north" || opening.side === "south" ? "h" : "v";
+  const roomKey = [spec.id, opening.connectsTo ?? "unlinked"].sort().join("::");
+  return `${spec.level}::${roomKey}::${axis}::${x.toFixed(3)}::${y.toFixed(3)}::${opening.width.toFixed(3)}`;
+};
+
+const reciprocalOpening = (sourceRoom: RoomSpec, targetRoom: RoomSpec, opening: OpeningSpec) =>
+  (targetRoom.openings ?? []).find(
+    (candidate) =>
+      candidate.traversable !== false &&
+      candidate.connectsTo === sourceRoom.id &&
+      candidate.side === oppositeRoomSide(opening.side) &&
+      candidate.center === opening.center &&
+      candidate.width === opening.width,
+  );
+
+const routeableRoomFeature = (feature: OfficeFeature) => {
+  if (feature.properties.kind !== "room" && feature.properties.kind !== "meeting_room" && feature.properties.kind !== "amenity") {
+    return false;
+  }
+
+  const spec = roomSpecById.get(feature.id);
+
+  if (!spec) {
+    return false;
+  }
+
+  return (spec.openings ?? []).some((opening) => opening.traversable !== false && Boolean(opening.connectsTo));
+};
+
+const routeTargetLabel = (feature: OfficeFeature) => feature.properties.employee ?? feature.properties.name;
+
+const levelDescription = (feature: OfficeFeature) => {
+  switch (feature.properties.kind) {
+    case "meeting_room":
+      return `Meeting room · ${feature.properties.level}`;
+    case "amenity":
+      return `Amenity · ${feature.properties.level}`;
+    case "workstation":
+      return `Desk · ${feature.properties.level}`;
+    case "connector":
+      return `Connector · ${feature.properties.level}`;
+    default:
+      return `Room · ${feature.properties.level}`;
+  }
+};
+
+const validateRoutablePoiRooms = (features: OfficePointFeature[]) => {
+  for (const feature of features) {
+    const room = roomContainingCoordinate(feature.properties.level, officePointCoordinate(feature));
+
+    if (!room) {
+      throw new Error(`Point feature ${feature.id} is not contained in any room.`);
+    }
+  }
+};
+
+const derivedPortalNodes: DerivedPortalNode[] = [];
+const derivedPortalConnections: DerivedPortalConnection[] = [];
+const portalsByRoomId = new Map<string, DerivedPortalNode[]>();
+const processedOpenings = new Set<string>();
+
+for (const spec of allRoomSpecs) {
+  for (const opening of spec.openings ?? []) {
+    if (opening.traversable === false || !opening.connectsTo) {
+      continue;
+    }
+
+    const targetRoom = roomSpecById.get(opening.connectsTo);
+
+    if (!targetRoom) {
+      continue;
+    }
+
+    const pairKey = openingPairKey(spec, opening);
+
+    if (processedOpenings.has(pairKey)) {
+      continue;
+    }
+
+    const targetOpening = reciprocalOpening(spec, targetRoom, opening);
+    const targetOpeningForPortal: OpeningSpec = targetOpening ?? {
+      ...opening,
+      id: `auto-${spec.id}-${opening.id}`,
+      side: oppositeRoomSide(opening.side),
+      center: opening.center,
+      width: opening.width,
+    };
+    const boundaryPoint = localOpeningBoundaryPoint(spec.bounds, opening);
+    const sourcePortal: DerivedPortalNode = {
+      id: autoPortalNodeId(spec.id, opening.id),
+      roomId: spec.id,
+      level: spec.level,
+      point: localPortalPoint(spec.bounds, opening),
+    };
+    const targetPortal: DerivedPortalNode = {
+      id: autoPortalNodeId(targetRoom.id, targetOpeningForPortal.id),
+      roomId: targetRoom.id,
+      level: targetRoom.level,
+      point: localPortalPoint(targetRoom.bounds, targetOpeningForPortal),
+    };
+
+    derivedPortalNodes.push(sourcePortal, targetPortal);
+    derivedPortalConnections.push({
+      id: pairKey,
+      fromPortalId: sourcePortal.id,
+      toPortalId: targetPortal.id,
+      boundaryPoint,
+    });
+    portalsByRoomId.set(sourcePortal.roomId, [...(portalsByRoomId.get(sourcePortal.roomId) ?? []), sourcePortal]);
+    portalsByRoomId.set(targetPortal.roomId, [...(portalsByRoomId.get(targetPortal.roomId) ?? []), targetPortal]);
+    processedOpenings.add(pairKey);
+  }
+}
+
+validateRoutablePoiRooms(poiFeatures);
+
+const preferredPortalForRoom = (spec: RoomSpec): DerivedPortalNode | null => {
+  const portals = portalsByRoomId.get(spec.id) ?? [];
+
+  if (portals.length === 0) {
+    return null;
+  }
+
+  const anchor = routeAnchorPoint(spec);
+  let bestPortal: DerivedPortalNode | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+
+  for (const portal of portals) {
+    const distance = manhattanDistance(anchor, portal.point);
+
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestPortal = portal;
+    }
+  }
+
+  return bestPortal;
+};
+
+const roomAnchorNodes: RoutingGraph["nodes"] = allRoomSpecs.map((spec) => ({
+  id: roomAnchorNodeId(spec.id),
+  level: spec.level,
+  point: point(routeAnchorPoint(spec)[0], routeAnchorPoint(spec)[1]),
+  kind: "room_anchor",
+  featureRef: spec.id,
+}));
+
+const portalGraphNodes: RoutingGraph["nodes"] = derivedPortalNodes.map((portal) => ({
+  id: portal.id,
+  level: portal.level,
+  point: point(portal.point[0], portal.point[1]),
+  kind: "junction",
+}));
+
+const poiNavigationNodes: RoutingGraph["nodes"] = poiFeatures.map((feature) => ({
+  id: poiNodeId(feature.id),
+  level: feature.properties.level,
+  point: officePointCoordinate(feature),
+  kind: feature.properties.kind === "connector" ? "connector" : "room_anchor",
+  featureRef: feature.id,
+}));
+
+const derivedEdges: RoutingEdge[] = [];
+
+for (const spec of allRoomSpecs) {
+  const anchor = routeAnchorPoint(spec);
+  const anchorNodeId = roomAnchorNodeId(spec.id);
+  const roomPortals = portalsByRoomId.get(spec.id) ?? [];
+
+  for (const portal of roomPortals) {
+    const portalPath = roomTraversalPath(spec, anchor, portal.point);
+
+    derivedEdges.push(
+      routeEdge(
+        `edge-room-${spec.id}-${portal.id}`,
+        anchorNodeId,
+        portal.id,
+        manhattanDistance(anchor, portal.point),
+        portalPath,
+        { accessible: true },
+      ),
+    );
+  }
+
+  for (let leftIndex = 0; leftIndex < roomPortals.length; leftIndex += 1) {
+    const leftPortal = roomPortals[leftIndex];
+
+    if (!leftPortal) {
+      continue;
+    }
+
+    for (let rightIndex = leftIndex + 1; rightIndex < roomPortals.length; rightIndex += 1) {
+      const rightPortal = roomPortals[rightIndex];
+
+      if (!rightPortal) {
+        continue;
+      }
+
+      const roomPortalPath = roomTraversalPath(spec, leftPortal.point, rightPortal.point);
+
+      derivedEdges.push(
+        routeEdge(
+          `edge-room-pass-${spec.id}-${leftPortal.id}-${rightPortal.id}`,
+          leftPortal.id,
+          rightPortal.id,
+          manhattanDistance(leftPortal.point, rightPortal.point),
+          roomPortalPath,
+          { accessible: true },
+        ),
+      );
+    }
+  }
+}
+
+const portalNodeById = new Map(derivedPortalNodes.map((portal) => [portal.id, portal]));
+
+for (const connection of derivedPortalConnections) {
+  const fromPortal = portalNodeById.get(connection.fromPortalId);
+  const toPortal = portalNodeById.get(connection.toPortalId);
+
+  if (!fromPortal || !toPortal) {
+    continue;
+  }
+
+  derivedEdges.push(
+    routeEdge(
+      `edge-portal-${connection.id}`,
+      fromPortal.id,
+      toPortal.id,
+      manhattanDistance(fromPortal.point, connection.boundaryPoint) + manhattanDistance(connection.boundaryPoint, toPortal.point),
+      [fromPortal.point, connection.boundaryPoint, toPortal.point],
+      { accessible: true },
+    ),
+  );
+}
+
+const featureRouteNodeIdByFeatureId = new Map<string, string>();
+
+for (const spec of allRoomSpecs) {
+  const preferredPortal = preferredPortalForRoom(spec);
+  featureRouteNodeIdByFeatureId.set(spec.id, preferredPortal?.id ?? roomAnchorNodeId(spec.id));
+}
+
+for (const feature of poiFeatures) {
+  const nodeId = poiNodeId(feature.id);
+  const containingRoom = roomContainingCoordinate(feature.properties.level, officePointCoordinate(feature));
+
+  featureRouteNodeIdByFeatureId.set(feature.id, nodeId);
+
+  if (!containingRoom) {
+    continue;
+  }
+
+  const roomAnchor = routeAnchorPoint(containingRoom);
+  const poiLocalCoordinate = mapCoordinateToGrid(officePointCoordinate(feature));
+  const poiPath = roomTraversalPath(containingRoom, poiLocalCoordinate, roomAnchor);
+
+  derivedEdges.push(
+    routeEdge(
+      `edge-poi-${feature.id}`,
+      nodeId,
+      roomAnchorNodeId(containingRoom.id),
+      manhattanDistance(poiLocalCoordinate, roomAnchor),
+      poiPath,
+      { accessible: true },
+    ),
+  );
+}
+
+const connectorsByGroup = new Map<string, OfficePointFeature[]>();
+
+for (const feature of poiFeatures.filter((item) => item.properties.kind === "connector")) {
+  const groupId = connectorGroupId(feature.id);
+  connectorsByGroup.set(groupId, [...(connectorsByGroup.get(groupId) ?? []), feature]);
+}
+
+for (const [groupId, connectorFeatures] of connectorsByGroup) {
+  const sortedConnectors = [...connectorFeatures].sort(
+    (left, right) => (levelRankById.get(left.properties.level) ?? 0) - (levelRankById.get(right.properties.level) ?? 0),
+  );
+
+  for (let index = 0; index < sortedConnectors.length - 1; index += 1) {
+    const current = sortedConnectors[index];
+    const next = sortedConnectors[index + 1];
+
+    if (!current || !next) {
+      continue;
+    }
+
+    const connectorCoordinate = mapCoordinateToGrid(officePointCoordinate(current));
+    const connectorType = connectorTypeForFeature(current);
+
+    derivedEdges.push(
+      routeEdge(
+        `edge-connector-${groupId}-${current.properties.level}-${next.properties.level}`,
+        poiNodeId(current.id),
+        poiNodeId(next.id),
+        connectorType === "elevator" ? 6 : 10,
+        [connectorCoordinate, connectorCoordinate],
+        { connectorType, accessible: connectorType === "elevator" },
+      ),
+    );
+  }
+}
+
+const routingGraphData: RoutingGraph = {
+  nodes: [...roomAnchorNodes, ...portalGraphNodes, ...poiNavigationNodes],
+  edges: derivedEdges,
+};
+
+const routeTargetData: RouteTarget[] = [...roomFeatures.filter(routeableRoomFeature), ...poiFeatures.filter((feature) => feature.properties.kind === "connector")]
+  .map((feature) => {
+    const roomSpec = roomSpecById.get(feature.id);
+    const roomPortalNodeIds = roomSpec ? (portalsByRoomId.get(roomSpec.id) ?? []).map((portal) => portal.id) : [];
+    const fallbackNodeId = featureRouteNodeIdByFeatureId.get(feature.id);
+    const routeNodeIds =
+      roomPortalNodeIds.length > 0
+        ? roomPortalNodeIds
+        : [fallbackNodeId].filter((nodeId): nodeId is string => Boolean(nodeId));
+    const routeNodeId = routeNodeIds[0];
+
+    if (!routeNodeId) {
+      throw new Error(`Feature ${feature.id} has no derived route node.`);
+    }
+
+    return {
+      id: derivedTargetId(feature.id),
+      label: routeTargetLabel(feature),
+      level: feature.properties.level,
+      featureId: feature.id,
+      routeNodeIds,
+      routeNodeId,
+    };
+  })
+  .sort((left, right) => {
+    const levelOrder = (levelRankById.get(left.level) ?? 0) - (levelRankById.get(right.level) ?? 0);
+
+    if (levelOrder !== 0) {
+      return levelOrder;
+    }
+
+    return left.label.localeCompare(right.label);
+  });
 
 const sameCoordinate = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
 
@@ -1653,6 +2077,14 @@ const validateRoutingGraph = (graph: RoutingGraph) => {
 
 validateOpenings(allRoomSpecs);
 validateRoutingGraph(routingGraphData);
+
+for (const feature of roomFeatures) {
+  feature.properties.routeNodeId = featureRouteNodeIdByFeatureId.get(feature.id);
+}
+
+for (const feature of poiFeatures) {
+  feature.properties.routeNodeId = featureRouteNodeIdByFeatureId.get(feature.id);
+}
 
 export const officeModel: OfficeModel = {
   levels,

@@ -629,10 +629,14 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         type: "line",
         source: ROUTE_SOURCE,
         filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
         paint: {
-          "line-color": "#ffffff",
-          "line-width": 10,
-          "line-opacity": 0.6,
+          "line-color": "rgba(255,255,255,0.9)",
+          "line-width": 8,
+          "line-opacity": 0.82,
         },
       });
 
@@ -641,9 +645,13 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         type: "line",
         source: ROUTE_SOURCE,
         filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
         paint: {
           "line-color": "#d62828",
-          "line-width": 4,
+          "line-width": 3.5,
         },
       });
 

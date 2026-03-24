@@ -1,7 +1,7 @@
 import { lazy, Suspense, startTransition, useDeferredValue, useEffect, useState } from "react";
 import { featureById, levels, routeTargets, routingGraph, searchEntries, statusRoomIds } from "./data/generated/office-data";
 import { MockOccupancyProvider } from "./lib/occupancy";
-import { computeRoute, summarizeRoute } from "./lib/routing";
+import { computeShortestRoute, summarizeRoute } from "./lib/routing";
 import { searchOffice } from "./lib/search";
 import type { LevelId, RoomStatus, RoomStatuses, RouteLeg, RouteResult } from "./lib/types";
 
@@ -62,7 +62,7 @@ const featureLevel = (featureId: string | null): LevelId | null => {
   return featureById.get(featureId)?.properties.level ?? null;
 };
 
-const routeNodeForTarget = (targetId: string) => routeTargets.find((target) => target.id === targetId)?.routeNodeId ?? null;
+const routeNodesForTarget = (targetId: string) => routeTargets.find((target) => target.id === targetId)?.routeNodeIds ?? [];
 
 const routeNodeById = new Map(routingGraph.nodes.map((node) => [node.id, node]));
 
@@ -97,14 +97,24 @@ const routeConnectorLabel = (connectorTypes: readonly ("stairs" | "elevator")[])
   return uniqueConnectors.length > 0 ? uniqueConnectors.join(" + ") : "flat path";
 };
 
+const defaultRouteFromId =
+  routeTargets.find((target) => target.featureId === "room-l1-lobby")?.id ??
+  routeTargets[0]?.id ??
+  "";
+
+const defaultRouteToId =
+  routeTargets.find((target) => target.featureId === "room-l2-cedar")?.id ??
+  routeTargets[1]?.id ??
+  defaultRouteFromId;
+
 export default function App() {
   const [activeLevel, setActiveLevel] = useState<LevelId>("L1");
   const [activePanel, setActivePanel] = useState<"search" | "selection" | "route" | "ops">("search");
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>("room-l1-lobby");
   const [focusRequestId, setFocusRequestId] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [routeFromId, setRouteFromId] = useState("target-lobby");
-  const [routeToId, setRouteToId] = useState("target-cedar");
+  const [routeFromId, setRouteFromId] = useState(defaultRouteFromId);
+  const [routeToId, setRouteToId] = useState(defaultRouteToId);
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -193,16 +203,16 @@ export default function App() {
   };
 
   const buildRoute = () => {
-    const fromNodeId = routeNodeForTarget(routeFromId);
-    const toNodeId = routeNodeForTarget(routeToId);
+    const fromNodeIds = routeNodesForTarget(routeFromId);
+    const toNodeIds = routeNodesForTarget(routeToId);
 
-    if (!fromNodeId || !toNodeId) {
+    if (fromNodeIds.length === 0 || toNodeIds.length === 0) {
       setRouteError("Select both route endpoints.");
       setRoute(null);
       return;
     }
 
-    const result = computeRoute(routingGraph, fromNodeId, toNodeId, { accessibleOnly });
+    const result = computeShortestRoute(routingGraph, fromNodeIds, toNodeIds, { accessibleOnly });
 
     if (!result) {
       setRouteError(accessibleOnly ? "No accessible route found for the selected points." : "No route found for the selected points.");

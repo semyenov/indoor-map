@@ -72,6 +72,7 @@ export interface RouteTarget {
   label: string;
   level: LevelId;
   featureId: string;
+  routeNodeIds: string[];
   routeNodeId: string;
 }
 

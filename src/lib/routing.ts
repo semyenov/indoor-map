@@ -13,10 +13,152 @@ interface EdgeTraversalMeta {
 }
 
 const edgeKey = (from: string, to: string) => `${from}::${to}`;
+const EPSILON = 0.000001;
+const MAX_CORNER_RADIUS = 0.8;
+const CURVE_STEPS = 5;
 
 const coordinatesEqual = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
 
 const reversePath = (coordinates: Coordinate[]): Coordinate[] => [...coordinates].reverse();
+const coordinateKey = (coordinate: Coordinate) => `${coordinate[0].toFixed(9)}:${coordinate[1].toFixed(9)}`;
+
+const coordinateDistance = (left: Coordinate, right: Coordinate) =>
+  Math.hypot(right[0] - left[0], right[1] - left[1]);
+
+const isZeroLength = (left: Coordinate, right: Coordinate) => coordinateDistance(left, right) <= EPSILON;
+
+const nearlyEqual = (left: number, right: number) => Math.abs(left - right) <= EPSILON;
+
+const isCollinear = (left: Coordinate, pivot: Coordinate, right: Coordinate) =>
+  (nearlyEqual(left[0], pivot[0]) && nearlyEqual(pivot[0], right[0])) ||
+  (nearlyEqual(left[1], pivot[1]) && nearlyEqual(pivot[1], right[1]));
+
+const pointTowards = (from: Coordinate, to: Coordinate, distance: number): Coordinate => {
+  const fullDistance = coordinateDistance(from, to);
+
+  if (fullDistance <= EPSILON || distance <= EPSILON) {
+    return from;
+  }
+
+  const ratio = Math.min(1, distance / fullDistance);
+
+  return [from[0] + (to[0] - from[0]) * ratio, from[1] + (to[1] - from[1]) * ratio];
+};
+
+const quadraticPoint = (start: Coordinate, control: Coordinate, end: Coordinate, progress: number): Coordinate => {
+  const inverse = 1 - progress;
+  const x = inverse * inverse * start[0] + 2 * inverse * progress * control[0] + progress * progress * end[0];
+  const y = inverse * inverse * start[1] + 2 * inverse * progress * control[1] + progress * progress * end[1];
+
+  return [x, y];
+};
+
+const appendUniqueCoordinate = (target: Coordinate[], coordinate: Coordinate) => {
+  const lastCoordinate = target.at(-1);
+
+  if (lastCoordinate && isZeroLength(lastCoordinate, coordinate)) {
+    return;
+  }
+
+  target.push(coordinate);
+};
+
+const normalizeCoordinates = (coordinates: Coordinate[], protectedCoordinates: ReadonlySet<string> = new Set()): Coordinate[] => {
+  const deduped: Coordinate[] = [];
+
+  for (const coordinate of coordinates) {
+    appendUniqueCoordinate(deduped, coordinate);
+  }
+
+  if (deduped.length <= 2) {
+    return deduped;
+  }
+
+  const normalized: Coordinate[] = [];
+
+  for (const coordinate of deduped) {
+    appendUniqueCoordinate(normalized, coordinate);
+
+    while (normalized.length >= 3) {
+      const right = normalized.at(-1);
+      const pivot = normalized.at(-2);
+      const left = normalized.at(-3);
+
+      if (!left || !pivot || !right || !isCollinear(left, pivot, right) || protectedCoordinates.has(coordinateKey(pivot))) {
+        break;
+      }
+
+      normalized.splice(normalized.length - 2, 1);
+    }
+  }
+
+  return normalized;
+};
+
+const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: ReadonlySet<string> = new Set()): Coordinate[] => {
+  const normalized = normalizeCoordinates(coordinates, protectedCoordinates);
+
+  if (normalized.length <= 2) {
+    return normalized;
+  }
+
+  const firstCoordinate = normalized[0];
+
+  if (!firstCoordinate) {
+    return [];
+  }
+
+  const smoothed: Coordinate[] = [firstCoordinate];
+
+  for (let index = 1; index < normalized.length - 1; index += 1) {
+    const previous = normalized[index - 1];
+    const current = normalized[index];
+    const next = normalized[index + 1];
+
+    if (!previous || !current || !next) {
+      continue;
+    }
+
+    if (protectedCoordinates.has(coordinateKey(current))) {
+      appendUniqueCoordinate(smoothed, current);
+      continue;
+    }
+
+    if (isCollinear(previous, current, next)) {
+      appendUniqueCoordinate(smoothed, current);
+      continue;
+    }
+
+    const incomingLength = coordinateDistance(previous, current);
+    const outgoingLength = coordinateDistance(current, next);
+    const radius = Math.min(MAX_CORNER_RADIUS, incomingLength / 2, outgoingLength / 2);
+
+    if (radius <= EPSILON) {
+      appendUniqueCoordinate(smoothed, current);
+      continue;
+    }
+
+    const cornerStart = pointTowards(current, previous, radius);
+    const cornerEnd = pointTowards(current, next, radius);
+
+    appendUniqueCoordinate(smoothed, cornerStart);
+
+    for (let step = 1; step < CURVE_STEPS; step += 1) {
+      const progress = step / CURVE_STEPS;
+      appendUniqueCoordinate(smoothed, quadraticPoint(cornerStart, current, cornerEnd, progress));
+    }
+
+    appendUniqueCoordinate(smoothed, cornerEnd);
+  }
+
+  const lastCoordinate = normalized.at(-1);
+
+  if (lastCoordinate) {
+    appendUniqueCoordinate(smoothed, lastCoordinate);
+  }
+
+  return normalizeCoordinates(smoothed, protectedCoordinates);
+};
 
 const directedEdgePath = (edge: RoutingEdge, fromNodeId: string, toNodeId: string): Coordinate[] => {
   if (edge.from === fromNodeId && edge.to === toNodeId) {
@@ -203,12 +345,72 @@ export const computeRoute = (
   };
 };
 
+export const computeShortestRoute = (
+  graph: RoutingGraph,
+  fromNodeIds: string[],
+  toNodeIds: string[],
+  options: RoutingOptions = {},
+): RouteResult | null => {
+  let bestRoute: RouteResult | null = null;
+
+  for (const fromNodeId of fromNodeIds) {
+    for (const toNodeId of toNodeIds) {
+      const candidate = computeRoute(graph, fromNodeId, toNodeId, options);
+
+      if (!candidate) {
+        continue;
+      }
+
+      if (!bestRoute || candidate.summary.distance < bestRoute.summary.distance) {
+        bestRoute = candidate;
+      }
+    }
+  }
+
+  return bestRoute;
+};
+
 export const buildRouteCollection = (
   route: RouteResult | null,
-): FeatureCollection<LineString, { level: LevelId }> => ({
-  type: "FeatureCollection",
-  features:
-    route?.segments
+): FeatureCollection<LineString, { level: LevelId }> => {
+  if (!route) {
+    return { type: "FeatureCollection", features: [] };
+  }
+
+  const segments: Array<{ level: LevelId; coordinates: Coordinate[]; protectedCoordinates: Set<string> }> = [];
+  let activeSegment: { level: LevelId; coordinates: Coordinate[]; protectedCoordinates: Set<string> } | null = null;
+
+  for (const leg of route.legs) {
+    if (leg.connectorType) {
+      activeSegment = null;
+      continue;
+    }
+
+    if (!activeSegment || activeSegment.level !== leg.level) {
+      activeSegment = {
+        level: leg.level,
+        coordinates: [],
+        protectedCoordinates: new Set(),
+      };
+      segments.push(activeSegment);
+    }
+
+    appendCoordinates(activeSegment.coordinates, leg.path);
+
+    if (leg.id.startsWith("edge-portal-")) {
+      for (const coordinate of leg.path) {
+        activeSegment.protectedCoordinates.add(coordinateKey(coordinate));
+      }
+    }
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: segments
+      .map((segment) => ({
+        ...segment,
+        coordinates: smoothCoordinates(segment.coordinates, segment.protectedCoordinates),
+      }))
       .filter((segment) => segment.coordinates.length > 1)
       .map((segment, index) => ({
         id: `route-${segment.level}-${index}`,
@@ -220,8 +422,9 @@ export const buildRouteCollection = (
         properties: {
           level: segment.level,
         },
-      })) ?? [],
-});
+      })),
+  };
+};
 
 export const summarizeRoute = (summary: RouteSummary | null) => {
   if (!summary) {
