@@ -407,7 +407,7 @@ export default function AtlasV4() {
   const [roomStatuses, setRoomStatuses] = useState<RoomStatuses>({});
   const [occupancyUpdatedAt, setOccupancyUpdatedAt] = useState<Date | null>(null);
   const [zoomCommand, setZoomCommand] = useState<{ id: number; delta: 1 | -1 } | null>(null);
-  const browseRef = useRef<HTMLInputElement | null>(null);
+  const topSearchRef = useRef<HTMLInputElement | null>(null);
   const deferredBrowseQuery = useDeferredValue(browseQ);
 
   useEffect(() => {
@@ -600,8 +600,7 @@ export default function AtlasV4() {
   const openBrowse = () => {
     setDrawerMode("search");
     setDrawerOpen(true);
-    setBrowseQ("");
-    window.setTimeout(() => browseRef.current?.focus(), 80);
+    window.setTimeout(() => topSearchRef.current?.focus(), 80);
   };
 
   const openRouteBuilder = (fromTargetId: string | null = null, toTargetId: string | null = null) => {
@@ -615,6 +614,12 @@ export default function AtlasV4() {
 
   const closeDrawer = () => {
     setDrawerOpen(false);
+  };
+
+  const closeSearch = () => {
+    if (drawerMode === "search") {
+      setDrawerOpen(false);
+    }
   };
 
   const buildRoute = () => {
@@ -694,24 +699,53 @@ export default function AtlasV4() {
       </div>
 
       <header style={S.topBar}>
-        <div style={S.topLeft}>
-          <div style={S.logo} className="hud-glass">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <rect x="1" y="1" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.9" />
-              <rect x="10" y="1" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.45" />
-              <rect x="1" y="10" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.25" />
-              <rect x="10" y="10" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.65" />
-            </svg>
-            <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.02em" }}>Atlas</span>
+        <div style={S.topBrandBlock}>
+          <div style={S.topSectionLabel}>Workspace</div>
+          <div style={S.topBrandRow}>
+            <div style={S.logo}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="1" y="1" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.9" />
+                <rect x="10" y="1" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.45" />
+                <rect x="1" y="10" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.25" />
+                <rect x="10" y="10" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.65" />
+              </svg>
+              <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.02em" }}>Atlas</span>
+            </div>
+            <div style={S.searchField}>
+              <Ic.Search s={14} />
+              <input
+                ref={topSearchRef}
+                style={S.searchInput}
+                placeholder="Search spaces & people…"
+                value={browseQ}
+                onFocus={openBrowse}
+                onChange={(event) => {
+                  setBrowseQ(event.target.value);
+                  setDrawerMode("search");
+                  setDrawerOpen(true);
+                }}
+              />
+              {browseQ ? (
+                <button
+                  style={S.searchClearBtn}
+                  className="hud-btn"
+                  onClick={() => {
+                    setBrowseQ("");
+                    closeSearch();
+                  }}
+                  type="button"
+                >
+                  <Ic.X s={11} />
+                </button>
+              ) : null}
+              <kbd style={S.kbd}>/</kbd>
+            </div>
           </div>
-          <button style={S.searchBtn} className="hud-glass hud-hover" onClick={openBrowse} type="button">
-            <Ic.Search s={14} /> <span style={{ color: T.muted, fontWeight: 400 }}>Browse spaces & people…</span>
-            <kbd style={S.kbd}>/</kbd>
-          </button>
         </div>
 
-        <div style={S.topCenter}>
-          <div style={S.viewModes} className="hud-glass">
+        <div style={S.topSceneBlock}>
+          <div style={S.topSectionLabel}>Scene</div>
+          <div style={S.viewModes}>
             {VIEW_MODES.map((mode) => (
               <button
                 key={mode.id}
@@ -727,35 +761,38 @@ export default function AtlasV4() {
           </div>
         </div>
 
-        <div style={S.topRight}>
-          <div style={S.themeSwitch} className="hud-glass">
-            {THEME_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                style={{ ...S.themeBtn, ...(themeVariant === option.id ? S.themeBtnActive : {}) }}
-                className="hud-btn"
-                onClick={() => setThemeVariant(option.id)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <button style={S.opsBtn} className="hud-glass hud-hover" onClick={() => setOpsOpen((current) => !current)} type="button">
-            <Ic.Grid />
-            <span style={S.opsBadge}>
-              <span style={{ ...S.liveDot, background: ST.available.c, width: 6, height: 6 }} /> {statusCounts.available} free
-            </span>
-          </button>
-          <div style={S.syncChip} className="hud-glass">
-            <span style={{ ...S.liveDot, background: "#34d399", width: 5, height: 5 }} />
-            {(occupancyUpdatedAt ?? time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        <div style={S.topActionBlock}>
+          <div style={S.topSectionLabel}>Controls</div>
+          <div style={S.topActionRow}>
+            <div style={S.themeSwitch}>
+              {THEME_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  style={{ ...S.themeBtn, ...(themeVariant === option.id ? S.themeBtnActive : {}) }}
+                  className="hud-btn"
+                  onClick={() => setThemeVariant(option.id)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <button style={S.opsBtn} className="hud-btn" onClick={() => setOpsOpen((current) => !current)} type="button">
+              <Ic.Grid />
+              <span style={S.opsBadge}>
+                <span style={{ ...S.liveDot, background: ST.available.c, width: 6, height: 6 }} /> {statusCounts.available} free
+              </span>
+            </button>
+            <div style={S.syncChip}>
+              <span style={{ ...S.liveDot, background: "#34d399", width: 5, height: 5 }} />
+              {(occupancyUpdatedAt ?? time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </div>
           </div>
         </div>
       </header>
 
       <div style={S.bottomBar}>
-        <div style={S.bottomModule}>
+        <div style={{ ...S.bottomModule, ...S.bottomFloorModule }}>
           <div style={S.bottomModuleLabel}>Floor</div>
           <div style={S.floorPicker}>
             {levels.map((level) => (
@@ -772,91 +809,63 @@ export default function AtlasV4() {
           </div>
         </div>
 
-        <div style={S.bottomCenter}>
-          <div style={S.bottomContext}>
-            <div style={S.bottomModuleLabel}>{route ? "Active route" : selectedFeature ? "Selection" : "Workspace"}</div>
-            <div style={S.bottomHeadline}>{bottomHeadline}</div>
-            <div style={S.bottomMetaRow}>
-              <span style={S.bottomMeta}>{bottomMeta}</span>
-              <span style={S.bottomChip}>{activeLevel}</span>
-              <span style={S.bottomChip}>{viewMode}</span>
-              {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
+        <div style={S.bottomMainRail}>
+          <div style={S.bottomContextBlock}>
+            <div style={S.bottomContext}>
+              <div style={S.bottomModuleLabel}>{route ? "Active route" : selectedFeature ? "Selection" : "Workspace"}</div>
+              <div style={S.bottomHeadline}>{bottomHeadline}</div>
+              <div style={S.bottomMetaRow}>
+                <span style={S.bottomMeta}>{bottomMeta}</span>
+                <span style={S.bottomChip}>{activeLevel}</span>
+                <span style={S.bottomChip}>{viewMode}</span>
+                {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
+              </div>
             </div>
           </div>
-          <div style={S.bottomActionRow}>
-            <button
-              style={{ ...S.bottomActionBtn, ...(drawerOpen && drawerMode === "search" ? S.bottomActionBtnActive : {}) }}
-              className={drawerOpen && drawerMode === "search" ? "hud-accent" : "hud-btn"}
-              onClick={() => {
-                if (drawerOpen && drawerMode === "search") {
-                  setDrawerOpen(false);
-                  return;
-                }
-                openBrowse();
-              }}
-              type="button"
-            >
-              <Ic.Search s={13} /> <span>Search</span>
-            </button>
-            <button
-              style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
-              className={drawerOpen && drawerMode === "route" ? "hud-accent" : "hud-btn"}
-              onClick={() => {
-                if (drawerOpen && drawerMode === "route") {
-                  setDrawerOpen(false);
-                  return;
-                }
-                openRouteBuilder();
-              }}
-              type="button"
-            >
-              <Ic.Route /> <span>{route ? "Edit route" : "Build route"}</span>
-            </button>
-          </div>
-        </div>
 
-        <div style={{ ...S.bottomModule, ...S.bottomModuleRight }}>
-          <div style={S.bottomModuleLabel}>View</div>
-          <div style={S.bottomUtilityRow}>
-            <span style={S.bottomChip}>{themeVariant}</span>
-            <span style={S.bottomChip}>{route ? routeConnectorLabel(route.summary.connectorTypes) : "flat"}</span>
-            <div style={S.zoomStack}>
-              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
-                −
+          <div style={S.bottomActionCluster}>
+            <div style={S.bottomActionPrimary}>
+              <button
+                style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
+                className={drawerOpen && drawerMode === "route" ? "hud-accent" : "hud-btn"}
+                onClick={() => {
+                  if (drawerOpen && drawerMode === "route") {
+                    setDrawerOpen(false);
+                    return;
+                  }
+                  openRouteBuilder();
+                }}
+                type="button"
+              >
+                <Ic.Route /> <span>{route ? "Edit route" : "Build route"}</span>
               </button>
-              <div style={S.zoomDivider} />
-              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
-                +
-              </button>
+            </div>
+
+            <div style={S.bottomUtilityBlock}>
+              <div style={S.bottomModuleLabel}>View</div>
+              <div style={S.bottomUtilityRow}>
+                <span style={S.bottomChip}>{themeVariant}</span>
+                <span style={S.bottomChip}>{route ? routeConnectorLabel(route.summary.connectorTypes) : "flat"}</span>
+                <div style={S.zoomStack}>
+                  <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
+                    −
+                  </button>
+                  <div style={S.zoomDivider} />
+                  <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
+                    +
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {drawerOpen && drawerMode === "search" ? (
-        <div style={S.drawerLayer} onClick={() => setDrawerOpen(false)}>
-          <div style={S.drawerSheet} className="hud-glass oa-slide-up" onClick={(event) => event.stopPropagation()}>
+        <div style={S.searchDrawerLayer} onClick={closeSearch}>
+          <div style={S.searchDrawerSheet} className="hud-glass oa-slide-up" onClick={(event) => event.stopPropagation()}>
             <div style={S.browsePanel}>
             <div style={S.bpHeader}>
-              <div style={S.bpSearchRow}>
-                <Ic.Search s={16} />
-                <input
-                  ref={browseRef}
-                  style={S.bpInput}
-                  placeholder="Search spaces, people, departments…"
-                  value={browseQ}
-                  onChange={(event) => setBrowseQ(event.target.value)}
-                />
-                {browseQ ? (
-                  <button style={S.iconBtn} className="hud-btn" onClick={() => setBrowseQ("")} type="button">
-                    <Ic.X s={12} />
-                  </button>
-                ) : null}
-                <div style={S.bpDivider} />
-                <button style={S.iconBtn} className="hud-btn" onClick={() => setDrawerOpen(false)} type="button">
-                  <Ic.X />
-                </button>
-              </div>
               <div style={S.bpToolbar}>
                 <div style={S.bpGroupRow}>
                   <span style={S.bpGroupLabel}>Group by</span>
@@ -872,10 +881,15 @@ export default function AtlasV4() {
                     </button>
                   ))}
                 </div>
-                <span style={S.bpCount}>
-                  {browseQ.trim() ? `${matchedSearchResults.length} indexed hits` : `${browseSpaces.length} spaces`}
-                  {browsePeople.length > 0 ? ` · ${browsePeople.length} people` : ""}
-                </span>
+                <div style={S.bpToolbarMeta}>
+                  <span style={S.bpCount}>
+                    {browseQ.trim() ? `${matchedSearchResults.length} indexed hits` : `${browseSpaces.length} spaces`}
+                    {browsePeople.length > 0 ? ` · ${browsePeople.length} people` : ""}
+                  </span>
+                  <button style={S.iconBtn} className="hud-btn" onClick={closeSearch} type="button">
+                    <Ic.X />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -889,7 +903,8 @@ export default function AtlasV4() {
                     {browsePeople.slice(0, 6).map((person) => (
                       <PersonRow key={person.featureId} person={person} onClick={(nextPerson) => {
                         onSelectFeature(nextPerson.featureId);
-                        setDrawerOpen(false);
+                        setBrowseQ("");
+                        closeSearch();
                       }} />
                     ))}
                   </div>
@@ -901,7 +916,8 @@ export default function AtlasV4() {
                 groupKey={browseGroup}
                 onSelect={(space) => {
                   onSelectFeature(space.featureId);
-                  setDrawerOpen(false);
+                  setBrowseQ("");
+                  closeSearch();
                 }}
                 selectedFeatureId={selectedFeatureId}
               />
@@ -1075,7 +1091,7 @@ export default function AtlasV4() {
         </div>
       ) : null}
 
-      {route && !(drawerOpen && drawerMode === "route") ? (
+      {route && !drawerOpen ? (
         <div style={S.routeResultFloat} className="hud-glass oa-slide-left">
           <div style={S.panelHeaderTight}>
             <div style={{ display: "grid", gap: 4 }}>
@@ -1305,8 +1321,8 @@ export default function AtlasV4() {
 
 const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', monospace";
-const TOP_BAR_CLEARANCE = 64;
-const BOTTOM_BAR_CLEARANCE = 112;
+const TOP_BAR_CLEARANCE = 72;
+const BOTTOM_BAR_CLEARANCE = 96;
 const T = {
   bg: "#0c1018",
   glass: "rgba(15,20,32,.72)",
@@ -1353,33 +1369,39 @@ const S: Record<string, CSSProperties> = {
     left: 0,
     right: 0,
     zIndex: 10,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: "10px 12px",
+    display: "grid",
+    gridTemplateColumns: "minmax(320px, 1.2fr) auto auto",
+    alignItems: "stretch",
+    gap: 0,
+    padding: 0,
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
     border: `1px solid ${T.borderH}`,
     borderRadius: 0,
     boxShadow: "0 10px 34px rgba(0,0,0,.22)",
+    minHeight: TOP_BAR_CLEARANCE,
   },
-  topLeft: { display: "flex", alignItems: "center", gap: 8 },
-  logo: { display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 0, flexShrink: 0 },
-  searchBtn: { display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: "none", border: "none", minWidth: 280 },
+  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", borderRight: `1px solid ${T.border}` },
+  topBrandRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
+  topSectionLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  logo: { display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, borderRadius: 0, flexShrink: 0 },
+  searchField: { display: "flex", alignItems: "center", gap: 10, padding: "0 12px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, minWidth: 320, minHeight: 38, flex: 1 },
+  searchInput: { flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: T.text, fontSize: 13, fontWeight: 500, fontFamily: FONT },
+  searchClearBtn: { width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 0, color: T.muted, flexShrink: 0 },
   kbd: { marginLeft: "auto", padding: "2px 7px", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: "rgba(255,255,255,.04)", borderRadius: 3, border: `1px solid ${T.border}` },
-  topCenter: {},
-  topRight: { display: "flex", alignItems: "center", gap: 8 },
-  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0 },
+  topSceneBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", borderRight: `1px solid ${T.border}` },
+  topActionBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 300 },
+  topActionRow: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
+  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
   themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
   themeBtnActive: { color: T.text, background: "rgba(255,255,255,.08)" },
-  viewModes: { display: "flex", gap: 2, padding: 3, borderRadius: 0 },
+  viewModes: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
   vmBtn: { display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 500, fontFamily: FONT, color: T.muted, whiteSpace: "nowrap" },
   vmActive: { color: T.text, background: "rgba(255,255,255,.08)" },
-  opsBtn: { display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 0, background: "none", border: "none", fontFamily: FONT, color: T.sec },
+  opsBtn: { display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, fontFamily: FONT, color: T.sec, minHeight: 38 },
   opsBadge: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600 },
-  syncChip: { display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 0, fontSize: 10, color: T.sec },
+  syncChip: { display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 0, fontSize: 10, color: T.sec, minHeight: 38, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
   liveDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0, animation: "oa-pulse 2.5s ease infinite" },
   bottomBar: {
     position: "absolute",
@@ -1388,42 +1410,57 @@ const S: Record<string, CSSProperties> = {
     bottom: 0,
     zIndex: 10,
     display: "grid",
-    gridTemplateColumns: "240px minmax(420px, 1fr) 260px",
-    alignItems: "center",
-    gap: 12,
-    padding: "12px",
+    gridTemplateColumns: "240px minmax(0, 1fr)",
+    alignItems: "stretch",
+    gap: 0,
+    padding: 0,
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
     border: `1px solid ${T.borderH}`,
     borderRadius: 0,
     boxShadow: "0 -2px 28px rgba(0,0,0,.18)",
+    minHeight: BOTTOM_BAR_CLEARANCE,
   },
   bottomModule: {
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
     gap: 8,
-    height: 88,
-    padding: "10px 12px",
-    background: "rgba(255,255,255,.035)",
-    border: `1px solid ${T.border}`,
+    minHeight: BOTTOM_BAR_CLEARANCE,
+    padding: "12px 14px",
+    background: "rgba(255,255,255,.03)",
+    borderRight: `1px solid ${T.border}`,
     borderRadius: 0,
   },
-  bottomModuleRight: { alignItems: "flex-end" },
+  bottomFloorModule: { borderRight: `1px solid ${T.borderH}` },
   bottomModuleLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
-  bottomCenter: {
+  bottomMainRail: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    minHeight: BOTTOM_BAR_CLEARANCE,
+    background: "rgba(255,255,255,.04)",
+  },
+  bottomContextBlock: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 14,
-    minHeight: 88,
-    padding: "10px 12px",
-    background: "rgba(255,255,255,.05)",
-    border: `1px solid ${T.border}`,
-    borderRadius: 0,
+    minWidth: 0,
+    padding: "12px 14px",
   },
-  bottomActionRow: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
+  bottomActionCluster: {
+    display: "grid",
+    gridTemplateColumns: "auto auto",
+    alignItems: "stretch",
+    borderLeft: `1px solid ${T.border}`,
+    background: "rgba(255,255,255,.02)",
+  },
+  bottomActionPrimary: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "12px 14px",
+    borderRight: `1px solid ${T.border}`,
+  },
   bottomActionBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,.03)", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" },
   bottomActionBtnActive: { background: T.accentBg, color: T.accent, borderColor: T.accentBorder },
   bottomContext: { display: "grid", gap: 3, minWidth: 0 },
@@ -1454,12 +1491,35 @@ const S: Record<string, CSSProperties> = {
   floorPicker: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4 },
   floorBtn: { padding: "9px 14px", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: MONO, color: T.muted },
   floorBtnActive: { color: T.accent, background: T.accentBg },
+  bottomUtilityBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 244 },
   bottomUtilityRow: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
   zoomStack: { display: "flex", alignItems: "center", borderRadius: 0, overflow: "hidden", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}` },
   zoomBtn: { width: 34, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", fontSize: 18, fontWeight: 300, fontFamily: FONT, color: T.sec },
   zoomDivider: { width: 1, height: 18, background: T.border },
   fab: { display: "flex", alignItems: "center", gap: 8, padding: "11px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(56,189,248,.25)" },
   fabActive: { background: "#0ea5e9", boxShadow: "0 4px 24px rgba(56,189,248,.3)" },
+  searchDrawerLayer: {
+    position: "absolute",
+    top: TOP_BAR_CLEARANCE,
+    right: 0,
+    bottom: BOTTOM_BAR_CLEARANCE,
+    left: 0,
+    zIndex: 9,
+    background: "rgba(0,0,0,.08)",
+    display: "flex",
+    alignItems: "stretch",
+    justifyContent: "stretch",
+    padding: 0,
+  },
+  searchDrawerSheet: {
+    width: "100%",
+    height: "100%",
+    minHeight: 0,
+    maxHeight: "none",
+    borderRadius: 0,
+    overflow: "hidden",
+    boxShadow: "0 8px 34px rgba(0,0,0,.24)",
+  },
   drawerLayer: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE,
@@ -1471,7 +1531,7 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "flex-end",
     justifyContent: "stretch",
-    padding: "0 12px 8px",
+    padding: 0,
   },
   drawerSheet: {
     width: "100%",
@@ -1491,7 +1551,8 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
-  bpHeader: { padding: "16px 20px 12px", borderBottom: `1px solid ${T.borderH}`, flexShrink: 0, background: "rgba(255,255,255,.035)" },
+  bpHeader: { padding: "12px 16px", borderBottom: `1px solid ${T.borderH}`, flexShrink: 0, background: "rgba(255,255,255,.035)" },
+  bpToolbarMeta: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
   bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
   bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
   bpDivider: { width: 1, height: 20, background: T.border },
@@ -1499,17 +1560,17 @@ const S: Record<string, CSSProperties> = {
   bpGroupRow: { display: "flex", alignItems: "center", gap: 5 },
   bpGroupLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginRight: 4 },
   bpCount: { fontSize: 11, color: T.muted, fontWeight: 500 },
-  bpBody: { flex: 1, overflowY: "auto", padding: 20 },
-  bpPeopleSection: { marginBottom: 24 },
-  bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 },
-  bpPeopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 6 },
+  bpBody: { flex: 1, overflowY: "auto", padding: "14px 16px" },
+  bpPeopleSection: { marginBottom: 18 },
+  bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 },
+  bpPeopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 4 },
   pill: { padding: "5px 12px", fontSize: 11, fontWeight: 600, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.sec, fontFamily: FONT },
   pillActive: { background: T.accentBg, borderColor: T.accentBorder, color: T.accent },
   pillSm: { padding: "3px 9px", fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.muted, fontFamily: FONT },
   pillSmActive: { background: T.accentBg, borderColor: T.accentBorder, color: T.accent },
-  groupedGrid: { display: "flex", flexDirection: "column", gap: 24 },
+  groupedGrid: { display: "flex", flexDirection: "column", gap: 18 },
   group: {},
-  groupHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 },
+  groupHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 },
   groupLabel: { fontSize: 12, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".04em" },
   groupCount: { fontSize: 10, fontWeight: 600, color: T.muted, background: "rgba(255,255,255,.04)", padding: "1px 7px", borderRadius: 10 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 6 },
@@ -1591,10 +1652,10 @@ const S: Record<string, CSSProperties> = {
   accentBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT },
   ghostBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", background: "none", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT },
   iconBtn: { width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 0, color: T.sec, flexShrink: 0 },
-  detailFloat: { position: "absolute", top: 72, right: 14, zIndex: 20, width: 312, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: "calc(100vh - 156px)", overflow: "hidden" },
-  routeResultFloat: { position: "absolute", top: 72, right: 14, zIndex: 22, width: 356, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: "calc(100vh - 156px)", overflow: "hidden" },
+  detailFloat: { position: "absolute", top: TOP_BAR_CLEARANCE, right: 14, zIndex: 20, width: 312, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`, overflow: "hidden" },
+  routeResultFloat: { position: "absolute", top: TOP_BAR_CLEARANCE, right: 14, zIndex: 22, width: 356, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`, overflow: "hidden" },
   statusPill: { display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", fontSize: 11, fontWeight: 600, borderRadius: 20 },
-  opsPanel: { position: "absolute", top: 72, right: 14, zIndex: 40, width: 340, borderRadius: 0, boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: "calc(100vh - 156px)", overflow: "hidden", display: "flex", flexDirection: "column" },
+  opsPanel: { position: "absolute", top: TOP_BAR_CLEARANCE, right: 14, zIndex: 40, width: 340, borderRadius: 0, boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`, overflow: "hidden", display: "flex", flexDirection: "column" },
   checkRow: { display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none", fontSize: 12, color: T.sec, fontWeight: 500 },
   checkBox: { width: 15, height: 15, borderRadius: 4, border: "1.5px solid rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
   checkBoxOn: { background: T.accent, borderColor: T.accent },
