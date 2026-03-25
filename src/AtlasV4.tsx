@@ -792,6 +792,37 @@ export default function AtlasV4() {
       </header>
 
       <div style={S.bottomBar}>
+        <div style={{ ...S.bottomContextBlock, ...(drawerOpen && drawerMode === "route" ? S.bottomContextBlockRoute : {}) }}>
+          <div style={S.bottomContext}>
+            <div style={S.bottomModuleLabel}>{drawerOpen && drawerMode === "route" ? "Route Builder" : route ? "Active route" : selectedFeature ? "Selection" : "Workspace"}</div>
+            <div style={S.bottomHeadline}>
+              {drawerOpen && drawerMode === "route" ? (
+                <>
+                  {routeFrom?.name ?? "Choose start"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Choose destination"}
+                </>
+              ) : (
+                bottomHeadline
+              )}
+            </div>
+            <div style={S.bottomMetaRow}>
+              {drawerOpen && drawerMode === "route" ? (
+                <>
+                  <span style={S.bottomMeta}>{routeFrom && routeTo ? "Ready to build route" : "Pick both endpoints to continue"}</span>
+                  {routeFrom ? <span style={S.bottomChip}>{routeFrom.level}</span> : null}
+                  {routeTo ? <span style={S.bottomChip}>{routeTo.level}</span> : null}
+                </>
+              ) : (
+                <>
+                  <span style={S.bottomMeta}>{bottomMeta}</span>
+                  <span style={S.bottomChip}>{activeLevel}</span>
+                  <span style={S.bottomChip}>{viewMode}</span>
+                  {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div style={{ ...S.bottomModule, ...S.bottomFloorModule }}>
           <div style={S.bottomModuleLabel}>Floor</div>
           <div style={S.floorPicker}>
@@ -809,56 +840,67 @@ export default function AtlasV4() {
           </div>
         </div>
 
-        <div style={S.bottomMainRail}>
-          <div style={S.bottomContextBlock}>
-            <div style={S.bottomContext}>
-              <div style={S.bottomModuleLabel}>{route ? "Active route" : selectedFeature ? "Selection" : "Workspace"}</div>
-              <div style={S.bottomHeadline}>{bottomHeadline}</div>
-              <div style={S.bottomMetaRow}>
-                <span style={S.bottomMeta}>{bottomMeta}</span>
-                <span style={S.bottomChip}>{activeLevel}</span>
-                <span style={S.bottomChip}>{viewMode}</span>
-                {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
-              </div>
-            </div>
-          </div>
-
-          <div style={S.bottomActionCluster}>
-            <div style={S.bottomActionPrimary}>
-              <button
-                style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
-                className={drawerOpen && drawerMode === "route" ? "hud-accent" : "hud-btn"}
-                onClick={() => {
-                  if (drawerOpen && drawerMode === "route") {
-                    setDrawerOpen(false);
-                    return;
-                  }
-                  openRouteBuilder();
-                }}
-                type="button"
-              >
-                <Ic.Route /> <span>{route ? "Edit route" : "Build route"}</span>
+        <div style={S.bottomUtilityBlock}>
+          <div style={S.bottomModuleLabel}>View</div>
+          <div style={S.bottomUtilityRow}>
+            <span style={S.bottomChip}>{themeVariant}</span>
+            <span style={S.bottomChip}>{route ? routeConnectorLabel(route.summary.connectorTypes) : "flat"}</span>
+            <div style={S.zoomStack}>
+              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
+                −
               </button>
-            </div>
-
-            <div style={S.bottomUtilityBlock}>
-              <div style={S.bottomModuleLabel}>View</div>
-              <div style={S.bottomUtilityRow}>
-                <span style={S.bottomChip}>{themeVariant}</span>
-                <span style={S.bottomChip}>{route ? routeConnectorLabel(route.summary.connectorTypes) : "flat"}</span>
-                <div style={S.zoomStack}>
-                  <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
-                    −
-                  </button>
-                  <div style={S.zoomDivider} />
-                  <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
-                    +
-                  </button>
-                </div>
-              </div>
+              <div style={S.zoomDivider} />
+              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
+                +
+              </button>
             </div>
           </div>
         </div>
+
+        {drawerOpen && drawerMode === "route" ? (
+          <div style={S.bottomRouteActions}>
+            <label style={S.checkRow}>
+              <div
+                style={{ ...S.checkBox, ...(accessibleOnly ? S.checkBoxOn : {}) }}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setAccessibleOnly((current) => !current);
+                }}
+              >
+                {accessibleOnly ? <Ic.Check /> : null}
+              </div>
+              <span>Accessible only</span>
+            </label>
+            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
+              Close
+            </button>
+            <button
+              style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
+              className="hud-accent"
+              onClick={buildRoute}
+              type="button"
+            >
+              <Ic.Nav /> Build route
+            </button>
+          </div>
+        ) : (
+          <div style={S.bottomActionPrimary}>
+            <button
+              style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
+              className={drawerOpen && drawerMode === "route" ? "hud-accent" : "hud-btn"}
+              onClick={() => {
+                if (drawerOpen && drawerMode === "route") {
+                  setDrawerOpen(false);
+                  return;
+                }
+                openRouteBuilder();
+              }}
+              type="button"
+            >
+              <Ic.Route /> <span>{route ? "Edit route" : "Build route"}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {drawerOpen && drawerMode === "search" ? (
@@ -998,7 +1040,7 @@ export default function AtlasV4() {
                 </button>
               </div>
 
-              <div style={{ ...S.rpCol, borderRight: "none" }}>
+              <div style={{ ...S.rpCol, ...S.rpColLast }}>
                 <div style={S.rpColHeader}>
                   <div style={{ flex: 1 }}>
                     <div style={S.rpColLabel}>To — Destination</div>
@@ -1050,42 +1092,6 @@ export default function AtlasV4() {
               </div>
             </div>
 
-            <div style={S.rpFooter}>
-              <div style={S.rpFooterSummary}>
-                <span style={S.panelSectionLabel}>Route Builder</span>
-                <div style={S.rpFooterHeadline}>
-                  {routeFrom?.name ?? "Choose start"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Choose destination"}
-                </div>
-                <div style={S.rpFooterMeta}>
-                  {routeFrom && routeTo ? "Ready to build route" : "Pick both endpoints to continue"}
-                </div>
-              </div>
-              <div style={S.rpFooterActions}>
-                <label style={S.checkRow}>
-                  <div
-                    style={{ ...S.checkBox, ...(accessibleOnly ? S.checkBoxOn : {}) }}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setAccessibleOnly((current) => !current);
-                    }}
-                  >
-                    {accessibleOnly ? <Ic.Check /> : null}
-                  </div>
-                  <span>Accessible only</span>
-                </label>
-                <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                  Close
-                </button>
-                <button
-                  style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
-                  className="hud-accent"
-                  onClick={buildRoute}
-                  type="button"
-                >
-                  <Ic.Nav /> Build route
-                </button>
-              </div>
-            </div>
             </div>
           </div>
         </div>
@@ -1323,6 +1329,7 @@ const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', monospace";
 const TOP_BAR_CLEARANCE = 72;
 const BOTTOM_BAR_CLEARANCE = 96;
+const SIDE_PANEL_TOP_INSET = 16;
 const T = {
   bg: "#0c1018",
   glass: "rgba(15,20,32,.72)",
@@ -1410,7 +1417,7 @@ const S: Record<string, CSSProperties> = {
     bottom: 0,
     zIndex: 10,
     display: "grid",
-    gridTemplateColumns: "240px minmax(0, 1fr)",
+    gridTemplateColumns: "minmax(360px, 1.45fr) 210px 240px minmax(320px, 1fr)",
     alignItems: "stretch",
     gap: 0,
     padding: 0,
@@ -1445,7 +1452,13 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     minWidth: 0,
-    padding: "12px 14px",
+    minHeight: BOTTOM_BAR_CLEARANCE,
+    padding: "12px 16px",
+    background: "linear-gradient(90deg, rgba(255,255,255,.045), rgba(255,255,255,.028))",
+    borderRight: `1px solid ${T.borderH}`,
+  },
+  bottomContextBlockRoute: {
+    padding: "14px 16px",
   },
   bottomActionCluster: {
     display: "grid",
@@ -1457,13 +1470,28 @@ const S: Record<string, CSSProperties> = {
   bottomActionPrimary: {
     display: "flex",
     alignItems: "center",
+    justifyContent: "flex-end",
     gap: 8,
-    padding: "12px 14px",
-    borderRight: `1px solid ${T.border}`,
+    minHeight: BOTTOM_BAR_CLEARANCE,
+    padding: "12px 16px",
+    background: "rgba(255,255,255,.025)",
+    borderLeft: `1px solid ${T.borderH}`,
+    flexWrap: "wrap",
+  },
+  bottomRouteActions: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 10,
+    minHeight: BOTTOM_BAR_CLEARANCE,
+    padding: "12px 16px",
+    background: "rgba(255,255,255,.025)",
+    borderLeft: `1px solid ${T.borderH}`,
+    flexWrap: "wrap",
   },
   bottomActionBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,.03)", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" },
   bottomActionBtnActive: { background: T.accentBg, color: T.accent, borderColor: T.accentBorder },
-  bottomContext: { display: "grid", gap: 3, minWidth: 0 },
+  bottomContext: { display: "grid", gap: 4, minWidth: 0, maxWidth: 560 },
   bottomHeadline: {
     fontSize: 15,
     fontWeight: 750,
@@ -1491,7 +1519,16 @@ const S: Record<string, CSSProperties> = {
   floorPicker: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4 },
   floorBtn: { padding: "9px 14px", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: MONO, color: T.muted },
   floorBtnActive: { color: T.accent, background: T.accentBg },
-  bottomUtilityBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 244 },
+  bottomUtilityBlock: {
+    display: "grid",
+    alignContent: "center",
+    gap: 8,
+    minHeight: BOTTOM_BAR_CLEARANCE,
+    padding: "12px 16px",
+    minWidth: 0,
+    background: "rgba(255,255,255,.03)",
+    borderRight: `1px solid ${T.borderH}`,
+  },
   bottomUtilityRow: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
   zoomStack: { display: "flex", alignItems: "center", borderRadius: 0, overflow: "hidden", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}` },
   zoomBtn: { width: 34, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", fontSize: 18, fontWeight: 300, fontFamily: FONT, color: T.sec },
@@ -1529,18 +1566,19 @@ const S: Record<string, CSSProperties> = {
     zIndex: 9,
     background: "rgba(0,0,0,.08)",
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "stretch",
     justifyContent: "stretch",
     padding: 0,
   },
   drawerSheet: {
     width: "100%",
-    height: "min(42vh, calc(100vh - 188px))",
-    minHeight: 320,
-    maxHeight: "calc(100vh - 188px)",
+    height: "100%",
+    minHeight: 0,
+    maxHeight: "none",
     borderRadius: 0,
     overflow: "hidden",
-    boxShadow: "0 -8px 34px rgba(0,0,0,.24)",
+    borderTop: `1px solid ${T.borderH}`,
+    boxShadow: "0 8px 34px rgba(0,0,0,.24)",
   },
   browsePanel: {
     width: "100%",
@@ -1597,21 +1635,86 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
+    padding: "14px 16px",
+    background: "rgba(255,255,255,.018)",
   },
-  rpColumns: { flex: 1, display: "flex", overflow: "hidden", minHeight: 0 },
-  rpCol: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: `1px solid ${T.border}` },
-  rpColHeader: { display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 },
+  rpColumns: {
+    flex: 1,
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 40px minmax(0, 1fr)",
+    gap: 12,
+    overflow: "hidden",
+    minHeight: 0,
+  },
+  rpCol: {
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    minWidth: 0,
+    background: "rgba(255,255,255,.02)",
+    border: `1px solid ${T.border}`,
+  },
+  rpColLast: { borderRight: `1px solid ${T.border}` },
+  rpColHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: "10px 14px",
+    borderBottom: `1px solid ${T.border}`,
+    flexShrink: 0,
+    background: "rgba(255,255,255,.028)",
+  },
   rpColLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 },
   rpSelected: { display: "flex", alignItems: "center", gap: 7, padding: "5px 10px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 0, marginTop: 0 },
   rpSelectedName: { fontSize: 13, fontWeight: 650 },
   rpSelectedLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, marginLeft: "auto" },
   rpClearBtn: { width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.06)", border: "none", borderRadius: 3, color: T.muted, marginLeft: 4, flexShrink: 0 },
-  rpColSearch: { display: "flex", alignItems: "center", gap: 7, padding: "8px 14px", borderBottom: `1px solid ${T.border}`, color: T.muted, flexShrink: 0 },
+  rpColSearch: {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "10px 14px",
+    borderBottom: `1px solid ${T.border}`,
+    color: T.muted,
+    flexShrink: 0,
+    background: "rgba(255,255,255,.012)",
+  },
   rpColInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 12, fontFamily: FONT },
-  rpColToolbar: { display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 },
-  rpColBody: { flex: 1, overflowY: "auto", padding: 12 },
-  rpSwapCol: { display: "flex", alignItems: "center", paddingTop: 60, flexShrink: 0 },
-  rpSwapBtn: { width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.muted, margin: "-1px" },
+  rpColToolbar: {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "10px 14px",
+    borderBottom: `1px solid ${T.border}`,
+    flexShrink: 0,
+    background: "rgba(255,255,255,.012)",
+  },
+  rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
+  rpSwapCol: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    position: "relative",
+    background: "transparent",
+    paddingTop: 92,
+    overflow: "hidden",
+    flexShrink: 0,
+  },
+  rpSwapBtn: {
+    width: 30,
+    height: 30,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(255,255,255,.035)",
+    border: `1px solid ${T.border}`,
+    borderRadius: 0,
+    color: T.muted,
+    boxShadow: "0 6px 18px rgba(0,0,0,.18)",
+    position: "relative",
+    zIndex: 1,
+  },
   rpFooter: {
     display: "flex",
     alignItems: "center",
@@ -1652,20 +1755,102 @@ const S: Record<string, CSSProperties> = {
   accentBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT },
   ghostBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", background: "none", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT },
   iconBtn: { width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 0, color: T.sec, flexShrink: 0 },
-  detailFloat: { position: "absolute", top: TOP_BAR_CLEARANCE, right: 14, zIndex: 20, width: 312, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`, overflow: "hidden" },
-  routeResultFloat: { position: "absolute", top: TOP_BAR_CLEARANCE, right: 14, zIndex: 22, width: 356, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`, overflow: "hidden" },
+  detailFloat: {
+    position: "absolute",
+    top: TOP_BAR_CLEARANCE + SIDE_PANEL_TOP_INSET,
+    right: 0,
+    bottom: BOTTOM_BAR_CLEARANCE,
+    zIndex: 20,
+    width: 352,
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column",
+    background: T.glass,
+    backdropFilter: "blur(28px) saturate(150%)",
+    WebkitBackdropFilter: "blur(28px) saturate(150%)",
+    borderLeft: `1px solid ${T.borderH}`,
+    boxShadow: "-8px 0 28px rgba(0,0,0,.18)",
+    overflow: "hidden",
+  },
+  routeResultFloat: {
+    position: "absolute",
+    top: TOP_BAR_CLEARANCE + SIDE_PANEL_TOP_INSET,
+    right: 0,
+    bottom: BOTTOM_BAR_CLEARANCE,
+    zIndex: 22,
+    width: 416,
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column",
+    background: T.glass,
+    backdropFilter: "blur(28px) saturate(150%)",
+    WebkitBackdropFilter: "blur(28px) saturate(150%)",
+    borderLeft: `1px solid ${T.borderH}`,
+    boxShadow: "-8px 0 28px rgba(0,0,0,.18)",
+    overflow: "hidden",
+  },
   statusPill: { display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", fontSize: 11, fontWeight: 600, borderRadius: 20 },
-  opsPanel: { position: "absolute", top: TOP_BAR_CLEARANCE, right: 14, zIndex: 40, width: 340, borderRadius: 0, boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`, overflow: "hidden", display: "flex", flexDirection: "column" },
+  opsPanel: {
+    position: "absolute",
+    top: TOP_BAR_CLEARANCE + SIDE_PANEL_TOP_INSET,
+    right: 0,
+    bottom: BOTTOM_BAR_CLEARANCE,
+    zIndex: 40,
+    width: 372,
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column",
+    background: T.glass,
+    backdropFilter: "blur(28px) saturate(150%)",
+    WebkitBackdropFilter: "blur(28px) saturate(150%)",
+    borderLeft: `1px solid ${T.borderH}`,
+    boxShadow: "-8px 0 28px rgba(0,0,0,.18)",
+    overflow: "hidden",
+  },
   checkRow: { display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none", fontSize: 12, color: T.sec, fontWeight: 500 },
   checkBox: { width: 15, height: 15, borderRadius: 4, border: "1.5px solid rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
   checkBoxOn: { background: T.accent, borderColor: T.accent },
   rrStatsPanel: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
   rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}` },
   floatHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 12, borderBottom: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.035)" },
-  panelHeaderTight: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, padding: "12px 14px", borderBottom: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.035)", flexShrink: 0 },
-  sidePanelBody: { display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", minHeight: 0, padding: 12, flex: 1 },
-  sidePanelFooter: { display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 14px", borderTop: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.03)", flexShrink: 0 },
-  sidePanelFooterColumn: { display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderTop: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.03)", flexShrink: 0 },
+  panelHeaderTight: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: "14px 16px",
+    borderBottom: `1px solid ${T.borderH}`,
+    background: "rgba(255,255,255,.03)",
+    flexShrink: 0,
+  },
+  sidePanelBody: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    overflowY: "auto",
+    minHeight: 0,
+    padding: "14px 16px",
+    flex: 1,
+    background: "rgba(255,255,255,.016)",
+  },
+  sidePanelFooter: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    padding: "14px 16px",
+    borderTop: `1px solid ${T.borderH}`,
+    background: "rgba(255,255,255,.03)",
+    flexShrink: 0,
+  },
+  sidePanelFooterColumn: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    padding: "14px 16px",
+    borderTop: `1px solid ${T.borderH}`,
+    background: "rgba(255,255,255,.03)",
+    flexShrink: 0,
+  },
   sidePanelTitle: { margin: 0, fontSize: 16, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15 },
   sidePanelSubline: { fontSize: 11, color: T.sec },
   sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: "rgba(255,255,255,.028)", border: `1px solid ${T.border}` },
