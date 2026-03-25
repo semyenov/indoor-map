@@ -618,7 +618,7 @@ export function MapCanvas({
     }
 
     popupRef.current?.remove();
-    popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: "map-popup" })
+    popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: `map-popup map-popup-${themeVariant}` })
       .setLngLat(feature.properties.focusPoint)
       .setHTML(popupHtml(featureById, featureId))
       .addTo(map);
@@ -996,7 +996,7 @@ export function MapCanvas({
 
         onSelectFeatureRef.current(featureId);
         popupRef.current?.remove();
-        popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: "map-popup" })
+        popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: `map-popup map-popup-${themeVariant}` })
           .setLngLat(event.lngLat)
           .setHTML(popupHtml(featureById, featureId))
           .addTo(map);

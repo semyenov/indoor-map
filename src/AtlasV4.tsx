@@ -27,6 +27,7 @@ const routeableKinds = new Set(["room", "meeting_room", "amenity", "connector"])
 type GroupKey = "level" | "kind" | "dept" | "status";
 type AtlasKind = "room" | "meeting" | "amenity" | "connector" | "workstation";
 type IndoorFeature = IndoorRuntimeData["dataset"]["features"][number];
+type DrawerMode = "search" | "route";
 
 type AtlasSpace = {
   id: string;
@@ -387,11 +388,11 @@ export default function AtlasV4() {
   const [viewMode, setViewMode] = useState<MapSceneMode>("explore");
   const [themeVariant, setThemeVariant] = useState<MapThemeVariant>("dark");
   const [time, setTime] = useState(new Date());
-  const [browseOpen, setBrowseOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<DrawerMode>("search");
   const [browseQ, setBrowseQ] = useState("");
   const [browseGroup, setBrowseGroup] = useState<GroupKey>("level");
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>("room-l1-lobby");
-  const [routeOpen, setRouteOpen] = useState(false);
   const [routeFromId, setRouteFromId] = useState("");
   const [routeToId, setRouteToId] = useState("");
   const [routeFromQ, setRouteFromQ] = useState("");
@@ -547,6 +548,16 @@ export default function AtlasV4() {
   const selectedStatus = featureStatus(featureById, selectedFeatureId, roomStatuses) ?? "offline";
   const routeSummaryDistance = route ? Math.round(route.summary.distance) : 0;
   const routeStepsList = routeSteps(route, routeFrom?.name ?? "Start", routeTo?.name ?? "Destination");
+  const bottomHeadline = route
+    ? `${routeFrom?.name ?? "Start"} → ${routeTo?.name ?? "Destination"}`
+    : selectedFeature
+      ? selectedFeature.properties.employee ?? selectedFeature.properties.name
+      : "Ready to navigate";
+  const bottomMeta = route
+    ? `${routeSummaryDistance} m · ${routeDurationLabel(route.summary.distance)}`
+    : selectedFeature
+      ? `${selectedFeature.properties.department ?? "Shared"} · ${selectedFeature.properties.level}`
+      : `${activeLevel} · ${viewMode}`;
   const matchedSearchResults = browseQ.trim()
     ? searchOffice(searchEntries, browseQ).map((entry) => atlasSpaces.find((space) => space.featureId === entry.featureId)).filter((space): space is AtlasSpace => Boolean(space))
     : [];
@@ -587,21 +598,23 @@ export default function AtlasV4() {
   };
 
   const openBrowse = () => {
-    setBrowseOpen(true);
+    setDrawerMode("search");
+    setDrawerOpen(true);
     setBrowseQ("");
     window.setTimeout(() => browseRef.current?.focus(), 80);
   };
 
   const openRouteBuilder = (fromTargetId: string | null = null, toTargetId: string | null = null) => {
-    setRouteOpen(true);
+    setDrawerMode("route");
+    setDrawerOpen(true);
     setRouteFromId(fromTargetId ?? routeFromId);
     setRouteToId(toTargetId ?? routeToId);
     setRouteFromQ("");
     setRouteToQ("");
   };
 
-  const closeRoute = () => {
-    setRouteOpen(false);
+  const closeDrawer = () => {
+    setDrawerOpen(false);
   };
 
   const buildRoute = () => {
@@ -624,7 +637,7 @@ export default function AtlasV4() {
 
     setRoute(result);
     setRouteError(null);
-    setRouteOpen(false);
+    setDrawerOpen(false);
     const firstLevel = result.summary.levels[0];
 
     if (firstLevel) {
@@ -741,43 +754,89 @@ export default function AtlasV4() {
         </div>
       </header>
 
-      <div style={S.bottomLeft}>
-        <div style={S.floorPicker} className="hud-glass">
-          {levels.map((level) => (
+      <div style={S.bottomBar}>
+        <div style={S.bottomModule}>
+          <div style={S.bottomModuleLabel}>Floor</div>
+          <div style={S.floorPicker}>
+            {levels.map((level) => (
+              <button
+                key={level.id}
+                style={{ ...S.floorBtn, ...(activeLevel === level.id ? S.floorBtnActive : {}) }}
+                className="hud-btn"
+                onClick={() => setActiveLevel(level.id)}
+                type="button"
+              >
+                {level.id}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={S.bottomCenter}>
+          <div style={S.bottomContext}>
+            <div style={S.bottomModuleLabel}>{route ? "Active route" : selectedFeature ? "Selection" : "Workspace"}</div>
+            <div style={S.bottomHeadline}>{bottomHeadline}</div>
+            <div style={S.bottomMetaRow}>
+              <span style={S.bottomMeta}>{bottomMeta}</span>
+              <span style={S.bottomChip}>{activeLevel}</span>
+              <span style={S.bottomChip}>{viewMode}</span>
+              {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
+            </div>
+          </div>
+          <div style={S.bottomActionRow}>
             <button
-              key={level.id}
-              style={{ ...S.floorBtn, ...(activeLevel === level.id ? S.floorBtnActive : {}) }}
-              className="hud-btn"
-              onClick={() => setActiveLevel(level.id)}
+              style={{ ...S.bottomActionBtn, ...(drawerOpen && drawerMode === "search" ? S.bottomActionBtnActive : {}) }}
+              className={drawerOpen && drawerMode === "search" ? "hud-accent" : "hud-btn"}
+              onClick={() => {
+                if (drawerOpen && drawerMode === "search") {
+                  setDrawerOpen(false);
+                  return;
+                }
+                openBrowse();
+              }}
               type="button"
             >
-              {level.id}
+              <Ic.Search s={13} /> <span>Search</span>
             </button>
-          ))}
+            <button
+              style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
+              className={drawerOpen && drawerMode === "route" ? "hud-accent" : "hud-btn"}
+              onClick={() => {
+                if (drawerOpen && drawerMode === "route") {
+                  setDrawerOpen(false);
+                  return;
+                }
+                openRouteBuilder();
+              }}
+              type="button"
+            >
+              <Ic.Route /> <span>{route ? "Edit route" : "Build route"}</span>
+            </button>
+          </div>
+        </div>
+
+        <div style={{ ...S.bottomModule, ...S.bottomModuleRight }}>
+          <div style={S.bottomModuleLabel}>View</div>
+          <div style={S.bottomUtilityRow}>
+            <span style={S.bottomChip}>{themeVariant}</span>
+            <span style={S.bottomChip}>{route ? routeConnectorLabel(route.summary.connectorTypes) : "flat"}</span>
+            <div style={S.zoomStack}>
+              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
+                −
+              </button>
+              <div style={S.zoomDivider} />
+              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
+                +
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={S.bottomRight}>
-        <div style={S.zoomStack} className="hud-glass">
-          <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
-            +
-          </button>
-          <div style={{ height: 1, background: "rgba(255,255,255,.06)", width: "60%", alignSelf: "center" }} />
-          <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
-            −
-          </button>
-        </div>
-      </div>
-
-      {!routeOpen && !browseOpen ? (
-        <button style={S.fab} className="hud-accent" onClick={() => openRouteBuilder()} type="button">
-          <Ic.Route /> <span>Route</span>
-        </button>
-      ) : null}
-
-      {browseOpen ? (
-        <div style={S.overlay} onClick={() => setBrowseOpen(false)}>
-          <div style={S.browsePanel} className="hud-glass-heavy oa-fade" onClick={(event) => event.stopPropagation()}>
+      {drawerOpen && drawerMode === "search" ? (
+        <div style={S.drawerLayer} onClick={() => setDrawerOpen(false)}>
+          <div style={S.drawerSheet} className="hud-glass oa-slide-up" onClick={(event) => event.stopPropagation()}>
+            <div style={S.browsePanel}>
             <div style={S.bpHeader}>
               <div style={S.bpSearchRow}>
                 <Ic.Search s={16} />
@@ -794,7 +853,7 @@ export default function AtlasV4() {
                   </button>
                 ) : null}
                 <div style={S.bpDivider} />
-                <button style={S.iconBtn} className="hud-btn" onClick={() => setBrowseOpen(false)} type="button">
+                <button style={S.iconBtn} className="hud-btn" onClick={() => setDrawerOpen(false)} type="button">
                   <Ic.X />
                 </button>
               </div>
@@ -830,7 +889,7 @@ export default function AtlasV4() {
                     {browsePeople.slice(0, 6).map((person) => (
                       <PersonRow key={person.featureId} person={person} onClick={(nextPerson) => {
                         onSelectFeature(nextPerson.featureId);
-                        setBrowseOpen(false);
+                        setDrawerOpen(false);
                       }} />
                     ))}
                   </div>
@@ -842,61 +901,27 @@ export default function AtlasV4() {
                 groupKey={browseGroup}
                 onSelect={(space) => {
                   onSelectFeature(space.featureId);
-                  setBrowseOpen(false);
+                  setDrawerOpen(false);
                 }}
                 selectedFeatureId={selectedFeatureId}
               />
+            </div>
             </div>
           </div>
         </div>
       ) : null}
 
-      {routeOpen ? (
-        <div style={S.overlay} onClick={closeRoute}>
-          <div style={S.routePanel} className="hud-glass-heavy oa-fade" onClick={(event) => event.stopPropagation()}>
-            <div style={S.rpHeader}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Ic.Route />
-                <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-.02em" }}>Route Builder</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <label style={S.checkRow}>
-                  <div
-                    style={{ ...S.checkBox, ...(accessibleOnly ? S.checkBoxOn : {}) }}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setAccessibleOnly((current) => !current);
-                    }}
-                  >
-                    {accessibleOnly ? <Ic.Check /> : null}
-                  </div>
-                  <span>Accessible only</span>
-                </label>
-                <button
-                  style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
-                  className="hud-accent"
-                  onClick={buildRoute}
-                  type="button"
-                >
-                  <Ic.Nav /> Build route
-                </button>
-                <button style={S.iconBtn} className="hud-btn" onClick={closeRoute} type="button">
-                  <Ic.X />
-                </button>
-              </div>
-            </div>
-
+      {drawerOpen && drawerMode === "route" ? (
+        <div style={S.drawerLayer} onClick={closeDrawer}>
+          <div style={S.drawerSheet} className="hud-glass oa-slide-up" onClick={(event) => event.stopPropagation()}>
+            <div style={S.routePanel}>
             <div style={S.rpColumns}>
               <div style={S.rpCol}>
                 <div style={S.rpColHeader}>
-                  <div style={S.rpColDot}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", border: `2.5px solid ${T.accent}` }} />
-                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={S.rpColLabel}>From — Starting point</div>
                     {routeFrom ? (
                       <div style={S.rpSelected}>
-                        <span style={{ ...S.statusDot, background: ST[routeFrom.status].c }} />
                         <span style={S.rpSelectedName}>{routeFrom.name}</span>
                         <span style={S.rpSelectedLevel}>{routeFrom.level}</span>
                         <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteFromId("")} type="button">
@@ -959,14 +984,10 @@ export default function AtlasV4() {
 
               <div style={{ ...S.rpCol, borderRight: "none" }}>
                 <div style={S.rpColHeader}>
-                  <div style={S.rpColDot}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: T.accent }} />
-                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={S.rpColLabel}>To — Destination</div>
                     {routeTo ? (
                       <div style={S.rpSelected}>
-                        <span style={{ ...S.statusDot, background: ST[routeTo.status].c }} />
                         <span style={S.rpSelectedName}>{routeTo.name}</span>
                         <span style={S.rpSelectedLevel}>{routeTo.level}</span>
                         <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteToId("")} type="button">
@@ -1013,21 +1034,56 @@ export default function AtlasV4() {
               </div>
             </div>
 
+            <div style={S.rpFooter}>
+              <div style={S.rpFooterSummary}>
+                <span style={S.panelSectionLabel}>Route Builder</span>
+                <div style={S.rpFooterHeadline}>
+                  {routeFrom?.name ?? "Choose start"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Choose destination"}
+                </div>
+                <div style={S.rpFooterMeta}>
+                  {routeFrom && routeTo ? "Ready to build route" : "Pick both endpoints to continue"}
+                </div>
+              </div>
+              <div style={S.rpFooterActions}>
+                <label style={S.checkRow}>
+                  <div
+                    style={{ ...S.checkBox, ...(accessibleOnly ? S.checkBoxOn : {}) }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setAccessibleOnly((current) => !current);
+                    }}
+                  >
+                    {accessibleOnly ? <Ic.Check /> : null}
+                  </div>
+                  <span>Accessible only</span>
+                </label>
+                <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                  Close
+                </button>
+                <button
+                  style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
+                  className="hud-accent"
+                  onClick={buildRoute}
+                  type="button"
+                >
+                  <Ic.Nav /> Build route
+                </button>
+              </div>
+            </div>
+            </div>
           </div>
         </div>
       ) : null}
 
-      {route && !routeOpen ? (
-        <div style={S.routeResultFloat} className="hud-glass-heavy oa-slide-left">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+      {route && !(drawerOpen && drawerMode === "route") ? (
+        <div style={S.routeResultFloat} className="hud-glass oa-slide-left">
+          <div style={S.panelHeaderTight}>
             <div style={{ display: "grid", gap: 4 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: T.accent }}>
-                Active Route
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.03em", lineHeight: 1.1 }}>
+              <div style={S.panelSectionLabel}>Active Route</div>
+              <div style={S.sidePanelTitle}>
                 {routeFrom?.name ?? "Start"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Destination"}
               </div>
-              <div style={{ fontSize: 12, color: T.sec }}>
+              <div style={S.sidePanelSubline}>
                 {routeSummaryDistance} m · {routeDurationLabel(route.summary.distance)}
               </div>
             </div>
@@ -1044,37 +1100,49 @@ export default function AtlasV4() {
             </button>
           </div>
 
-          <div style={S.rrPath}>
-            {routeFrom?.name ?? "Start"} <Ic.ArrowR /> {routeTo?.name ?? "Destination"}
-          </div>
-
-          <div style={S.rrStatsPanel}>
-            {[
-              { v: String(route.nodeIds.length), l: "Nodes" },
-              { v: String(route.legs.length), l: "Legs" },
-              { v: String(route.summary.levels.length), l: "Levels" },
-              { v: routeConnectorLabel(route.summary.connectorTypes), l: "Via" },
-            ].map((stat) => (
-              <div key={stat.l} style={S.rrStatCard}>
-                <span style={S.rrStatV}>{stat.v}</span>
-                <span style={S.rrStatL}>{stat.l}</span>
+          <div style={S.sidePanelBody}>
+            <div style={S.sidePanelSection}>
+              <div style={S.sidePanelSectionHeader}>
+                <span style={S.panelSectionLabel}>Overview</span>
               </div>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {routeStepsList.map((step, index) => (
-              <div key={step} style={S.rrStep}>
-                <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", borderColor: T.accent } : {}) }}>
-                  {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
-                </div>
-                <span style={S.rrStepT}>{step}</span>
+              <div style={S.rrPath}>
+                {routeFrom?.name ?? "Start"} <Ic.ArrowR /> {routeTo?.name ?? "Destination"}
               </div>
-            ))}
+
+              <div style={S.rrStatsPanel}>
+                {[
+                  { v: String(route.nodeIds.length), l: "Nodes" },
+                  { v: String(route.legs.length), l: "Legs" },
+                  { v: String(route.summary.levels.length), l: "Levels" },
+                  { v: routeConnectorLabel(route.summary.connectorTypes), l: "Via" },
+                ].map((stat) => (
+                  <div key={stat.l} style={S.rrStatCard}>
+                    <span style={S.rrStatV}>{stat.v}</span>
+                    <span style={S.rrStatL}>{stat.l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ ...S.sidePanelSection, minHeight: 0, flex: 1 }}>
+              <div style={S.sidePanelSectionHeader}>
+                <span style={S.panelSectionLabel}>Steps</span>
+              </div>
+              <div style={S.panelInsetScroll}>
+                {routeStepsList.map((step, index) => (
+                  <div key={step} style={S.rrStep}>
+                    <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", borderColor: T.accent } : {}) }}>
+                      {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
+                    </div>
+                    <span style={S.rrStepT}>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8 }}>
-            <button style={S.accentBtn} className="hud-accent" onClick={() => setRouteOpen(true)} type="button">
+          <div style={S.sidePanelFooter}>
+            <button style={S.accentBtn} className="hud-accent" onClick={() => openRouteBuilder()} type="button">
               <Ic.Route /> Edit route
             </button>
             <button
@@ -1092,60 +1160,68 @@ export default function AtlasV4() {
         </div>
       ) : null}
 
-      {selectedFeature && !browseOpen && !routeOpen && !route ? (
-        <div style={S.detailFloat} className="hud-glass-heavy oa-slide-left">
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      {selectedFeature && !drawerOpen && !route ? (
+        <div style={S.detailFloat} className="hud-glass oa-slide-left">
+          <div style={S.panelHeaderTight}>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div style={S.panelSectionLabel}>{KIND_L[getAtlasKind(selectedFeature)]}</div>
+              <h2 style={S.sidePanelTitle}>{selectedFeature.properties.employee ?? selectedFeature.properties.name}</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ ...S.statusPill, color: ST[selectedStatus].c, background: ST[selectedStatus].bg }}>
+                  <Ic.Pulse /> {ST[selectedStatus].label}
+                </span>
+                <span style={S.infoChip}>{selectedFeature.properties.level}</span>
+                {(selectedFeature.properties.capacity ?? 0) > 0 ? <span style={S.sidePanelSubline}>{selectedFeature.properties.capacity} seats</span> : null}
+              </div>
+            </div>
             <button style={S.iconBtn} className="hud-btn" onClick={() => setSelectedFeatureId(null)} type="button">
               <Ic.X />
             </button>
           </div>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: T.accent }}>
-            {KIND_L[getAtlasKind(selectedFeature)]}
-          </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.03em", margin: 0, lineHeight: 1.2 }}>
-            {selectedFeature.properties.employee ?? selectedFeature.properties.name}
-          </h2>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ ...S.statusPill, color: ST[selectedStatus].c, background: ST[selectedStatus].bg }}>
-              <Ic.Pulse /> {ST[selectedStatus].label}
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: T.sec, background: "rgba(255,255,255,.05)", padding: "2px 8px", borderRadius: 5 }}>
-              {selectedFeature.properties.level}
-            </span>
-            {(selectedFeature.properties.capacity ?? 0) > 0 ? <span style={{ fontSize: 11, color: T.sec }}>{selectedFeature.properties.capacity} seats</span> : null}
-          </div>
-          {selectedFeature.properties.employee ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 12 }}>
-              <div style={S.personAv}>{selectedFeature.properties.employee[0]}</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedFeature.properties.employee}</div>
-                <div style={{ fontSize: 11, color: T.muted }}>{selectedFeature.properties.name}</div>
+          <div style={S.sidePanelBody}>
+            {selectedFeature.properties.employee ? (
+              <div style={S.panelInsetAccent}>
+                <div style={S.personAv}>{selectedFeature.properties.employee[0]}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedFeature.properties.employee}</div>
+                  <div style={{ fontSize: 11, color: T.muted }}>{selectedFeature.properties.name}</div>
+                </div>
+              </div>
+            ) : null}
+            <div style={S.sidePanelSection}>
+              <div style={S.sidePanelSectionHeader}>
+                <span style={S.panelSectionLabel}>Workspace</span>
+              </div>
+              <div style={S.panelMetaGrid}>
+                {[
+                  ["Department", selectedFeature.properties.department ?? "Shared"],
+                  ["Level", selectedFeature.properties.level],
+                  ["ID", selectedFeature.id],
+                  ["Route", selectedRouteTarget?.routeNodeId ?? "N/A"],
+                ].map(([label, value]) => (
+                  <div key={label} style={S.panelMetaCell}>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, ...(label === "ID" || label === "Route" ? { fontFamily: MONO, fontSize: 10 } : {}) }}>{value}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : null}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: T.border, borderRadius: 12, overflow: "hidden" }}>
-            {[
-              ["Department", selectedFeature.properties.department ?? "Shared"],
-              ["Level", selectedFeature.properties.level],
-              ["ID", selectedFeature.id],
-              ["Route", selectedRouteTarget?.routeNodeId ?? "N/A"],
-            ].map(([label, value]) => (
-              <div key={label} style={{ display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: "rgba(15,20,32,.5)" }}>
-                <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, ...(label === "ID" || label === "Route" ? { fontFamily: MONO, fontSize: 10 } : {}) }}>{value}</span>
+            {(selectedFeature.properties.equipment ?? []).length > 0 ? (
+              <div style={S.sidePanelSection}>
+                <div style={S.sidePanelSectionHeader}>
+                  <div style={S.panelSectionLabel}>Equipment</div>
+                </div>
+                <div style={S.panelChipRow}>
+                {(selectedFeature.properties.equipment ?? []).map((equipment) => (
+                  <span key={equipment} style={S.infoChip}>
+                    {equipment}
+                  </span>
+                ))}
+                </div>
               </div>
-            ))}
+            ) : null}
           </div>
-          {(selectedFeature.properties.equipment ?? []).length > 0 ? (
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-              {(selectedFeature.properties.equipment ?? []).map((equipment) => (
-                <span key={equipment} style={{ padding: "4px 10px", fontSize: 11, fontWeight: 500, color: T.sec, background: "rgba(255,255,255,.04)", borderRadius: 6, border: `1px solid ${T.border}` }}>
-                  {equipment}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={S.sidePanelFooterColumn}>
             <button
               style={{ ...S.accentBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
               className="hud-accent"
@@ -1166,48 +1242,60 @@ export default function AtlasV4() {
         </div>
       ) : null}
 
-      {opsOpen ? (
-        <div style={S.opsPanel} className="hud-glass-heavy oa-fade">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderBottom: `1px solid ${T.border}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Ic.Grid />
-              <span style={{ fontSize: 14, fontWeight: 700 }}>Operations</span>
+      {opsOpen && !drawerOpen ? (
+        <div style={S.opsPanel} className="hud-glass oa-fade">
+          <div style={S.panelHeaderTight}>
+            <div style={{ display: "grid", gap: 0 }}>
+              <span style={S.panelSectionLabel}>Overview</span>
+              <span style={{ ...S.sidePanelTitle, fontSize: 16 }}>Operations</span>
             </div>
             <button style={S.iconBtn} className="hud-btn" onClick={() => setOpsOpen(false)} type="button">
               <Ic.X />
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderBottom: `1px solid ${T.border}` }}>
-            {Object.entries(ST).map(([statusKey, config]) => (
-              <div key={statusKey} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "12px 6px" }}>
-                <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, lineHeight: 1, color: config.c }}>{statusCounts[statusKey as RoomStatus]}</span>
-                <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{config.label}</span>
+          <div style={S.sidePanelBody}>
+            <div style={S.sidePanelSection}>
+              <div style={S.sidePanelSectionHeader}>
+                <span style={S.panelSectionLabel}>Status</span>
               </div>
-            ))}
-          </div>
-          <div style={{ overflowY: "auto", padding: 6, maxHeight: 300 }}>
-            {levelRooms.map((space) => {
-              const config = ST[space.status];
-              return (
-                <button
-                  key={space.id}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: "none", border: "none", borderRadius: 10, fontFamily: FONT, color: T.text, textAlign: "left" }}
-                  className="hud-card"
-                  onClick={() => {
-                    onSelectFeature(space.featureId);
-                    setOpsOpen(false);
-                  }}
-                  type="button"
-                >
-                  <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{space.name}</span>
-                    <span style={{ fontSize: 11, color: T.muted }}>{space.level} · {space.cap} seats</span>
+              <div style={S.rrStatsPanel}>
+                {Object.entries(ST).map(([statusKey, config]) => (
+                  <div key={statusKey} style={S.rrStatCard}>
+                    <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, lineHeight: 1, color: config.c }}>{statusCounts[statusKey as RoomStatus]}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{config.label}</span>
                   </div>
-                  <span style={{ ...S.statusPill, fontSize: 10, padding: "2px 8px", color: config.c, background: config.bg }}>{config.label}</span>
-                </button>
-              );
-            })}
+                ))}
+              </div>
+            </div>
+            <div style={{ ...S.sidePanelSection, minHeight: 0, flex: 1 }}>
+              <div style={S.sidePanelSectionHeader}>
+                <span style={S.panelSectionLabel}>Live Rooms</span>
+              </div>
+              <div style={S.panelInsetScroll}>
+                {levelRooms.map((space) => {
+                  const config = ST[space.status];
+                  return (
+                    <button
+                      key={space.id}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", background: "none", border: "1px solid transparent", borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", marginBottom: 6 }}
+                      className="hud-card"
+                      onClick={() => {
+                        onSelectFeature(space.featureId);
+                        setOpsOpen(false);
+                      }}
+                      type="button"
+                    >
+                      <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{space.name}</span>
+                        <span style={{ fontSize: 11, color: T.muted }}>{space.level} · {space.cap} seats</span>
+                      </div>
+                      <span style={{ ...S.statusPill, fontSize: 10, padding: "2px 8px", color: config.c, background: config.bg }}>{config.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
@@ -1217,6 +1305,8 @@ export default function AtlasV4() {
 
 const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', monospace";
+const TOP_BAR_CLEARANCE = 64;
+const BOTTOM_BAR_CLEARANCE = 112;
 const T = {
   bg: "#0c1018",
   glass: "rgba(15,20,32,.72)",
@@ -1244,8 +1334,8 @@ const CSS = `
   .oa-fade{animation:oa-fade .18s ease-out}
   .oa-slide-up{animation:oa-slide-up .22s ease-out}
   .oa-slide-left{animation:oa-slide-left .2s ease-out}
-  .hud-glass{background:${T.glass};backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid ${T.border}}
-  .hud-glass-heavy{background:${T.glassH};backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid ${T.borderH}}
+  .hud-glass{background:${T.glass};backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%);border:1px solid ${T.border}}
+  .hud-glass-heavy{background:${T.glassH};backdrop-filter:blur(40px) saturate(145%);-webkit-backdrop-filter:blur(40px) saturate(145%);border:1px solid ${T.borderH}}
   .hud-hover{cursor:pointer;transition:background .12s,border-color .12s}.hud-hover:hover{background:${T.glassH}!important;border-color:${T.borderH}!important}
   .hud-btn{cursor:pointer;transition:background .1s,color .1s}.hud-btn:hover{background:rgba(255,255,255,.06)!important}
   .hud-accent{cursor:pointer;transition:background .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:#0ea5e9!important;box-shadow:0 4px 20px rgba(56,189,248,.3)!important}.hud-accent:active{transform:scale(.97)}
@@ -1257,34 +1347,151 @@ const S: Record<string, CSSProperties> = {
   mapBg: { position: "absolute", inset: 0, zIndex: 0 },
   mapLoading: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.sec },
   emptyState: { width: "100%", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: T.bg, color: T.sec, fontFamily: FONT },
-  topBar: { position: "absolute", top: 12, left: 12, right: 12, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  topBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "10px 12px",
+    background: T.glass,
+    backdropFilter: "blur(28px) saturate(150%)",
+    WebkitBackdropFilter: "blur(28px) saturate(150%)",
+    border: `1px solid ${T.borderH}`,
+    borderRadius: 0,
+    boxShadow: "0 10px 34px rgba(0,0,0,.22)",
+  },
   topLeft: { display: "flex", alignItems: "center", gap: 8 },
-  logo: { display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 12, flexShrink: 0 },
-  searchBtn: { display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", borderRadius: 12, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: "none", border: "none", minWidth: 280 },
-  kbd: { marginLeft: "auto", padding: "2px 7px", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: "rgba(255,255,255,.04)", borderRadius: 4, border: `1px solid ${T.border}` },
+  logo: { display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 0, flexShrink: 0 },
+  searchBtn: { display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: "none", border: "none", minWidth: 280 },
+  kbd: { marginLeft: "auto", padding: "2px 7px", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: "rgba(255,255,255,.04)", borderRadius: 3, border: `1px solid ${T.border}` },
   topCenter: {},
   topRight: { display: "flex", alignItems: "center", gap: 8 },
-  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 12 },
-  themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 9, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
+  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0 },
+  themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
   themeBtnActive: { color: T.text, background: "rgba(255,255,255,.08)" },
-  viewModes: { display: "flex", gap: 2, padding: 3, borderRadius: 12 },
-  vmBtn: { display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "none", border: "none", borderRadius: 9, fontSize: 12, fontWeight: 500, fontFamily: FONT, color: T.muted, whiteSpace: "nowrap" },
+  viewModes: { display: "flex", gap: 2, padding: 3, borderRadius: 0 },
+  vmBtn: { display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 500, fontFamily: FONT, color: T.muted, whiteSpace: "nowrap" },
   vmActive: { color: T.text, background: "rgba(255,255,255,.08)" },
-  opsBtn: { display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 12, background: "none", border: "none", fontFamily: FONT, color: T.sec },
+  opsBtn: { display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 0, background: "none", border: "none", fontFamily: FONT, color: T.sec },
   opsBadge: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600 },
-  syncChip: { display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, fontSize: 10, color: T.sec },
+  syncChip: { display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 0, fontSize: 10, color: T.sec },
   liveDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0, animation: "oa-pulse 2.5s ease infinite" },
-  bottomLeft: { position: "absolute", bottom: 14, left: 14, zIndex: 10 },
-  floorPicker: { display: "flex", gap: 2, padding: 3, borderRadius: 12 },
-  floorBtn: { padding: "7px 16px", background: "none", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700, fontFamily: MONO, color: T.muted },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    display: "grid",
+    gridTemplateColumns: "240px minmax(420px, 1fr) 260px",
+    alignItems: "center",
+    gap: 12,
+    padding: "12px",
+    background: T.glass,
+    backdropFilter: "blur(28px) saturate(150%)",
+    WebkitBackdropFilter: "blur(28px) saturate(150%)",
+    border: `1px solid ${T.borderH}`,
+    borderRadius: 0,
+    boxShadow: "0 -2px 28px rgba(0,0,0,.18)",
+  },
+  bottomModule: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    gap: 8,
+    height: 88,
+    padding: "10px 12px",
+    background: "rgba(255,255,255,.035)",
+    border: `1px solid ${T.border}`,
+    borderRadius: 0,
+  },
+  bottomModuleRight: { alignItems: "flex-end" },
+  bottomModuleLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  bottomCenter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    minHeight: 88,
+    padding: "10px 12px",
+    background: "rgba(255,255,255,.05)",
+    border: `1px solid ${T.border}`,
+    borderRadius: 0,
+  },
+  bottomActionRow: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
+  bottomActionBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,.03)", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" },
+  bottomActionBtnActive: { background: T.accentBg, color: T.accent, borderColor: T.accentBorder },
+  bottomContext: { display: "grid", gap: 3, minWidth: 0 },
+  bottomHeadline: {
+    fontSize: 15,
+    fontWeight: 750,
+    letterSpacing: "-.02em",
+    color: T.text,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  bottomMetaRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  bottomMeta: { fontSize: 11, color: T.sec, fontWeight: 500 },
+  bottomChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 8px",
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: MONO,
+    color: T.sec,
+    background: "rgba(255,255,255,.04)",
+    border: `1px solid ${T.border}`,
+    borderRadius: 0,
+    textTransform: "uppercase",
+  },
+  floorPicker: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4 },
+  floorBtn: { padding: "9px 14px", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: MONO, color: T.muted },
   floorBtnActive: { color: T.accent, background: T.accentBg },
-  bottomRight: { position: "absolute", bottom: 14, right: 14, zIndex: 10 },
-  zoomStack: { display: "flex", flexDirection: "column", alignItems: "center", borderRadius: 12, overflow: "hidden" },
-  zoomBtn: { width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", fontSize: 18, fontWeight: 300, fontFamily: FONT, color: T.sec },
-  fab: { position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", zIndex: 10, display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 16, fontSize: 14, fontWeight: 700, fontFamily: FONT, boxShadow: "0 4px 24px rgba(56,189,248,.25)" },
-  overlay: { position: "absolute", inset: 0, zIndex: 50, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 },
-  browsePanel: { width: "90%", maxWidth: 1100, height: "85vh", borderRadius: 20, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 32px 100px rgba(0,0,0,.5)" },
-  bpHeader: { padding: "16px 20px 12px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 },
+  bottomUtilityRow: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
+  zoomStack: { display: "flex", alignItems: "center", borderRadius: 0, overflow: "hidden", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}` },
+  zoomBtn: { width: 34, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", fontSize: 18, fontWeight: 300, fontFamily: FONT, color: T.sec },
+  zoomDivider: { width: 1, height: 18, background: T.border },
+  fab: { display: "flex", alignItems: "center", gap: 8, padding: "11px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(56,189,248,.25)" },
+  fabActive: { background: "#0ea5e9", boxShadow: "0 4px 24px rgba(56,189,248,.3)" },
+  drawerLayer: {
+    position: "absolute",
+    top: TOP_BAR_CLEARANCE,
+    right: 0,
+    bottom: BOTTOM_BAR_CLEARANCE,
+    left: 0,
+    zIndex: 9,
+    background: "rgba(0,0,0,.08)",
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "stretch",
+    padding: "0 12px 8px",
+  },
+  drawerSheet: {
+    width: "100%",
+    height: "min(42vh, calc(100vh - 188px))",
+    minHeight: 320,
+    maxHeight: "calc(100vh - 188px)",
+    borderRadius: 0,
+    overflow: "hidden",
+    boxShadow: "0 -8px 34px rgba(0,0,0,.24)",
+  },
+  browsePanel: {
+    width: "100%",
+    height: "100%",
+    maxWidth: "none",
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  bpHeader: { padding: "16px 20px 12px", borderBottom: `1px solid ${T.borderH}`, flexShrink: 0, background: "rgba(255,255,255,.035)" },
   bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
   bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
   bpDivider: { width: 1, height: 20, background: T.border },
@@ -1296,9 +1503,9 @@ const S: Record<string, CSSProperties> = {
   bpPeopleSection: { marginBottom: 24 },
   bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 10 },
   bpPeopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 6 },
-  pill: { padding: "5px 12px", fontSize: 11, fontWeight: 600, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 8, color: T.sec, fontFamily: FONT },
+  pill: { padding: "5px 12px", fontSize: 11, fontWeight: 600, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.sec, fontFamily: FONT },
   pillActive: { background: T.accentBg, borderColor: T.accentBorder, color: T.accent },
-  pillSm: { padding: "3px 9px", fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, borderRadius: 6, color: T.muted, fontFamily: FONT },
+  pillSm: { padding: "3px 9px", fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.muted, fontFamily: FONT },
   pillSmActive: { background: T.accentBg, borderColor: T.accentBorder, color: T.accent },
   groupedGrid: { display: "flex", flexDirection: "column", gap: 24 },
   group: {},
@@ -1307,40 +1514,68 @@ const S: Record<string, CSSProperties> = {
   groupCount: { fontSize: 10, fontWeight: 600, color: T.muted, background: "rgba(255,255,255,.04)", padding: "1px 7px", borderRadius: 10 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 6 },
   gridCompact: { gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 4 },
-  card: { display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", background: "rgba(255,255,255,.02)", border: `1px solid ${T.border}`, borderRadius: 12, textAlign: "left", fontFamily: FONT, color: T.text },
+  card: { display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", background: "rgba(255,255,255,.02)", border: `1px solid ${T.border}`, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
   cardSelected: { borderColor: T.accent, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   cardNameRow: { display: "flex", alignItems: "center", gap: 7 },
   statusDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
   cardName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3 },
-  cardLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, background: T.accentBg, padding: "2px 6px", borderRadius: 4, flexShrink: 0 },
+  cardLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, background: T.accentBg, padding: "2px 6px", borderRadius: 0, flexShrink: 0 },
   cardBottom: { display: "flex", alignItems: "center", gap: 8 },
   cardKind: { fontSize: 11, color: T.muted, fontWeight: 500 },
   cardCap: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.sec, fontWeight: 500 },
   cardDept: { fontSize: 10, color: T.muted, fontWeight: 500, marginTop: -2 },
-  personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(255,255,255,.02)", border: `1px solid ${T.border}`, borderRadius: 12, fontFamily: FONT, color: T.text, textAlign: "left" },
+  personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(255,255,255,.02)", border: `1px solid ${T.border}`, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left" },
   personAv: { width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,rgba(56,189,248,.2),rgba(56,189,248,.05))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.accent, flexShrink: 0 },
   personInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 },
-  routePanel: { width: "92%", maxWidth: 1200, height: "88vh", borderRadius: 20, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 32px 100px rgba(0,0,0,.5)" },
-  rpHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${T.border}`, flexShrink: 0, gap: 12, flexWrap: "wrap" },
+  routePanel: {
+    width: "100%",
+    height: "100%",
+    maxWidth: "none",
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
   rpColumns: { flex: 1, display: "flex", overflow: "hidden", minHeight: 0 },
   rpCol: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: `1px solid ${T.border}` },
-  rpColHeader: { display: "flex", alignItems: "flex-start", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 },
-  rpColDot: { paddingTop: 2, flexShrink: 0 },
-  rpColLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 },
-  rpSelected: { display: "flex", alignItems: "center", gap: 7, padding: "6px 10px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 8, marginTop: 4 },
+  rpColHeader: { display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 },
+  rpColLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 },
+  rpSelected: { display: "flex", alignItems: "center", gap: 7, padding: "5px 10px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 0, marginTop: 0 },
   rpSelectedName: { fontSize: 13, fontWeight: 650 },
   rpSelectedLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, marginLeft: "auto" },
-  rpClearBtn: { width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.06)", border: "none", borderRadius: 5, color: T.muted, marginLeft: 4, flexShrink: 0 },
+  rpClearBtn: { width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.06)", border: "none", borderRadius: 3, color: T.muted, marginLeft: 4, flexShrink: 0 },
   rpColSearch: { display: "flex", alignItems: "center", gap: 7, padding: "8px 14px", borderBottom: `1px solid ${T.border}`, color: T.muted, flexShrink: 0 },
   rpColInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 12, fontFamily: FONT },
   rpColToolbar: { display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderBottom: `1px solid ${T.border}`, flexShrink: 0 },
   rpColBody: { flex: 1, overflowY: "auto", padding: 12 },
   rpSwapCol: { display: "flex", alignItems: "center", paddingTop: 60, flexShrink: 0 },
-  rpSwapBtn: { width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 10, color: T.muted, margin: "-1px" },
+  rpSwapBtn: { width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.muted, margin: "-1px" },
+  rpFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    padding: "12px 16px",
+    borderTop: `1px solid ${T.borderH}`,
+    background: "rgba(255,255,255,.035)",
+    flexShrink: 0,
+  },
+  rpFooterSummary: { display: "grid", gap: 3, minWidth: 0 },
+  rpFooterHeadline: {
+    fontSize: 15,
+    fontWeight: 750,
+    letterSpacing: "-.02em",
+    color: T.text,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  rpFooterMeta: { fontSize: 11, color: T.sec },
+  rpFooterActions: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" },
   rpResult: { padding: "16px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0, display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" },
   rrHero: { display: "flex", alignItems: "center", gap: 14, flex: "1 1 400px", flexWrap: "wrap" },
-  rrIcon: { width: 42, height: 42, borderRadius: 12, background: T.accent, color: "#0c1018", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  rrIcon: { width: 42, height: 42, borderRadius: 6, background: T.accent, color: "#0c1018", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   rrMain: { display: "flex", flexDirection: "column" },
   rrDist: { fontSize: 22, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.02em" },
   rrTime: { fontSize: 11, color: T.sec },
@@ -1353,16 +1588,38 @@ const S: Record<string, CSSProperties> = {
   rrStep: { display: "flex", alignItems: "flex-start", gap: 10, padding: "6px 0" },
   rrStepN: { width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,.05)", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },
   rrStepT: { fontSize: 12, color: T.sec, lineHeight: 1.5, paddingTop: 2 },
-  accentBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 12, fontSize: 13, fontWeight: 700, fontFamily: FONT },
-  ghostBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", background: "none", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 12, fontSize: 12, fontWeight: 600, fontFamily: FONT },
-  iconBtn: { width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 8, color: T.sec, flexShrink: 0 },
-  detailFloat: { position: "absolute", top: 68, right: 14, zIndex: 20, width: 300, borderRadius: 18, padding: 18, display: "flex", flexDirection: "column", gap: 12, boxShadow: "0 16px 60px rgba(0,0,0,.35)", maxHeight: "calc(100vh - 90px)", overflowY: "auto" },
-  routeResultFloat: { position: "absolute", top: 68, right: 14, zIndex: 22, width: 340, borderRadius: 18, padding: 18, display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 16px 60px rgba(0,0,0,.35)", maxHeight: "calc(100vh - 90px)", overflowY: "auto" },
+  accentBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT },
+  ghostBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", background: "none", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT },
+  iconBtn: { width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 0, color: T.sec, flexShrink: 0 },
+  detailFloat: { position: "absolute", top: 72, right: 14, zIndex: 20, width: 312, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: "calc(100vh - 156px)", overflow: "hidden" },
+  routeResultFloat: { position: "absolute", top: 72, right: 14, zIndex: 22, width: 356, borderRadius: 0, display: "flex", flexDirection: "column", boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: "calc(100vh - 156px)", overflow: "hidden" },
   statusPill: { display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", fontSize: 11, fontWeight: 600, borderRadius: 20 },
-  opsPanel: { position: "absolute", top: 60, right: 14, zIndex: 40, width: 340, borderRadius: 18, boxShadow: "0 16px 60px rgba(0,0,0,.4)", maxHeight: "calc(100vh - 80px)", overflow: "hidden", display: "flex", flexDirection: "column" },
+  opsPanel: { position: "absolute", top: 72, right: 14, zIndex: 40, width: 340, borderRadius: 0, boxShadow: "0 10px 34px rgba(0,0,0,.22)", maxHeight: "calc(100vh - 156px)", overflow: "hidden", display: "flex", flexDirection: "column" },
   checkRow: { display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none", fontSize: 12, color: T.sec, fontWeight: 500 },
   checkBox: { width: 15, height: 15, borderRadius: 4, border: "1.5px solid rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
   checkBoxOn: { background: T.accent, borderColor: T.accent },
   rrStatsPanel: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
-  rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}` },
+  rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}` },
+  floatHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 12, borderBottom: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.035)" },
+  panelHeaderTight: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, padding: "12px 14px", borderBottom: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.035)", flexShrink: 0 },
+  sidePanelBody: { display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", minHeight: 0, padding: 12, flex: 1 },
+  sidePanelFooter: { display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 14px", borderTop: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.03)", flexShrink: 0 },
+  sidePanelFooterColumn: { display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderTop: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.03)", flexShrink: 0 },
+  sidePanelTitle: { margin: 0, fontSize: 16, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15 },
+  sidePanelSubline: { fontSize: 11, color: T.sec },
+  sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: "rgba(255,255,255,.028)", border: `1px solid ${T.border}` },
+  sidePanelSectionHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  floatKicker: { fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: T.accent },
+  floatTitle: { margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: "-.03em", lineHeight: 1.15 },
+  floatSubline: { fontSize: 12, color: T.sec },
+  panelInset: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: "rgba(255,255,255,.035)", border: `1px solid ${T.border}`, borderRadius: 0 },
+  panelInsetAccent: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 0 },
+  panelInsetScroll: { overflowY: "auto", padding: "0 0 2px", minHeight: 0, flex: 1 },
+  panelSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", fontFamily: MONO },
+  panelMetaGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
+  panelMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: "rgba(255,255,255,.035)", border: `1px solid ${T.border}`, borderRadius: 0 },
+  panelChipRow: { display: "flex", gap: 6, flexWrap: "wrap" },
+  panelActionRow: { display: "flex", gap: 8, flexWrap: "wrap" },
+  panelActionColumn: { display: "flex", flexDirection: "column", gap: 8 },
+  infoChip: { display: "inline-flex", alignItems: "center", padding: "4px 10px", fontSize: 11, fontWeight: 600, color: T.sec, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0 },
 };
