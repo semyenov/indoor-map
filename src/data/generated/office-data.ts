@@ -1,5 +1,7 @@
 import type {
   Coordinate,
+  FeatureLabelSourceId,
+  FeatureSourceId,
   LevelId,
   LevelMeta,
   OfficeFeature,
@@ -727,6 +729,7 @@ const l1RoomSpecs: RoomSpec[] = [
     searchTokens: ["service core", "storage", "building services"],
     showLabel: false,
     wallSides: { north: true },
+    openings: [{ id: "north-entry", side: "north", center: 39, width: 1.2, kind: "door", connectsTo: "room-l1-east-link" }],
   },
   {
     id: "room-l1-ocean",
@@ -844,6 +847,7 @@ const l1RoomSpecs: RoomSpec[] = [
     routeNodeId: "n-l1-eng-south",
     searchTokens: ["engineering south", "sre", "developer experience"],
     wallSides: { south: true, west: true, east: true },
+    openings: [{ id: "south-opening", side: "south", center: 22, width: 7.2, kind: "opening", connectsTo: "zone-l1-engineering-north" }],
   },
   {
     id: "zone-l1-operations",
@@ -968,6 +972,7 @@ const l2RoomSpecs: RoomSpec[] = [
     searchTokens: ["support core", "storage", "service chase"],
     showLabel: false,
     wallSides: { north: true },
+    openings: [{ id: "north-entry", side: "north", center: 34, width: 1.8, kind: "door", connectsTo: "zone-l2-corridor" }],
   },
   {
     id: "room-l2-cedar",
@@ -1098,6 +1103,10 @@ const l2RoomSpecs: RoomSpec[] = [
     routeNodeId: "n-l2-touchdown",
     searchTokens: ["touchdown area", "hot desk", "visitors"],
     wallSides: { south: true },
+    openings: [
+      { id: "south-opening-west", side: "south", center: 22, width: 7.2, kind: "opening", connectsTo: "zone-l2-product" },
+      { id: "south-opening-east", side: "south", center: 34, width: 4.8, kind: "opening", connectsTo: "zone-l2-design" },
+    ],
   },
   circulationRoom({
     id: "room-l2-east-link",
@@ -1335,8 +1344,6 @@ export const poiLabelCollection: OfficeFeatureCollection = {
 export const allFeatures = [...roomFeatures, ...structureFeatures, ...doorFeatures, ...poiFeatures] satisfies OfficeFeature[];
 
 export const featureById = new Map(allFeatures.map((feature) => [feature.id, feature]));
-type FeatureSourceId = "spaces" | "structures" | "pois";
-type FeatureLabelSourceId = "room-label-points" | "poi-label-points";
 
 const featureSourceEntries: Array<[string, FeatureSourceId]> = [
   ...roomFeatures.map((feature): [string, FeatureSourceId] => [feature.id, "spaces"]),
@@ -1491,6 +1498,12 @@ interface DerivedPortalConnection {
   boundaryPoint: Coordinate;
 }
 
+interface ConnectorAccessSpec {
+  roomApproach?: Coordinate;
+  threshold: Coordinate;
+  interiorApproach?: Coordinate;
+}
+
 const roomAnchorNodeId = (roomId: string) => `node-room-${roomId}`;
 const poiNodeId = (featureId: string) => `node-poi-${featureId}`;
 const autoPortalNodeId = (roomId: string, openingId: string) => `node-portal-${roomId}-${openingId}`;
@@ -1498,6 +1511,23 @@ const derivedTargetId = (featureId: string) => `target-${featureId}`;
 const PORTAL_INSET = 0.45;
 
 const localPoint = (x: number, y: number): Coordinate => [x, y];
+
+const connectorAccessByFeatureId = new Map<string, ConnectorAccessSpec>([
+  [
+    "connector-l1-elevator",
+    {
+      threshold: localPoint(40.7, 24.3),
+      interiorApproach: localPoint(41.2, 24.3),
+    },
+  ],
+  [
+    "connector-l2-elevator",
+    {
+      threshold: localPoint(40.7, 24.3),
+      interiorApproach: localPoint(41.2, 24.3),
+    },
+  ],
+]);
 
 const mapCoordinateToGrid = (coordinate: Coordinate): Coordinate => [
   (coordinate[0] - origin[0]) / xStep,
@@ -1536,6 +1566,29 @@ const localPortalPoint = (bounds: RectBounds, opening: OpeningSpec, inset = PORT
     case "east":
       return localPoint(x2 - inset, opening.center);
   }
+};
+
+const portalSideForPoint = (bounds: RectBounds, coordinate: Coordinate): RoomSide | null => {
+  const [x1, y1, x2, y2] = bounds;
+  const tolerance = PORTAL_INSET + 0.05;
+
+  if (Math.abs(coordinate[0] - (x1 + PORTAL_INSET)) <= tolerance) {
+    return "west";
+  }
+
+  if (Math.abs(coordinate[0] - (x2 - PORTAL_INSET)) <= tolerance) {
+    return "east";
+  }
+
+  if (Math.abs(coordinate[1] - (y1 + PORTAL_INSET)) <= tolerance) {
+    return "south";
+  }
+
+  if (Math.abs(coordinate[1] - (y2 - PORTAL_INSET)) <= tolerance) {
+    return "north";
+  }
+
+  return null;
 };
 
 const withinBounds = (coordinate: Coordinate, bounds: RectBounds, padding = 0) =>
@@ -1586,6 +1639,12 @@ const appendRoomPathPoint = (target: Coordinate[], coordinate: Coordinate) => {
   target.push(coordinate);
 };
 
+const appendPathCoordinates = (target: Coordinate[], coordinates: Coordinate[]) => {
+  for (const coordinate of coordinates) {
+    appendRoomPathPoint(target, coordinate);
+  }
+};
+
 const centerlineRoomPath = (start: Coordinate, end: Coordinate, bounds: RectBounds): Coordinate[] => {
   const center = localRoomCenter(bounds);
   const width = bounds[2] - bounds[0];
@@ -1609,7 +1668,20 @@ const centerlineRoomPath = (start: Coordinate, end: Coordinate, bounds: RectBoun
 
 const roomTraversalPath = (spec: RoomSpec, start: Coordinate, end: Coordinate): Coordinate[] => {
   if (spec.department === "Circulation") {
-    return centerlineRoomPath(start, end, spec.bounds);
+    const width = spec.bounds[2] - spec.bounds[0];
+    const height = spec.bounds[3] - spec.bounds[1];
+    const aspectRatio = Math.max(width, height) / Math.max(1, Math.min(width, height));
+    const startSide = portalSideForPoint(spec.bounds, start);
+    const endSide = portalSideForPoint(spec.bounds, end);
+    const oppositeSides =
+      (startSide === "west" && endSide === "east") ||
+      (startSide === "east" && endSide === "west") ||
+      (startSide === "north" && endSide === "south") ||
+      (startSide === "south" && endSide === "north");
+
+    if (oppositeSides || aspectRatio >= 2) {
+      return centerlineRoomPath(start, end, spec.bounds);
+    }
   }
 
   return orthogonalRoomPath(start, end, spec.bounds);
@@ -1894,6 +1966,8 @@ for (const spec of allRoomSpecs) {
 for (const feature of poiFeatures) {
   const nodeId = poiNodeId(feature.id);
   const containingRoom = roomContainingCoordinate(feature.properties.level, officePointCoordinate(feature));
+  const poiLocalCoordinate = mapCoordinateToGrid(officePointCoordinate(feature));
+  const roomPortals = containingRoom ? portalsByRoomId.get(containingRoom.id) ?? [] : [];
 
   featureRouteNodeIdByFeatureId.set(feature.id, nodeId);
 
@@ -1901,8 +1975,55 @@ for (const feature of poiFeatures) {
     continue;
   }
 
+  if (feature.properties.kind === "connector" && roomPortals.length > 0) {
+    const connectorAccess = connectorAccessByFeatureId.get(feature.id);
+
+    for (const portal of roomPortals) {
+      const connectorPath: Coordinate[] = [];
+
+      if (connectorAccess) {
+        const roomApproach = connectorAccess.roomApproach ?? connectorAccess.threshold;
+
+        appendRoomPathPoint(connectorPath, portal.point);
+        appendRoomPathPoint(connectorPath, localPoint(portal.point[0], roomApproach[1]));
+
+        if (!coordinatesMatch(roomApproach, connectorAccess.threshold)) {
+          appendRoomPathPoint(connectorPath, roomApproach);
+        }
+
+        appendRoomPathPoint(connectorPath, connectorAccess.threshold);
+
+        if (connectorAccess.interiorApproach) {
+          appendRoomPathPoint(connectorPath, connectorAccess.interiorApproach);
+          appendRoomPathPoint(connectorPath, localPoint(poiLocalCoordinate[0], connectorAccess.interiorApproach[1]));
+          appendRoomPathPoint(connectorPath, poiLocalCoordinate);
+        } else {
+          appendRoomPathPoint(connectorPath, localPoint(poiLocalCoordinate[0], connectorAccess.threshold[1]));
+          appendRoomPathPoint(connectorPath, poiLocalCoordinate);
+        }
+      } else {
+        appendPathCoordinates(connectorPath, roomTraversalPath(containingRoom, portal.point, poiLocalCoordinate));
+      }
+
+      derivedEdges.push(
+        routeEdge(
+          `edge-poi-${feature.id}-${portal.id}`,
+          portal.id,
+          nodeId,
+          connectorPath.slice(1).reduce(
+            (distance, coordinate, index) => distance + manhattanDistance(connectorPath[index] ?? coordinate, coordinate),
+            0,
+          ),
+          connectorPath,
+          { accessible: true },
+        ),
+      );
+    }
+
+    continue;
+  }
+
   const roomAnchor = routeAnchorPoint(containingRoom);
-  const poiLocalCoordinate = mapCoordinateToGrid(officePointCoordinate(feature));
   const poiPath = roomTraversalPath(containingRoom, poiLocalCoordinate, roomAnchor);
 
   derivedEdges.push(
@@ -1961,12 +2082,10 @@ const routingGraphData: RoutingGraph = {
 const routeTargetData: RouteTarget[] = [...roomFeatures.filter(routeableRoomFeature), ...poiFeatures.filter((feature) => feature.properties.kind === "connector")]
   .map((feature) => {
     const roomSpec = roomSpecById.get(feature.id);
-    const roomPortalNodeIds = roomSpec ? (portalsByRoomId.get(roomSpec.id) ?? []).map((portal) => portal.id) : [];
     const fallbackNodeId = featureRouteNodeIdByFeatureId.get(feature.id);
-    const routeNodeIds =
-      roomPortalNodeIds.length > 0
-        ? roomPortalNodeIds
-        : [fallbackNodeId].filter((nodeId): nodeId is string => Boolean(nodeId));
+    const routeNodeIds = roomSpec
+      ? [roomAnchorNodeId(roomSpec.id)]
+      : [fallbackNodeId].filter((nodeId): nodeId is string => Boolean(nodeId));
     const routeNodeId = routeNodeIds[0];
 
     if (!routeNodeId) {
@@ -2093,6 +2212,31 @@ export const officeModel: OfficeModel = {
   searchEntries: searchEntryData,
   routeTargets: routeTargetData,
   routingGraph: routingGraphData,
+};
+
+export const indoorDataset = {
+  levels,
+  collections: {
+    spaces: spacesCollection,
+    structures: structuresCollection,
+    pois: poiCollection,
+    roomLabels: roomLabelCollection,
+    poiLabels: poiLabelCollection,
+  },
+  routing: {
+    graph: routingGraphData,
+    targets: routeTargetData,
+  },
+  search: {
+    entries: searchEntryData,
+  },
+  status: {
+    roomIds: [...statusRoomIds],
+  },
+  features: allFeatures,
+  featureSourceEntries,
+  featureLabelSourceEntries,
+  selectableSpaceFeatures,
 };
 
 export const searchEntries = officeModel.searchEntries;

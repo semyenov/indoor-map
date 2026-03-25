@@ -1,22 +1,142 @@
 import { useEffect, useRef, useState } from "react";
-import maplibregl, { type FilterSpecification, type StyleSpecification } from "maplibre-gl";
+import maplibregl, { type ExpressionSpecification, type FilterSpecification, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  featureById,
-  featureLabelSourceById,
-  featureSourceById,
-  levels,
-  poiCollection,
-  poiLabelCollection,
-  roomLabelCollection,
-  selectableSpaceFeatures,
-  spacesCollection,
-  structuresCollection,
-} from "../data/generated/office-data";
 import { buildRouteCollection } from "../lib/routing";
-import type { Coordinate, FeatureKind, LevelId, LevelMeta, RouteResult } from "../lib/types";
+import type {
+  Coordinate,
+  FeatureKind,
+  FeatureLabelSourceId,
+  FeatureSourceId,
+  IndoorCollections,
+  LevelId,
+  LevelMeta,
+  OfficeFeature,
+  OfficePolygonFeature,
+  RouteResult,
+} from "../lib/types";
 
-const style: StyleSpecification = {
+export type MapThemeVariant = "light" | "dark";
+
+const MAP_PALETTES = {
+  light: {
+    background: "#dfe5e8",
+    circulationFill: "#d8e0e3",
+    workspaceFill: "#d6dccf",
+    meetingFill: "#e6c3a0",
+    amenityFill: "#bfd7f0",
+    engineeringFill: "#bfe6cf",
+    operationsFill: "#bde2f2",
+    productFill: "#d7caf5",
+    designFill: "#f3c3d3",
+    sharedFill: "#e5d2af",
+    circulationAccentFill: "#bfd6dc",
+    verticalFill: "#d8d3ee",
+    selectedFill: "#56b7ed",
+    hoverFill: "#8fd3f4",
+    outline: "#495761",
+    selectedOutline: "#1f6d97",
+    hoverOutline: "#3a7fa5",
+    wall: "#667079",
+    door: "#b27c45",
+    furniture: "#a8b1b8",
+    connector: "#c8cfd6",
+    connectorSelected: "#e5c28c",
+    routeCasing: "rgba(255,255,255,0.88)",
+    routeLine: "#d83d46",
+    workstation: "#294858",
+    connectorPoi: "#d84a54",
+    poiHover: "#3fa0c7",
+    poiSelected: "#4bb9f2",
+    label: "#2a3f52",
+    labelHover: "#2f7aa1",
+    labelSelected: "#205f84",
+    labelHalo: "rgba(244,247,249,0.98)",
+  },
+  dark: {
+    background: "#11171c",
+    circulationFill: "#202b31",
+    workspaceFill: "#24312e",
+    meetingFill: "#463127",
+    amenityFill: "#24384c",
+    engineeringFill: "#1f4b39",
+    operationsFill: "#1f4354",
+    productFill: "#443664",
+    designFill: "#5b3244",
+    sharedFill: "#4b4030",
+    circulationAccentFill: "#29414a",
+    verticalFill: "#3f4058",
+    selectedFill: "#3aaee8",
+    hoverFill: "#2f789d",
+    outline: "#7f8b96",
+    selectedOutline: "#69d1ff",
+    hoverOutline: "#4eb1df",
+    wall: "#4d565f",
+    door: "#d0a06a",
+    furniture: "#6f7880",
+    connector: "#87919b",
+    connectorSelected: "#f0c57b",
+    routeCasing: "rgba(236,241,244,0.24)",
+    routeLine: "#ff6670",
+    workstation: "#c4d7e3",
+    connectorPoi: "#ff6a73",
+    poiHover: "#65c5f0",
+    poiSelected: "#7fd7ff",
+    label: "#dbe4ea",
+    labelHover: "#8bd8ff",
+    labelSelected: "#a4e5ff",
+    labelHalo: "rgba(10,13,16,0.96)",
+  },
+} as const;
+
+type MapPalette = (typeof MAP_PALETTES)[MapThemeVariant];
+
+const zoneFillExpression = (palette: MapPalette): ExpressionSpecification => [
+  "case",
+  ["==", ["get", "department"], "Engineering"],
+  palette.engineeringFill,
+  ["==", ["get", "department"], "Operations"],
+  palette.operationsFill,
+  ["==", ["get", "department"], "Product"],
+  palette.productFill,
+  ["==", ["get", "department"], "Design"],
+  palette.designFill,
+  ["==", ["get", "department"], "Vertical circulation"],
+  palette.verticalFill,
+  ["==", ["get", "department"], "Circulation"],
+  palette.circulationAccentFill,
+  ["==", ["get", "department"], "Shared"],
+  palette.sharedFill,
+  palette.circulationFill,
+];
+
+const roomFillExpression = (palette: MapPalette): ExpressionSpecification => [
+  "case",
+  ["boolean", ["feature-state", "selected"], false],
+  palette.selectedFill,
+  ["boolean", ["feature-state", "hover"], false],
+  palette.hoverFill,
+  ["==", ["get", "kind"], "meeting_room"],
+  palette.meetingFill,
+  ["==", ["get", "kind"], "amenity"],
+  palette.amenityFill,
+  ["==", ["get", "department"], "Engineering"],
+  palette.engineeringFill,
+  ["==", ["get", "department"], "Operations"],
+  palette.operationsFill,
+  ["==", ["get", "department"], "Product"],
+  palette.productFill,
+  ["==", ["get", "department"], "Design"],
+  palette.designFill,
+  ["==", ["get", "department"], "Vertical circulation"],
+  palette.verticalFill,
+  ["==", ["get", "department"], "Circulation"],
+  palette.circulationAccentFill,
+  ["==", ["get", "department"], "Shared"],
+  palette.sharedFill,
+  palette.workspaceFill,
+];
+
+const styleForTheme = (themeVariant: MapThemeVariant): StyleSpecification => ({
   version: 8,
   sources: {},
   layers: [
@@ -24,11 +144,11 @@ const style: StyleSpecification = {
       id: "background",
       type: "background",
       paint: {
-        "background-color": "#edf2f4",
+        "background-color": MAP_PALETTES[themeVariant].background,
       },
     },
   ],
-};
+});
 
 const SPACE_SOURCE = "spaces";
 const STRUCTURE_SOURCE = "structures";
@@ -67,20 +187,67 @@ const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "route-glow",
 ];
 
-type SceneMode = "plan" | "explore" | "theatre";
+export type MapSceneMode = "plan" | "explore" | "theatre";
 type ScenePreset = {
   pitch: number;
   bearing: number;
   zoomOffset: number;
 };
 
-const SCENE_PRESETS: Record<SceneMode, ScenePreset> = {
+const SCENE_PRESETS: Record<MapSceneMode, ScenePreset> = {
   plan: { pitch: 18, bearing: 0, zoomOffset: -0.15 },
   explore: { pitch: 58, bearing: -18, zoomOffset: 0 },
   theatre: { pitch: 70, bearing: -42, zoomOffset: 0.2 },
 };
 
-const SCENE_MODES: SceneMode[] = ["plan", "explore", "theatre"];
+const SCENE_MODES: MapSceneMode[] = ["plan", "explore", "theatre"];
+
+const ToolbarIcons = {
+  plan: () => (
+    <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
+      <rect height="10" rx="1" stroke="currentColor" strokeWidth="1.3" width="12" x="2" y="3" />
+      <line stroke="currentColor" strokeWidth="1" x1="2" x2="14" y1="7" y2="7" />
+      <line stroke="currentColor" strokeWidth="1" x1="7" x2="7" y1="7" y2="13" />
+    </svg>
+  ),
+  explore: () => (
+    <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5.5 5.5L7 9L10.5 10.5L9 7L5.5 5.5Z" fill="currentColor" opacity="0.6" />
+    </svg>
+  ),
+  theatre: () => (
+    <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
+      <path d="M2 6C2 6 5 2 8 2C11 2 14 6 14 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+      <path d="M2 6C2 6 5 10 8 10C11 10 14 6 14 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+      <circle cx="8" cy="6" fill="currentColor" opacity="0.6" r="2" />
+    </svg>
+  ),
+  rotateLeft: () => (
+    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
+      <path d="M4 2L2 4L4 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3" />
+      <path d="M2 4H8C10.2 4 12 5.8 12 8C12 10.2 10.2 12 8 12H6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+    </svg>
+  ),
+  rotateRight: () => (
+    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
+      <path d="M10 2L12 4L10 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3" />
+      <path d="M12 4H6C3.8 4 2 5.8 2 8C2 10.2 3.8 12 6 12H8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+    </svg>
+  ),
+  orbit: () => (
+    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
+      <ellipse cx="7" cy="7" rx="6" ry="3" stroke="currentColor" strokeWidth="1.2" transform="rotate(-30 7 7)" />
+      <circle cx="7" cy="7" fill="currentColor" r="1.5" />
+    </svg>
+  ),
+  focus: () => (
+    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
+      <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M7 1V3M7 11V13M1 7H3M11 7H13" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
+    </svg>
+  ),
+};
 
 const floorFilter = (
   level: LevelId,
@@ -119,13 +286,15 @@ const excludedDepartmentFilter = (
   ["!=", ["get", "department"], department],
 ];
 
-const firstLevel = levels[0];
+const getLevelMeta = (levels: LevelMeta[], level: LevelId): LevelMeta => {
+  const firstLevel = levels[0];
 
-if (!firstLevel) {
-  throw new Error("Indoor map requires at least one configured level.");
-}
+  if (!firstLevel) {
+    throw new Error("Indoor map requires at least one configured level.");
+  }
 
-const getLevelMeta = (level: LevelId): LevelMeta => levels.find((item) => item.id === level) ?? firstLevel;
+  return levels.find((item) => item.id === level) ?? firstLevel;
+};
 
 const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   const hasLayer = (layerId: FilteredLayerId) => Boolean(map.getLayer(layerId));
@@ -183,7 +352,7 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   }
 };
 
-const popupHtml = (featureId: string) => {
+const popupHtml = (featureById: Map<string, OfficeFeature>, featureId: string) => {
   const feature = featureById.get(featureId);
 
   if (!feature) {
@@ -212,7 +381,7 @@ const toFeatureId = (featureId: string | number | undefined): string | null => {
   return null;
 };
 
-const canonicalFeatureId = (feature: maplibregl.MapGeoJSONFeature) => {
+const canonicalFeatureId = (featureById: Map<string, OfficeFeature>, feature: maplibregl.MapGeoJSONFeature) => {
   const candidate = feature.properties?.featureId;
 
   if (typeof candidate === "string" && featureById.has(candidate)) {
@@ -223,7 +392,7 @@ const canonicalFeatureId = (feature: maplibregl.MapGeoJSONFeature) => {
   return fallbackId && featureById.has(fallbackId) ? fallbackId : null;
 };
 
-const pickInteractiveFeatureId = (features: maplibregl.MapGeoJSONFeature[] | undefined) => {
+const pickInteractiveFeatureId = (featureById: Map<string, OfficeFeature>, features: maplibregl.MapGeoJSONFeature[] | undefined) => {
   if (!features || features.length === 0) {
     return null;
   }
@@ -236,12 +405,12 @@ const pickInteractiveFeatureId = (features: maplibregl.MapGeoJSONFeature[] | und
     );
 
     if (match) {
-      return canonicalFeatureId(match);
+      return canonicalFeatureId(featureById, match);
     }
   }
 
   const fallback = features.find((feature) => feature.id !== undefined);
-  return fallback ? canonicalFeatureId(fallback) : null;
+  return fallback ? canonicalFeatureId(featureById, fallback) : null;
 };
 
 const polygonArea = (coordinates: Coordinate[]) => {
@@ -296,7 +465,11 @@ const isPointInRing = (point: Coordinate, ring: Coordinate[]) => {
   return inside;
 };
 
-const pickRoomFeatureIdAtLngLat = (level: LevelId, lngLat: maplibregl.LngLat) => {
+const pickRoomFeatureIdAtLngLat = (
+  selectableSpaceFeatures: OfficePolygonFeature[],
+  level: LevelId,
+  lngLat: maplibregl.LngLat,
+) => {
   const point: Coordinate = [lngLat.lng, lngLat.lat];
   const candidates = selectableSpaceFeatures
     .filter(
@@ -324,7 +497,14 @@ const pickRoomFeatureIdAtLngLat = (level: LevelId, lngLat: maplibregl.LngLat) =>
   return null;
 };
 
-const setFeatureState = (map: maplibregl.Map, featureId: string | null, key: "hover" | "selected", value: boolean) => {
+const setFeatureState = (
+  featureSourceById: Map<string, FeatureSourceId>,
+  featureLabelSourceById: Map<string, FeatureLabelSourceId>,
+  map: maplibregl.Map,
+  featureId: string | null,
+  key: "hover" | "selected",
+  value: boolean,
+) => {
   if (!featureId) {
     return;
   }
@@ -367,13 +547,39 @@ interface PendingFocusRequest {
 
 export interface MapCanvasProps {
   activeLevel: LevelId;
+  collections: IndoorCollections;
+  externalSceneMode?: MapSceneMode;
+  featureById: Map<string, OfficeFeature>;
+  featureLabelSourceById: Map<string, FeatureLabelSourceId>;
+  featureSourceById: Map<string, FeatureSourceId>;
   focusRequestId: number;
+  levels: LevelMeta[];
+  showControls?: boolean;
+  themeVariant?: MapThemeVariant;
   selectedFeatureId: string | null;
   route: RouteResult | null;
+  selectableSpaceFeatures: OfficePolygonFeature[];
+  zoomCommand?: { id: number; delta: 1 | -1 } | null;
   onSelectFeature: (featureId: string) => void;
 }
 
-export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, route, onSelectFeature }: MapCanvasProps) {
+export function MapCanvas({
+  activeLevel,
+  collections,
+  externalSceneMode,
+  featureById,
+  featureLabelSourceById,
+  featureSourceById,
+  focusRequestId,
+  levels,
+  showControls = true,
+  themeVariant = "light",
+  selectedFeatureId,
+  route,
+  selectableSpaceFeatures,
+  zoomCommand,
+  onSelectFeature,
+}: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hoverRef = useRef<string | null>(null);
@@ -382,11 +588,13 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
   const onSelectFeatureRef = useRef(onSelectFeature);
   const pendingFocusRef = useRef<PendingFocusRequest | null>(null);
   const focusPulseTimerRef = useRef<number | null>(null);
-  const [sceneMode, setSceneMode] = useState<SceneMode>("explore");
+  const processedZoomCommandIdRef = useRef(0);
+  const [sceneMode, setSceneMode] = useState<MapSceneMode>("explore");
   const [pitch, setPitch] = useState<number>(SCENE_PRESETS.explore.pitch);
   const [bearing, setBearing] = useState<number>(SCENE_PRESETS.explore.bearing);
   const [orbitEnabled, setOrbitEnabled] = useState(false);
-  const [controlsHidden, setControlsHidden] = useState(true);
+  const [controlsHidden, setControlsHidden] = useState(false);
+  const palette = MAP_PALETTES[themeVariant];
   const selectedFeature = selectedFeatureId ? featureById.get(selectedFeatureId) ?? null : null;
   const normalizedBearing = ((Math.round(bearing) % 360) + 360) % 360;
   const roundedPitch = Math.round(pitch);
@@ -412,7 +620,7 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
     popupRef.current?.remove();
     popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: "map-popup" })
       .setLngLat(feature.properties.focusPoint)
-      .setHTML(popupHtml(featureId))
+      .setHTML(popupHtml(featureById, featureId))
       .addTo(map);
   };
 
@@ -478,10 +686,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
       return;
     }
 
-    const levelMeta = getLevelMeta(activeLevel);
+    const levelMeta = getLevelMeta(levels, activeLevel);
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style,
+      style: styleForTheme(themeVariant),
       center: levelMeta.defaultCenter,
       zoom: levelMeta.defaultZoom + SCENE_PRESETS.explore.zoomOffset,
       pitch: SCENE_PRESETS.explore.pitch,
@@ -489,14 +697,12 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
       attributionControl: false,
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-
     map.on("load", () => {
-      map.addSource(SPACE_SOURCE, { type: "geojson", data: spacesCollection });
-      map.addSource(STRUCTURE_SOURCE, { type: "geojson", data: structuresCollection });
-      map.addSource(POI_SOURCE, { type: "geojson", data: poiCollection });
-      map.addSource(ROOM_LABEL_SOURCE, { type: "geojson", data: roomLabelCollection });
-      map.addSource(POI_LABEL_SOURCE, { type: "geojson", data: poiLabelCollection });
+      map.addSource(SPACE_SOURCE, { type: "geojson", data: collections.spaces });
+      map.addSource(STRUCTURE_SOURCE, { type: "geojson", data: collections.structures });
+      map.addSource(POI_SOURCE, { type: "geojson", data: collections.pois });
+      map.addSource(ROOM_LABEL_SOURCE, { type: "geojson", data: collections.roomLabels });
+      map.addSource(POI_LABEL_SOURCE, { type: "geojson", data: collections.poiLabels });
       map.addSource(ROUTE_SOURCE, { type: "geojson", data: buildRouteCollection(route) });
 
       map.addLayer({
@@ -505,8 +711,8 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         source: SPACE_SOURCE,
         filter: floorFilter(activeLevel, ["zone"], "Polygon"),
         paint: {
-          "fill-color": "#dbe7e1",
-          "fill-opacity": 0.48,
+          "fill-color": zoneFillExpression(palette),
+          "fill-opacity": 0.62,
         },
       });
 
@@ -516,19 +722,8 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         source: SPACE_SOURCE,
         filter: floorFilter(activeLevel, ["room", "meeting_room", "amenity"], "Polygon"),
         paint: {
-          "fill-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#ffb703",
-            ["boolean", ["feature-state", "hover"], false],
-            "#8ecae6",
-            ["==", ["get", "kind"], "meeting_room"],
-            "#f2cc8f",
-            ["==", ["get", "kind"], "amenity"],
-            "#bde0fe",
-            "#dde5b6",
-          ],
-          "fill-opacity": 0.9,
+          "fill-color": roomFillExpression(palette),
+          "fill-opacity": 0.86,
         },
       });
 
@@ -541,10 +736,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "line-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            "#7f5539",
+            palette.selectedOutline,
             ["boolean", ["feature-state", "hover"], false],
-            "#1d4e89",
-            "#17324d",
+            palette.hoverOutline,
+            palette.outline,
           ],
           "line-width": [
             "case",
@@ -563,10 +758,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         source: STRUCTURE_SOURCE,
         filter: floorFilter(activeLevel, ["wall"], "Polygon"),
         paint: {
-          "fill-extrusion-color": "#59636d",
+          "fill-extrusion-color": palette.wall,
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
           "fill-extrusion-height": ["coalesce", ["get", "height"], 3],
-          "fill-extrusion-opacity": 0.82,
+          "fill-extrusion-opacity": 0.76,
         },
       });
 
@@ -576,7 +771,7 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         source: STRUCTURE_SOURCE,
         filter: floorFilter(activeLevel, ["door"], "LineString"),
         paint: {
-          "line-color": "#8c5e34",
+          "line-color": palette.door,
           "line-width": 3,
           "line-opacity": 0.95,
         },
@@ -599,10 +794,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         source: STRUCTURE_SOURCE,
         filter: excludedDepartmentFilter(activeLevel, ["furniture"], "Polygon", "Vertical circulation"),
         paint: {
-          "fill-extrusion-color": "#8b949e",
+          "fill-extrusion-color": palette.furniture,
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
           "fill-extrusion-height": ["coalesce", ["get", "height"], 1],
-          "fill-extrusion-opacity": 0.56,
+          "fill-extrusion-opacity": 0.46,
         },
       });
 
@@ -615,12 +810,12 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "fill-extrusion-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            "#ffcc73",
-            "#bfc7cf",
+            palette.connectorSelected,
+            palette.connector,
           ],
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
           "fill-extrusion-height": ["coalesce", ["get", "height"], 1],
-          "fill-extrusion-opacity": 0.92,
+          "fill-extrusion-opacity": 0.86,
         },
       });
 
@@ -634,9 +829,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "line-join": "round",
         },
         paint: {
-          "line-color": "rgba(255,255,255,0.9)",
-          "line-width": 8,
-          "line-opacity": 0.82,
+          "line-color": palette.routeCasing,
+          "line-width": 9,
+          "line-opacity": 0.74,
+          "line-blur": 1.4,
         },
       });
 
@@ -650,8 +846,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "line-join": "round",
         },
         paint: {
-          "line-color": "#d62828",
+          "line-color": palette.routeLine,
           "line-width": 3.5,
+          "line-blur": 0.22,
+          "line-opacity": 0.96,
         },
       });
 
@@ -670,14 +868,14 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "circle-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            "#ffb703",
+            palette.poiSelected,
             ["boolean", ["feature-state", "hover"], false],
-            "#219ebc",
+            palette.poiHover,
             ["==", ["get", "kind"], "connector"],
-            "#d62828",
-            "#264653",
+            palette.connectorPoi,
+            palette.workstation,
           ],
-          "circle-stroke-color": "#ffffff",
+          "circle-stroke-color": "#f7fafc",
           "circle-stroke-width": 2,
         },
       });
@@ -713,12 +911,12 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "text-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            "#7f5539",
+            palette.labelSelected,
             ["boolean", ["feature-state", "hover"], false],
-            "#1d4e89",
-            "#102a43",
+            palette.labelHover,
+            palette.label,
           ],
-          "text-halo-color": "rgba(255,255,255,0.92)",
+          "text-halo-color": palette.labelHalo,
           "text-halo-width": 1.25,
         },
       });
@@ -744,10 +942,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           "text-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            "#7f5539",
+            palette.labelSelected,
             ["boolean", ["feature-state", "hover"], false],
-            "#1d4e89",
-            "#102a43",
+            palette.labelHover,
+            palette.label,
           ],
           "text-opacity": [
             "case",
@@ -755,13 +953,14 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
             1,
             0.96,
           ],
-          "text-halo-color": "rgba(255,255,255,0.96)",
+          "text-halo-color": palette.labelHalo,
           "text-halo-width": 1.6,
         },
       });
 
       map.on("mousemove", (event) => {
         const featureId = pickInteractiveFeatureId(
+          featureById,
           map.queryRenderedFeatures(event.point, { layers: [...interactiveLayerOrder] }),
         );
 
@@ -769,25 +968,26 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
           return;
         }
 
-        setFeatureState(map, hoverRef.current, "hover", false);
+        setFeatureState(featureSourceById, featureLabelSourceById, map, hoverRef.current, "hover", false);
         hoverRef.current = featureId;
-        setFeatureState(map, hoverRef.current, "hover", true);
+        setFeatureState(featureSourceById, featureLabelSourceById, map, hoverRef.current, "hover", true);
         map.getCanvas().style.cursor = featureId ? "pointer" : "";
       });
 
       map.on("mouseleave", () => {
-        setFeatureState(map, hoverRef.current, "hover", false);
+        setFeatureState(featureSourceById, featureLabelSourceById, map, hoverRef.current, "hover", false);
         hoverRef.current = null;
         map.getCanvas().style.cursor = "";
       });
 
       map.on("click", (event) => {
         let featureId = pickInteractiveFeatureId(
+          featureById,
           map.queryRenderedFeatures(event.point, { layers: [...interactiveLayerOrder] }),
         );
 
         if (!featureId) {
-          featureId = pickRoomFeatureIdAtLngLat(activeLevel, event.lngLat);
+          featureId = pickRoomFeatureIdAtLngLat(selectableSpaceFeatures, activeLevel, event.lngLat);
         }
 
         if (!featureId) {
@@ -798,13 +998,13 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
         popupRef.current?.remove();
         popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: "map-popup" })
           .setLngLat(event.lngLat)
-          .setHTML(popupHtml(featureId))
+          .setHTML(popupHtml(featureById, featureId))
           .addTo(map);
       });
 
       updateFilters(map, activeLevel);
       selectedRef.current = selectedFeatureId;
-      setFeatureState(map, selectedRef.current, "selected", true);
+      setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", true);
     });
 
     mapRef.current = map;
@@ -815,7 +1015,7 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [themeVariant]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -865,10 +1065,10 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
       return;
     }
 
-    setFeatureState(map, selectedRef.current, "selected", false);
+    setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", false);
     selectedRef.current = selectedFeatureId;
-    setFeatureState(map, selectedRef.current, "selected", true);
-  }, [selectedFeatureId]);
+    setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", true);
+  }, [featureLabelSourceById, featureSourceById, selectedFeatureId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -941,9 +1141,9 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
     };
   }, [orbitEnabled]);
 
-  const applySceneMode = (mode: SceneMode) => {
+  const applySceneMode = (mode: MapSceneMode) => {
     const preset = SCENE_PRESETS[mode];
-    const levelMeta = getLevelMeta(activeLevel);
+    const levelMeta = getLevelMeta(levels, activeLevel);
     const map = mapRef.current;
 
     setSceneMode(mode);
@@ -992,90 +1192,117 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
     runFocusRequest(map, request);
   };
 
+  const zoomBy = (delta: 1 | -1) => {
+    const map = mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    if (delta > 0) {
+      map.zoomIn({ duration: 180 });
+      return;
+    }
+
+    map.zoomOut({ duration: 180 });
+  };
+
+  useEffect(() => {
+    if (!externalSceneMode || externalSceneMode === sceneMode) {
+      return;
+    }
+
+    applySceneMode(externalSceneMode);
+  }, [externalSceneMode, sceneMode]);
+
+  useEffect(() => {
+    if (!zoomCommand || zoomCommand.id === processedZoomCommandIdRef.current) {
+      return;
+    }
+
+    processedZoomCommandIdRef.current = zoomCommand.id;
+    zoomBy(zoomCommand.delta);
+  }, [zoomCommand]);
+
   return (
     <div className="map-frame">
       <div className="map-shell" ref={containerRef} />
-      <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
+      {showControls ? <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
         <div className="map-toolbar-header">
           <div className="map-toolbar-copy">
             <span className="map-toolbar-kicker">View Control</span>
             <strong>Scene Deck</strong>
           </div>
           <div className="map-toolbar-header-actions">
-            {!controlsHidden ? (
-              <div className="map-toolbar-meta">
-                <span>{activeLevel}</span>
-                <span>{sceneMode}</span>
-              </div>
-            ) : null}
+            {!controlsHidden ? <span className="map-toolbar-badge">{activeLevel}</span> : null}
             <button
               aria-expanded={!controlsHidden}
               className="map-tool map-toolbar-toggle"
               onClick={() => setControlsHidden((current) => !current)}
               type="button"
             >
-              {controlsHidden ? "Open deck" : "Hide deck"}
+              {controlsHidden ? "Show" : "Hide"}
             </button>
           </div>
         </div>
         {!controlsHidden ? (
-          <div className="map-toolbar-grid">
+          <div className="map-toolbar-body">
             <section className="map-toolbar-section">
-              <div className="map-toolbar-section-head">
-                <span>Scene Preset</span>
-                <strong>{sceneMode}</strong>
-              </div>
+              <span className="map-toolbar-section-label">Scene Preset</span>
               <div className="map-toolbar-group map-toolbar-group-segmented">
-                {SCENE_MODES.map((mode) => (
-                  <button
-                    className={mode === sceneMode ? "map-tool map-tool-active" : "map-tool"}
-                    key={mode}
-                    onClick={() => applySceneMode(mode)}
-                    type="button"
-                  >
-                    {mode}
-                  </button>
-                ))}
+                {SCENE_MODES.map((mode) => {
+                  const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+                  const Icon = ToolbarIcons[mode];
+
+                  return (
+                    <button
+                      className={mode === sceneMode ? "map-tool map-tool-active" : "map-tool"}
+                      key={mode}
+                      onClick={() => applySceneMode(mode)}
+                      type="button"
+                    >
+                      <Icon />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
             <section className="map-toolbar-section">
-              <div className="map-toolbar-section-head">
-                <span>Orientation</span>
-                <strong>{orbitEnabled ? "orbit" : "manual"}</strong>
-              </div>
+              <span className="map-toolbar-section-label">Orientation</span>
               <div className="map-readout-grid">
                 <div className="map-readout">
                   <span>Bearing</span>
-                  <strong>{normalizedBearing}deg</strong>
+                  <strong>{normalizedBearing}°</strong>
                 </div>
                 <div className="map-readout">
                   <span>Tilt</span>
-                  <strong>{roundedPitch}deg</strong>
+                  <strong>{roundedPitch}°</strong>
                 </div>
               </div>
               <div className="map-toolbar-group">
                 <button className="map-tool" onClick={() => rotateBy(-20)} type="button">
-                  Left 20
+                  <ToolbarIcons.rotateLeft />
+                  <span>−20°</span>
                 </button>
                 <button className="map-tool" onClick={() => rotateBy(20)} type="button">
-                  Right 20
+                  <ToolbarIcons.rotateRight />
+                  <span>+20°</span>
                 </button>
                 <button
                   className={orbitEnabled ? "map-tool map-tool-active" : "map-tool"}
                   onClick={() => setOrbitEnabled((current) => !current)}
                   type="button"
                 >
-                  Orbit
+                  <ToolbarIcons.orbit />
+                  <span>Orbit</span>
                 </button>
               </div>
             </section>
 
-            <section className="map-toolbar-section map-toolbar-section-wide">
-              <div className="map-toolbar-section-head">
-                <span>Focus Target</span>
-                <strong>{selectedFeature ? "ready" : "idle"}</strong>
-              </div>
+            <section className="map-toolbar-section">
+              <span className="map-toolbar-section-label">Camera Tilt</span>
               <label className="map-slider">
                 <span>Camera tilt</span>
                 <input
@@ -1089,20 +1316,31 @@ export function MapCanvas({ activeLevel, focusRequestId, selectedFeatureId, rout
                   value={pitch}
                 />
               </label>
+            </section>
+
+            {selectedFeature ? (
               <div className="map-focus-row">
                 <div className="map-focus-copy">
                   <span className="map-focus-label">Selection</span>
-                  <strong>{selectedFeature?.properties.name ?? "No feature selected"}</strong>
-                  <span>{selectedFeature?.id ?? "select a room, desk, or connector from the map"}</span>
+                  <strong>{selectedFeature.properties.name}</strong>
                 </div>
                 <button className="map-tool focus-tool" disabled={!selectedFeature} onClick={focusSelection} type="button">
-                  Focus selection
+                  <ToolbarIcons.focus />
+                  <span>Focus</span>
                 </button>
               </div>
-            </section>
+            ) : null}
           </div>
         ) : null}
-      </div>
+      </div> : null}
+      {showControls ? <div className="map-zoom-controls">
+        <button className="map-zoom-btn" onClick={() => zoomBy(1)} type="button">
+          +
+        </button>
+        <button className="map-zoom-btn" onClick={() => zoomBy(-1)} type="button">
+          −
+        </button>
+      </div> : null}
     </div>
   );
 }

@@ -3,6 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "generate:data": "bun scripts/generate-indoor-data.ts",
+    "predev": "bun run generate:data",
+    "prebuild": "bun run generate:data",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

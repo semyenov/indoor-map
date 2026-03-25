@@ -14,8 +14,9 @@ interface EdgeTraversalMeta {
 
 const edgeKey = (from: string, to: string) => `${from}::${to}`;
 const EPSILON = 0.000001;
-const MAX_CORNER_RADIUS = 0.8;
-const CURVE_STEPS = 5;
+// Push corridor turns toward a more guided spline-like shape without drifting off the route graph.
+const MAX_CORNER_RADIUS = 1.5;
+const CURVE_STEPS = 10;
 
 const coordinatesEqual = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
 

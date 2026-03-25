@@ -137,3 +137,198 @@ export interface RoomStatuses {
 
 export type OfficeFeatureCollection = FeatureCollection<Geometry, OfficeFeatureProperties>;
 export type OfficeLineCollection = FeatureCollection<LineString, { level: LevelId }>;
+export type FeatureSourceId = "spaces" | "structures" | "pois";
+export type FeatureLabelSourceId = "room-label-points" | "poi-label-points";
+
+export interface IndoorCollections {
+  spaces: OfficeFeatureCollection;
+  structures: OfficeFeatureCollection;
+  pois: OfficeFeatureCollection;
+  roomLabels: OfficeFeatureCollection;
+  poiLabels: OfficeFeatureCollection;
+}
+
+export interface IndoorRoutingPayload {
+  graph: RoutingGraph;
+  targets: RouteTarget[];
+}
+
+export interface IndoorSearchPayload {
+  entries: SearchEntry[];
+}
+
+export interface IndoorStatusPayload {
+  roomIds: string[];
+}
+
+export type RoomSide = "north" | "south" | "west" | "east";
+export type OpeningKind = "door" | "opening";
+export type LocalRectBounds = [number, number, number, number];
+
+export interface CanonicalGrid {
+  origin: Coordinate;
+  xStep: number;
+  yStep: number;
+}
+
+export interface CanonicalLevelMeta {
+  id: LevelId;
+  label: string;
+  order: number;
+  defaultCenter: Coordinate;
+  defaultZoom: number;
+}
+
+export interface CanonicalOpening {
+  id: string;
+  side: RoomSide;
+  center: number;
+  width: number;
+  kind: OpeningKind;
+  traversable?: boolean;
+  connectsTo?: string;
+}
+
+export interface CanonicalRoom {
+  id: string;
+  level: LevelId;
+  kind: "room" | "meeting_room" | "amenity";
+  name: string;
+  bounds: LocalRectBounds;
+  subtitle: string;
+  department: string;
+  searchTokens: string[];
+  focusPoint?: Coordinate;
+  capacity?: number;
+  equipment?: string[];
+  status?: RoomStatus;
+  showLabel?: boolean;
+  wallSides?: Partial<Record<RoomSide, boolean>>;
+  openings?: CanonicalOpening[];
+}
+
+export interface CanonicalPoi {
+  id: string;
+  level: LevelId;
+  kind: "amenity" | "workstation" | "connector";
+  name: string;
+  point: Coordinate;
+  subtitle?: string;
+  department?: string;
+  employee?: string;
+  searchTokens: string[];
+  roomId?: string;
+  connectorGroupId?: string;
+  connectorType?: "stairs" | "elevator";
+  accessible?: boolean;
+  accessPath?: {
+    roomApproach?: Coordinate;
+    threshold: Coordinate;
+    interiorApproach?: Coordinate;
+  };
+}
+
+export interface CanonicalWallOpening {
+  center: number;
+  width: number;
+}
+
+export interface CanonicalWallBoxOptions {
+  north?: boolean;
+  south?: boolean;
+  west?: boolean;
+  east?: boolean;
+  northOpenings?: CanonicalWallOpening[];
+  southOpenings?: CanonicalWallOpening[];
+  westOpenings?: CanonicalWallOpening[];
+  eastOpenings?: CanonicalWallOpening[];
+}
+
+export interface CanonicalRectStructure {
+  id: string;
+  level: LevelId;
+  featureKind: "furniture";
+  geometry: {
+    type: "rect";
+    bounds: LocalRectBounds;
+  };
+  name: string;
+  department?: string;
+  baseHeight?: number;
+  height?: number;
+  searchTokens?: string[];
+}
+
+export interface CanonicalWallBoxStructure {
+  id: string;
+  level: LevelId;
+  featureKind: "wall";
+  geometry: {
+    type: "wall_box";
+    bounds: LocalRectBounds;
+    thickness?: number;
+    height?: number;
+    options?: CanonicalWallBoxOptions;
+  };
+  name: string;
+  department?: string;
+  baseHeight?: number;
+  searchTokens?: string[];
+}
+
+export interface CanonicalStairRunStructure {
+  id: string;
+  level: LevelId;
+  featureKind: "furniture";
+  geometry: {
+    type: "stair_run";
+    bounds: LocalRectBounds;
+    stepCount: number;
+    rise?: number;
+    treadThickness?: number;
+    treadCoverage?: number;
+  };
+  name: string;
+  department?: string;
+  baseHeight?: number;
+  height?: number;
+  searchTokens?: string[];
+}
+
+export interface CanonicalLineStructure {
+  id: string;
+  level: LevelId;
+  featureKind: "door";
+  geometry: {
+    type: "line";
+    coordinates: Coordinate[];
+  };
+  name: string;
+  department?: string;
+  baseHeight?: number;
+  height?: number;
+  searchTokens?: string[];
+}
+
+export type CanonicalStructure =
+  | CanonicalRectStructure
+  | CanonicalWallBoxStructure
+  | CanonicalStairRunStructure
+  | CanonicalLineStructure;
+
+export interface CanonicalIndoorDataset {
+  grid: CanonicalGrid;
+  levels: CanonicalLevelMeta[];
+  rooms: CanonicalRoom[];
+  pois: CanonicalPoi[];
+  structures: CanonicalStructure[];
+}
+
+export interface IndoorRuntimeDataset {
+  levels: LevelMeta[];
+  collections: IndoorCollections;
+  routing: IndoorRoutingPayload;
+  search: IndoorSearchPayload;
+  status: IndoorStatusPayload;
+  features: OfficeFeature[];
+}
