@@ -16,7 +16,8 @@ const edgeKey = (from: string, to: string) => `${from}::${to}`;
 const EPSILON = 0.000001;
 // Push corridor turns toward a more guided spline-like shape without drifting off the route graph.
 const MAX_CORNER_RADIUS = 1.5;
-const CURVE_STEPS = 10;
+const CORNER_RADIUS_FACTOR = 0.5;
+const CURVE_STEPS = 18;
 
 const coordinatesEqual = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
 
@@ -132,7 +133,7 @@ const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: Read
 
     const incomingLength = coordinateDistance(previous, current);
     const outgoingLength = coordinateDistance(current, next);
-    const radius = Math.min(MAX_CORNER_RADIUS, incomingLength / 2, outgoingLength / 2);
+    const radius = Math.min(MAX_CORNER_RADIUS, incomingLength * CORNER_RADIUS_FACTOR, outgoingLength * CORNER_RADIUS_FACTOR);
 
     if (radius <= EPSILON) {
       appendUniqueCoordinate(smoothed, current);

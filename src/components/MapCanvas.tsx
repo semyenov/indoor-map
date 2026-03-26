@@ -643,7 +643,12 @@ const buildCustomRouteVertices = (route: RouteResult | null, level: LevelId) => 
 };
 
 const buildRouteBreadcrumbCollection = (route: RouteResult | null) => {
-  return buildRouteMarkerCollection(route);
+  const markerCollection = buildRouteMarkerCollection(route);
+
+  return {
+    ...markerCollection,
+    features: markerCollection.features.filter((feature) => feature.properties.terminal),
+  };
 };
 
 const hasRouteOnLevel = (route: RouteResult | null, level: LevelId) =>

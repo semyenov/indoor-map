@@ -26,6 +26,7 @@ import {
   Route as RouteIcon,
   Search,
   SquareX,
+  X as CloseIcon,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -317,7 +318,7 @@ const fixedIcon = (Icon: LucideIcon, size: number) => () => <Icon size={size} {.
 const Ic = {
   Brand: fixedIcon(MapIcon, 18),
   Search: sizedIcon(Search, 15),
-  X: sizedIcon(SquareX, 13),
+  X: sizedIcon(CloseIcon, 13),
   Nav: fixedIcon(Navigation2, 14),
   ClosePanel: fixedIcon(PanelLeftClose, 14),
   Route: fixedIcon(RouteIcon, 15),
@@ -1477,8 +1478,8 @@ export default function AtlasV4() {
                   </div>
 
                   <div style={S.rpStage}>
-                    <div style={S.rpStageControls}>
-                      <div style={S.rpColSearch} className="hud-input-shell">
+                    <div style={S.rpStageControls} className="hud-focus-shell">
+                      <div style={S.rpColSearch}>
                         <Ic.Search s={13} />
                         <input
                           style={S.rpColInput}
@@ -2030,7 +2031,7 @@ const CSS = `
   .hud-glass{background:${T.glass};backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%);border:1px solid ${T.border}}
   .hud-glass-heavy{background:${T.glassH};backdrop-filter:blur(40px) saturate(145%);-webkit-backdrop-filter:blur(40px) saturate(145%);border:1px solid ${T.borderH}}
   .hud-hover{cursor:pointer;transition:background .12s,border-color .12s}.hud-hover:hover{background:${T.glassH}!important;border-color:${T.borderH}!important}
-  .hud-btn,.hud-card,.hud-accent,.hud-input-shell{transition:background .12s,border-color .12s,color .12s,box-shadow .12s,transform .08s}
+  .hud-btn,.hud-card,.hud-accent,.hud-input-shell,.hud-focus-shell{transition:background .12s,border-color .12s,color .12s,box-shadow .12s,transform .08s}
   .hud-btn,.hud-accent{-webkit-appearance:none;appearance:none;outline:none}
   .hud-btn::-moz-focus-inner,.hud-accent::-moz-focus-inner{border:0;padding:0}
   .hud-segment-btn:focus,.hud-segment-btn:active{outline:none!important;box-shadow:none!important}
@@ -2044,6 +2045,8 @@ const CSS = `
   .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
   .hud-input-shell:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important}
   .hud-input-shell:focus-within{background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
+  .hud-focus-shell:hover{background:var(--atlas-hover-surface)!important}
+  .hud-focus-shell:focus-within{background:var(--atlas-focus-surface)!important;box-shadow:inset 0 0 0 1px ${T.accentBorder}!important}
 `;
 
 const S: Record<string, CSSProperties> = {
@@ -2339,25 +2342,25 @@ const S: Record<string, CSSProperties> = {
     padding: 0,
     background: PANEL_SURFACE_SOFT,
   },
-  rpTopToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  rpTopFlow: { display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 },
-  rpTopFlowText: { display: "grid", gap: 2, minWidth: 0 },
+  rpTopToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  rpTopFlow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 },
+  rpTopFlowText: { display: "grid", gap: 3, minWidth: 0 },
   rpTopFlowTitle: { fontSize: 15, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15, minWidth: 0 },
   rpTopFlowSubline: { fontSize: 12, color: T.muted, lineHeight: 1.35, minWidth: 0 },
   rpFlowStep: { ...microChipBase, padding: "0 12px", minHeight: 30, gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, fontFamily: FONT },
   rpFlowStepActive: { ...segmentedButtonActive },
   rpFlowStepReady: { color: ST.available.c, fontSize: 12, lineHeight: 1, marginTop: -1 },
-  rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 8, minHeight: 0, overflow: "hidden", padding: "8px 12px 10px" },
-  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 34px minmax(0,1fr)", gap: 8, alignItems: "stretch", flexShrink: 0 },
-  rpPlannerCard: { display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 104, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 10, minHeight: 0, overflow: "hidden", padding: "10px 14px 14px" },
+  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", gap: 10, alignItems: "stretch", flexShrink: 0 },
+  rpPlannerCard: { display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 108, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
   rpPlannerCardActive: { background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `0 0 0 1px ${T.accent}26` },
   rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
   rpSwapDock: { display: "flex", alignItems: "center", justifyContent: "center" },
   rpStage: { display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
   rpStageTitle: { fontSize: 15, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.2, marginTop: 0 },
   rpStageStat: { ...microChipBase, padding: "0 9px", minHeight: 26, fontSize: 10, fontWeight: 700, color: T.sec, fontFamily: MONO, letterSpacing: ".04em", flexShrink: 0 },
-  rpStageControls: { display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: CONTROL_BORDER, flexShrink: 0, background: PANEL_SURFACE },
-  rpStageBody: { flex: 1, overflowY: "auto", padding: "10px 14px 14px", minHeight: 0, scrollPaddingBottom: 18 },
+  rpStageControls: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: CONTROL_BORDER, flexShrink: 0, background: PANEL_SURFACE },
+  rpStageBody: { flex: 1, overflowY: "auto", padding: "12px 14px 14px", minHeight: 0, scrollPaddingBottom: 18 },
   rpAside: { display: "flex", flexDirection: "column", gap: 12, minHeight: 0 },
   rpAsideShell: { display: "flex", flexDirection: "column", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 0 },
   rpAsideSection: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", borderBottom: CONTROL_BORDER_STRONG },
@@ -2398,7 +2401,7 @@ const S: Record<string, CSSProperties> = {
   rpColSearch: {
     display: "flex",
     alignItems: "center",
-    gap: 7,
+    gap: 8,
     flex: 1,
     minWidth: 0,
     padding: 0,
@@ -2411,7 +2414,7 @@ const S: Record<string, CSSProperties> = {
   rpColToolbar: {
     display: "flex",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
     flexShrink: 0,
     flexWrap: "nowrap",
     padding: 0,
@@ -2420,16 +2423,16 @@ const S: Record<string, CSSProperties> = {
   rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
   rpEmptyState: { display: "grid", gap: 6, padding: "16px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER },
   rpEmptyTitle: { fontSize: 13, fontWeight: 650, color: T.text },
-  rpStepCard: { display: "flex", flexDirection: "column", gap: 8, color: T.text, textAlign: "left" },
+  rpStepCard: { display: "flex", flexDirection: "column", gap: 10, color: T.text, textAlign: "left" },
   rpStepCardActive: { background: "transparent" },
   rpStepCardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
   rpActiveStateChip: { ...microChipBase, minWidth: 72, padding: "0 10px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, justifyContent: "center", fontFamily: FONT },
   rpActiveStateChipHidden: { visibility: "hidden" },
-  rpStepCardBody: { display: "grid", gap: 6 },
+  rpStepCardBody: { display: "grid", gap: 8 },
   rpStepCardName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3 },
   rpStepCardPlaceholder: { fontSize: 11, color: T.muted, lineHeight: 1.4 },
-  rpStepCardMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  rpStepCardActions: { display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 8, flexWrap: "wrap" },
+  rpStepCardMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 1 },
+  rpStepCardActions: { display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 8, flexWrap: "wrap", paddingTop: 2 },
   rpStepAction: { minHeight: 26, padding: "0 9px", fontSize: 10 },
   rpStepMiniChip: { ...microChipBase, padding: "0 7px", minHeight: 22, fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.sec, letterSpacing: ".03em" },
   rpSummaryCard: { display: "grid", gap: 10 },
