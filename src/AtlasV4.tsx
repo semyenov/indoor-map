@@ -1,4 +1,5 @@
 import {
+  Fragment,
   lazy,
   Suspense,
   startTransition,
@@ -28,6 +29,7 @@ type GroupKey = "level" | "kind" | "dept" | "status";
 type AtlasKind = "room" | "meeting" | "amenity" | "connector" | "workstation";
 type IndoorFeature = IndoorRuntimeData["dataset"]["features"][number];
 type DrawerMode = "search" | "route" | "detail" | "route-result" | "ops";
+type RouteBuilderStep = "from" | "to";
 
 type AtlasSpace = {
   id: string;
@@ -475,6 +477,69 @@ function GroupedGrid({
   );
 }
 
+function RouteCandidateGrid({
+  spaces,
+  groupKey,
+  onSelect,
+  selectedFeatureId,
+}: {
+  spaces: AtlasSpace[];
+  groupKey: GroupKey;
+  onSelect: (space: AtlasSpace) => void;
+  selectedFeatureId: string | null;
+}) {
+  const groups = groupBy(spaces, groupKey);
+
+  return (
+    <div style={S.groupedGrid}>
+      {groups.map(([label, items]) => (
+        <div key={label} style={S.group}>
+          <div style={S.groupHeader}>
+            <span style={S.groupLabel}>{label}</span>
+            <span style={S.groupCount}>{items.length}</span>
+          </div>
+          <div style={S.routeChoiceGrid}>
+            {items.map((space) => {
+              const status = ST[space.status];
+              const isSelected = selectedFeatureId === space.featureId;
+
+              return (
+                <button
+                  key={space.id}
+                  style={{ ...S.routeChoiceCard, ...(isSelected ? S.routeChoiceCardSelected : {}) }}
+                  className="hud-card"
+                  onClick={() => onSelect(space)}
+                  type="button"
+                >
+                  <div style={S.routeChoiceTop}>
+                    <div style={S.routeChoiceNameRow}>
+                      <span style={{ ...S.statusDot, background: status.c }} />
+                      <span style={S.routeChoiceName}>{space.name}</span>
+                    </div>
+                    <span style={S.cardLevel}>{space.level}</span>
+                  </div>
+                  <div style={S.routeChoiceMeta}>
+                    <span style={S.routeChoiceMetaText}>{space.kindLabel}</span>
+                    {space.cap > 0 ? (
+                      <span style={S.routeChoiceMetaText}>
+                        <Ic.Seats /> {space.cap}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={S.routeChoiceFooter}>
+                    <span style={S.routeChoiceDept}>{space.dept}</span>
+                    <span style={{ ...S.statusPill, ...S.routeChoiceStatus, color: status.c, background: status.bg }}>{status.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AtlasV4() {
   const [indoorData, setIndoorData] = useState<IndoorRuntimeData | null>(null);
   const [datasetError, setDatasetError] = useState<string | null>(null);
@@ -493,6 +558,7 @@ export default function AtlasV4() {
   const [routeToQ, setRouteToQ] = useState("");
   const [routeFromGroup, setRouteFromGroup] = useState<GroupKey>("level");
   const [routeToGroup, setRouteToGroup] = useState<GroupKey>("level");
+  const [routeBuilderStep, setRouteBuilderStep] = useState<RouteBuilderStep>("from");
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [focusRequestId, setFocusRequestId] = useState(0);
   const [route, setRoute] = useState<RouteResult | null>(null);
@@ -635,6 +701,17 @@ export default function AtlasV4() {
 
   const routeFrom = routeChoiceByTargetId.get(routeFromId) ?? null;
   const routeTo = routeChoiceByTargetId.get(routeToId) ?? null;
+  const activeRouteStep = routeBuilderStep === "to" && routeFrom ? "to" : "from";
+  const isEditingFrom = activeRouteStep === "from";
+  const activeRouteChoiceList = isEditingFrom ? routeFromChoices : routeToChoices;
+  const activeRouteGroup = isEditingFrom ? routeFromGroup : routeToGroup;
+  const activeRouteSelectedFeatureId = isEditingFrom ? routeFrom?.featureId ?? null : routeTo?.featureId ?? null;
+  const activeRouteQuery = isEditingFrom ? routeFromQ : routeToQ;
+  const activeRouteTitle = isEditingFrom ? "Шаг 1. Выберите стартовую точку" : "Шаг 2. Выберите точку назначения";
+  const activeRouteSubtitle = isEditingFrom
+    ? "Выберите, откуда начинается маршрут. После выбора акцент автоматически перейдёт к точке назначения."
+    : "Уточните, куда должен привести маршрут. Когда обе точки заданы, маршрут можно сразу построить.";
+  const activeRouteEmpty = isEditingFrom ? "Стартовая точка не выбрана" : "Точка назначения не выбрана";
 
   const selectedFeature = selectedFeatureId ? featureById.get(selectedFeatureId) ?? null : null;
   const selectedSpace = selectedFeatureId ? atlasSpaces.find((space) => space.featureId === selectedFeatureId) ?? null : null;
@@ -648,6 +725,12 @@ export default function AtlasV4() {
     routeTo?.name ?? "Точка назначения",
     routingGraph,
     featureById,
+  );
+  const routeStepColumnCount =
+    routeStepsList.length >= 8 ? 4 : routeStepsList.length >= 5 ? 3 : routeStepsList.length >= 3 ? 2 : 1;
+  const routeStepRows = Math.max(1, Math.ceil(routeStepsList.length / routeStepColumnCount));
+  const routeStepColumns = Array.from({ length: routeStepColumnCount }, (_, columnIndex) =>
+    routeStepsList.filter((_, index) => Math.floor(index / routeStepRows) === columnIndex),
   );
   const isWorkspaceDrawerMode = drawerMode === "search" || drawerMode === "route";
   const isInfoDrawerMode = drawerMode === "detail" || drawerMode === "route-result" || drawerMode === "ops";
@@ -725,12 +808,16 @@ export default function AtlasV4() {
   };
 
   const openRouteBuilder = (fromTargetId: string | null = null, toTargetId: string | null = null) => {
+    const nextFromId = fromTargetId ?? routeFromId;
+    const nextToId = toTargetId ?? routeToId;
     setDrawerMode("route");
     setDrawerOpen(true);
-    setRouteFromId(fromTargetId ?? routeFromId);
-    setRouteToId(toTargetId ?? routeToId);
+    setRouteFromId(nextFromId);
+    setRouteToId(nextToId);
     setRouteFromQ("");
     setRouteToQ("");
+    setRouteBuilderStep(nextFromId ? "to" : "from");
+    setRouteError(null);
   };
 
   const closeDrawer = () => {
@@ -770,6 +857,66 @@ export default function AtlasV4() {
     if (firstLevel) {
       setActiveLevel(firstLevel);
     }
+  };
+
+  const swapRouteEndpoints = () => {
+    const fromId = routeFromId;
+    setRouteFromId(routeToId);
+    setRouteToId(fromId);
+    setRouteFromQ("");
+    setRouteToQ("");
+    setRouteError(null);
+    setRouteBuilderStep(fromId ? "to" : "from");
+  };
+
+  const clearRoutePoint = (step: RouteBuilderStep) => {
+    if (step === "from") {
+      setRouteFromId("");
+      setRouteFromQ("");
+      setRouteBuilderStep("from");
+    } else {
+      setRouteToId("");
+      setRouteToQ("");
+      setRouteBuilderStep(routeFromId ? "to" : "from");
+    }
+    setRouteError(null);
+  };
+
+  const selectRoutePoint = (step: RouteBuilderStep, targetId: string) => {
+    if (step === "from") {
+      setRouteFromId(targetId);
+      setRouteFromQ("");
+      setRouteBuilderStep("to");
+    } else {
+      setRouteToId(targetId);
+      setRouteToQ("");
+      setRouteBuilderStep("to");
+    }
+    setRouteError(null);
+  };
+
+  const setActiveRouteQuery = (value: string) => {
+    if (isEditingFrom) {
+      setRouteFromQ(value);
+      return;
+    }
+    setRouteToQ(value);
+  };
+
+  const clearActiveRouteQuery = () => {
+    if (isEditingFrom) {
+      setRouteFromQ("");
+      return;
+    }
+    setRouteToQ("");
+  };
+
+  const setActiveRouteGrouping = (group: GroupKey) => {
+    if (isEditingFrom) {
+      setRouteFromGroup(group);
+      return;
+    }
+    setRouteToGroup(group);
   };
 
   const queueZoom = (delta: 1 | -1) => {
@@ -1033,6 +1180,29 @@ export default function AtlasV4() {
               </div>
               <span>Только доступные маршруты</span>
             </label>
+            <button
+              style={{ ...S.ghostBtn, opacity: routeFrom && routeTo ? 1 : 0.45, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
+              className="hud-btn"
+              onClick={swapRouteEndpoints}
+              type="button"
+            >
+              <Ic.Swap /> Поменять местами
+            </button>
+            <button
+              style={{ ...S.ghostBtn, opacity: routeFrom || routeTo ? 1 : 0.45, pointerEvents: routeFrom || routeTo ? "auto" : "none" }}
+              className="hud-btn"
+              onClick={() => {
+                setRouteFromId("");
+                setRouteToId("");
+                setRouteFromQ("");
+                setRouteToQ("");
+                setRouteBuilderStep("from");
+                setRouteError(null);
+              }}
+              type="button"
+            >
+              Очистить
+            </button>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
               Закрыть
             </button>
@@ -1203,123 +1373,164 @@ export default function AtlasV4() {
 
             {drawerMode === "route" ? (
               <div style={S.routePanel}>
-                <div style={S.rpColumns}>
-                  <div style={S.rpCol}>
-                    <div style={S.rpColHeader}>
-                      <div style={{ flex: 1 }}>
-                        <div style={S.rpColLabel}>Откуда — стартовая точка</div>
-                        {routeFrom ? (
-                          <div style={S.rpSelected}>
-                            <span style={S.rpSelectedName}>{routeFrom.name}</span>
-                            <span style={S.rpSelectedLevel}>{routeFrom.level}</span>
-                            <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteFromId("")} type="button">
-                              <Ic.X s={10} />
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 12, color: T.muted }}>Выберите стартовую точку ниже</span>
-                        )}
+                <div style={S.bpHeader}>
+                  <div style={S.rpTopToolbar}>
+                    <div style={S.rpTopFlow}>
+                      <div style={S.rpTopFlowText}>
+                        <span style={S.bpGroupLabel}>Активный шаг</span>
+                        <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
+                        <div style={S.rpTopFlowSubline}>{activeRouteSubtitle}</div>
                       </div>
                     </div>
-                    <div style={S.rpColSearch} className="hud-input-shell">
-                      <Ic.Search s={13} />
-                      <input style={S.rpColInput} placeholder="Фильтр…" value={routeFromQ} onChange={(event) => setRouteFromQ(event.target.value)} />
-                      {routeFromQ ? (
-                        <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setRouteFromQ("")} type="button">
-                          <Ic.X s={10} />
-                        </button>
-                      ) : null}
-                    </div>
-                    <div style={S.rpColToolbar}>
-                      <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
-                      {GROUP_OPTIONS.slice(0, 3).map((group) => (
-                        <button
-                          key={group.key}
-                          style={{ ...S.pillSm, ...(routeFromGroup === group.key ? S.pillSmActive : {}) }}
-                          className="hud-btn"
-                          data-active={routeFromGroup === group.key ? "true" : undefined}
-                          onClick={() => setRouteFromGroup(group.key)}
-                          type="button"
-                        >
-                          {group.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={S.rpColBody}>
-                      <GroupedGrid
-                        spaces={routeFromChoices}
-                        groupKey={routeFromGroup}
-                        onSelect={(space) => setRouteFromId(space.routeTargetId ?? "")}
-                        selectedFeatureId={routeFrom?.featureId ?? null}
-                        compact
-                      />
+                    <div style={S.bpToolbarMeta}>
+                      <span style={S.bpCount}>
+                        {routeError
+                          ? routeError
+                          : routeFrom && routeTo
+                            ? "Маршрут готов к построению"
+                            : `${activeRouteChoiceList.length} вариантов`}
+                      </span>
+                      <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                        <Ic.X />
+                      </button>
                     </div>
                   </div>
-
-                  <div style={S.rpSwapCol}>
-                    <button
-                      style={S.rpSwapBtn}
-                      className="hud-btn"
-                      onClick={() => {
-                        const fromId = routeFromId;
-                        setRouteFromId(routeToId);
-                        setRouteToId(fromId);
-                      }}
-                      type="button"
-                    >
-                      <Ic.Swap />
-                    </button>
-                  </div>
-
-                  <div style={{ ...S.rpCol, ...S.rpColLast }}>
-                    <div style={S.rpColHeader}>
-                      <div style={{ flex: 1 }}>
-                        <div style={S.rpColLabel}>Куда — точка назначения</div>
-                        {routeTo ? (
-                          <div style={S.rpSelected}>
-                            <span style={S.rpSelectedName}>{routeTo.name}</span>
-                            <span style={S.rpSelectedLevel}>{routeTo.level}</span>
-                            <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteToId("")} type="button">
-                              <Ic.X s={10} />
-                            </button>
+                </div>
+                <div style={S.rpFlowShell}>
+                  <div style={S.rpPlannerBar}>
+                    {[
+                      { step: "from" as const, title: "Старт", point: routeFrom, helper: "Выберите, откуда начать маршрут." },
+                      { step: "to" as const, title: "Назначение", point: routeTo, helper: "Выберите, куда нужно попасть." },
+                    ].map(({ step, title, point, helper }, plannerIndex) => {
+                      const isActive = activeRouteStep === step;
+                      return (
+                        <Fragment key={step}>
+                          {plannerIndex === 1 ? (
+                            <div style={S.rpSwapDock}>
+                              <button style={S.rpSwapBtn} className="hud-btn" onClick={swapRouteEndpoints} type="button">
+                                <Ic.Swap />
+                              </button>
+                            </div>
+                          ) : null}
+                          <div
+                            style={{ ...S.rpPlannerCard, ...(isActive ? S.rpPlannerCardActive : {}) }}
+                            onClick={() => setRouteBuilderStep(step)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                setRouteBuilderStep(step);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div style={S.rpStepCard}>
+                              <div style={S.rpStepCardTop}>
+                                <span style={S.panelSectionLabel}>{title}</span>
+                                <span
+                                  style={{
+                                    ...S.rpActiveStateChip,
+                                    ...(isActive ? null : S.rpActiveStateChipHidden),
+                                  }}
+                                >
+                                  Активно
+                                </span>
+                              </div>
+                              {point ? (
+                                <div style={S.rpStepCardBody}>
+                                  <div style={S.rpStepCardName}>{point.name}</div>
+                                  <div style={S.rpStepCardMeta}>
+                                    <span style={S.rpStepMiniChip}>{point.level}</span>
+                                    <span style={S.rpStepMiniChip}>{point.kindLabel}</span>
+                                    {point.cap > 0 ? <span style={S.rpStepMiniChip}>{point.cap} мест</span> : null}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={S.rpStepCardBody}>
+                                  <div style={S.rpStepCardPlaceholder}>{helper}</div>
+                                </div>
+                              )}
+                              <div style={S.rpStepCardActions}>
+                                <button
+                                  style={{ ...S.ghostBtn, ...S.rpStepAction }}
+                                  className="hud-btn"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setRouteBuilderStep(step);
+                                  }}
+                                  type="button"
+                                >
+                                  {point ? "Изменить" : "Выбрать"}
+                                </button>
+                                {point ? (
+                                  <button
+                                    style={{ ...S.iconBtn, width: 28, height: 28 }}
+                                    className="hud-btn"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      clearRoutePoint(step);
+                                    }}
+                                    type="button"
+                                  >
+                                    <Ic.X s={10} />
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
-                        ) : (
-                          <span style={{ fontSize: 12, color: T.muted }}>Выберите точку назначения ниже</span>
-                        )}
+                        </Fragment>
+                      );
+                    })}
+                  </div>
+
+                  <div style={S.rpStage}>
+                    <div style={S.rpStageControls}>
+                      <div style={S.rpColSearch} className="hud-input-shell">
+                        <Ic.Search s={13} />
+                        <input
+                          style={S.rpColInput}
+                          placeholder={isEditingFrom ? "Найдите стартовую точку…" : "Найдите точку назначения…"}
+                          value={activeRouteQuery}
+                          onChange={(event) => setActiveRouteQuery(event.target.value)}
+                        />
+                        {activeRouteQuery ? (
+                          <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={clearActiveRouteQuery} type="button">
+                            <Ic.X s={10} />
+                          </button>
+                        ) : null}
+                      </div>
+                      <div style={S.rpColToolbar}>
+                        <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                        {GROUP_OPTIONS.slice(0, 3).map((group) => (
+                          <button
+                            key={group.key}
+                            style={{ ...S.pillSm, ...(activeRouteGroup === group.key ? S.pillSmActive : {}) }}
+                            className="hud-btn"
+                            data-active={activeRouteGroup === group.key ? "true" : undefined}
+                            onClick={() => setActiveRouteGrouping(group.key)}
+                            type="button"
+                          >
+                            {group.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    <div style={S.rpColSearch} className="hud-input-shell">
-                      <Ic.Search s={13} />
-                      <input style={S.rpColInput} placeholder="Фильтр…" value={routeToQ} onChange={(event) => setRouteToQ(event.target.value)} />
-                      {routeToQ ? (
-                        <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setRouteToQ("")} type="button">
-                          <Ic.X s={10} />
-                        </button>
-                      ) : null}
-                    </div>
-                    <div style={S.rpColToolbar}>
-                      <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
-                      {GROUP_OPTIONS.slice(0, 3).map((group) => (
-                        <button
-                          key={group.key}
-                          style={{ ...S.pillSm, ...(routeToGroup === group.key ? S.pillSmActive : {}) }}
-                          className="hud-btn"
-                          data-active={routeToGroup === group.key ? "true" : undefined}
-                          onClick={() => setRouteToGroup(group.key)}
-                          type="button"
-                        >
-                          {group.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={S.rpColBody}>
-                      <GroupedGrid
-                        spaces={routeToChoices}
-                        groupKey={routeToGroup}
-                        onSelect={(space) => setRouteToId(space.routeTargetId ?? "")}
-                        selectedFeatureId={routeTo?.featureId ?? null}
-                        compact
-                      />
+                    <div style={S.rpStageBody}>
+                      {activeRouteChoiceList.length > 0 ? (
+                        <RouteCandidateGrid
+                          spaces={activeRouteChoiceList}
+                          groupKey={activeRouteGroup}
+                          onSelect={(space) => selectRoutePoint(activeRouteStep, space.routeTargetId ?? "")}
+                          selectedFeatureId={activeRouteSelectedFeatureId}
+                        />
+                      ) : (
+                        <div style={S.rpEmptyState}>
+                          <div style={S.rpEmptyTitle}>{activeRouteEmpty}</div>
+                          <div style={S.sidePanelSubline}>
+                            {activeRouteQuery.trim() ? "По текущему фильтру ничего не найдено. Попробуйте изменить запрос или группу." : "Начните с выбора точки или используйте поиск, чтобы быстро сузить список."}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1328,26 +1539,43 @@ export default function AtlasV4() {
 
             {drawerMode === "route-result" && route ? (
               <div style={S.drawerInfoPanel}>
-                <div style={S.sidePanelBody}>
-                  <div style={S.sidePanelSectionCompact}>
-                    <div style={S.sidePanelSectionHeader}>
-                      <span style={S.panelSectionLabel}>Обзор</span>
-                    </div>
-                    <div style={S.rrPath}>
-                      {routeFrom?.name ?? "Старт"} <Ic.ArrowR /> {routeTo?.name ?? "Точка назначения"}
+                <div style={S.infoDrawerHeader}>
+                  <div style={S.infoDrawerHeaderMain}>
+                    <span style={S.panelSectionLabel}>Маршрут</span>
+                    <div style={S.infoDrawerHeaderTitle}>
+                      {routeFrom?.name ?? "Старт"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Точка назначения"}
                     </div>
                   </div>
+                  <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                    <Ic.X />
+                  </button>
+                </div>
+                <div style={S.sidePanelBody}>
                   <div style={{ ...S.sidePanelSectionCompact, minHeight: 0 }}>
                     <div style={S.sidePanelSectionHeader}>
                       <span style={S.panelSectionLabel}>Шаги</span>
                     </div>
-                    <div style={{ ...S.panelInsetScroll, ...S.infoPanelScrollArea, ...S.rrStepsGrid }}>
-                      {routeStepsList.map((step, index) => (
-                        <div key={step} style={S.rrStep}>
-                          <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", border: `1px solid ${T.accent}` } : {}) }}>
-                            {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
-                          </div>
-                          <span style={S.rrStepT}>{step}</span>
+                    <div
+                      style={{
+                        ...S.panelInsetScroll,
+                        ...S.infoPanelScrollArea,
+                        ...S.rrStepsGrid,
+                        gridTemplateColumns: `repeat(${routeStepColumnCount}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {routeStepColumns.map((column, columnIndex) => (
+                        <div key={`col-${columnIndex}`} style={S.rrStepsColumn}>
+                          {column.map((step, rowIndex) => {
+                            const index = columnIndex * routeStepRows + rowIndex;
+                            return (
+                              <div key={`${index}-${step}`} style={S.rrStep}>
+                                <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", border: `1px solid ${T.accent}` } : {}) }}>
+                                  {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
+                                </div>
+                                <span style={S.rrStepT}>{step}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
@@ -1358,6 +1586,19 @@ export default function AtlasV4() {
 
             {drawerMode === "detail" && selectedFeature ? (
               <div style={S.drawerInfoPanel}>
+                <div style={S.infoDrawerHeader}>
+                  <div style={S.infoDrawerHeaderMain}>
+                    <span style={S.panelSectionLabel}>
+                      {selectedFeature.properties.employee ? "Сотрудник" : "Пространство"}
+                    </span>
+                    <div style={S.infoDrawerHeaderTitle}>
+                      {selectedFeature.properties.employee ?? selectedFeature.properties.name}
+                    </div>
+                  </div>
+                  <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                    <Ic.X />
+                  </button>
+                </div>
                 <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
                   {(() => {
                     const equipment = selectedFeature.properties.equipment ?? [];
@@ -1422,6 +1663,15 @@ export default function AtlasV4() {
 
             {drawerMode === "ops" ? (
               <div style={S.drawerInfoPanel}>
+                <div style={S.infoDrawerHeader}>
+                  <div style={S.infoDrawerHeaderMain}>
+                    <span style={S.panelSectionLabel}>Операции</span>
+                    <div style={S.infoDrawerHeaderTitle}>Оперативная сводка</div>
+                  </div>
+                  <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                    <Ic.X />
+                  </button>
+                </div>
                 <div style={S.sidePanelBody}>
                   <div style={S.opsOverviewGrid}>
                     <div style={S.opsHeroCard}>
@@ -1853,7 +2103,6 @@ const S: Record<string, CSSProperties> = {
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
     background: CHROME_SURFACE_SOFT,
-    borderLeft: CONTROL_BORDER_STRONG,
     flexWrap: "wrap",
   },
   bottomRouteActions: {
@@ -1864,7 +2113,6 @@ const S: Record<string, CSSProperties> = {
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
     background: CHROME_SURFACE_SOFT,
-    borderLeft: CONTROL_BORDER_STRONG,
     flexWrap: "wrap",
   },
   bottomContext: { display: "grid", gap: 4, minWidth: 0, maxWidth: 560 },
@@ -1948,7 +2196,6 @@ const S: Record<string, CSSProperties> = {
     minHeight: 0,
     borderRadius: 0,
     overflow: "hidden",
-    borderTop: CONTROL_BORDER_STRONG,
     boxShadow: T.elevDrawer,
     display: "flex",
     flexDirection: "column",
@@ -1971,7 +2218,7 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
-  bpHeader: { padding: "12px 16px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
+  bpHeader: { padding: "10px 14px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
   bpToolbarMeta: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
   bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
   bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
@@ -2006,6 +2253,17 @@ const S: Record<string, CSSProperties> = {
   cardKind: { fontSize: 11, color: T.muted, fontWeight: 500 },
   cardCap: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.sec, fontWeight: 500 },
   cardDept: { fontSize: 10, color: T.muted, fontWeight: 500, marginTop: -2 },
+  routeChoiceGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 8 },
+  routeChoiceCard: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 13px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text, minHeight: 114 },
+  routeChoiceCardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
+  routeChoiceTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+  routeChoiceNameRow: { display: "flex", alignItems: "center", gap: 7, minWidth: 0 },
+  routeChoiceName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3, minWidth: 0 },
+  routeChoiceMeta: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  routeChoiceMetaText: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: T.sec, fontWeight: 500 },
+  routeChoiceFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: "auto" },
+  routeChoiceDept: { fontSize: 10, color: T.muted, fontWeight: 500 },
+  routeChoiceStatus: { fontSize: 10, padding: "2px 8px", flexShrink: 0 },
   personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left" },
   personAv: { width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,rgba(56,189,248,.2),rgba(56,189,248,.05))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.accent, flexShrink: 0 },
   personInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 },
@@ -2017,9 +2275,33 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    padding: "14px 16px",
+    padding: 0,
     background: PANEL_SURFACE_SOFT,
   },
+  rpTopToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  rpTopFlow: { display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 },
+  rpTopFlowText: { display: "grid", gap: 2, minWidth: 0 },
+  rpTopFlowTitle: { fontSize: 15, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15, minWidth: 0 },
+  rpTopFlowSubline: { fontSize: 12, color: T.muted, lineHeight: 1.35, minWidth: 0 },
+  rpFlowStep: { ...microChipBase, padding: "0 12px", minHeight: 30, gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, fontFamily: FONT },
+  rpFlowStepActive: { ...segmentedButtonActive },
+  rpFlowStepReady: { color: ST.available.c, fontSize: 12, lineHeight: 1, marginTop: -1 },
+  rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 8, minHeight: 0, overflow: "hidden", padding: "8px 12px 10px" },
+  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 34px minmax(0,1fr)", gap: 8, alignItems: "stretch", flexShrink: 0 },
+  rpPlannerCard: { display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 104, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  rpPlannerCardActive: { background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `0 0 0 1px ${T.accent}26` },
+  rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  rpSwapDock: { display: "flex", alignItems: "center", justifyContent: "center" },
+  rpStage: { display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  rpStageTitle: { fontSize: 15, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.2, marginTop: 0 },
+  rpStageStat: { ...microChipBase, padding: "0 9px", minHeight: 26, fontSize: 10, fontWeight: 700, color: T.sec, fontFamily: MONO, letterSpacing: ".04em", flexShrink: 0 },
+  rpStageControls: { display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: CONTROL_BORDER, flexShrink: 0, background: PANEL_SURFACE },
+  rpStageBody: { flex: 1, overflowY: "auto", padding: "10px 14px 14px", minHeight: 0, scrollPaddingBottom: 18 },
+  rpAside: { display: "flex", flexDirection: "column", gap: 12, minHeight: 0 },
+  rpAsideShell: { display: "flex", flexDirection: "column", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 0 },
+  rpAsideSection: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", borderBottom: CONTROL_BORDER_STRONG },
+  rpAsideSectionActive: { background: T.accentBg },
+  rpAsideSectionLast: { borderBottom: "none" },
   rpColumns: {
     flex: 1,
     display: "grid",
@@ -2056,23 +2338,42 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 7,
-    padding: "10px 14px",
-    borderBottom: CONTROL_BORDER,
+    flex: 1,
+    minWidth: 0,
+    padding: 0,
+    borderBottom: "none",
     color: T.muted,
     flexShrink: 0,
-    background: PANEL_SURFACE_SOFT,
+    background: "transparent",
   },
   rpColInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 12, fontFamily: FONT },
   rpColToolbar: {
     display: "flex",
     alignItems: "center",
     gap: 5,
-    padding: "10px 14px",
-    borderBottom: CONTROL_BORDER,
     flexShrink: 0,
-    background: PANEL_SURFACE_SOFT,
+    flexWrap: "nowrap",
+    padding: 0,
+    background: "transparent",
   },
   rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
+  rpEmptyState: { display: "grid", gap: 6, padding: "16px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER },
+  rpEmptyTitle: { fontSize: 13, fontWeight: 650, color: T.text },
+  rpStepCard: { display: "flex", flexDirection: "column", gap: 8, color: T.text, textAlign: "left" },
+  rpStepCardActive: { background: "transparent" },
+  rpStepCardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  rpActiveStateChip: { ...microChipBase, minWidth: 72, padding: "0 10px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, justifyContent: "center", fontFamily: FONT },
+  rpActiveStateChipHidden: { visibility: "hidden" },
+  rpStepCardBody: { display: "grid", gap: 6 },
+  rpStepCardName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3 },
+  rpStepCardPlaceholder: { fontSize: 11, color: T.muted, lineHeight: 1.4 },
+  rpStepCardMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  rpStepCardActions: { display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 8, flexWrap: "wrap" },
+  rpStepAction: { minHeight: 26, padding: "0 9px", fontSize: 10 },
+  rpStepMiniChip: { ...microChipBase, padding: "0 7px", minHeight: 22, fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.sec, letterSpacing: ".03em" },
+  rpSummaryCard: { display: "grid", gap: 10 },
+  rpSummaryPath: { display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.text, fontWeight: 600, lineHeight: 1.45, flexWrap: "wrap" },
+  rpSummaryMetaRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
   rpSwapCol: {
     display: "flex",
     flexDirection: "column",
@@ -2085,8 +2386,8 @@ const S: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   rpSwapBtn: {
-    width: 30,
-    height: 30,
+    width: 26,
+    height: 26,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2104,6 +2405,33 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
     background: PANEL_SURFACE_SOFT,
+    borderTop: CONTROL_BORDER_STRONG,
+  },
+  infoDrawerHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "12px 16px",
+    borderBottom: CONTROL_BORDER_STRONG,
+    background: PANEL_SURFACE_STRONG,
+    flexShrink: 0,
+  },
+  infoDrawerHeaderMain: {
+    display: "grid",
+    gap: 4,
+    minWidth: 0,
+  },
+  infoDrawerHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 750,
+    letterSpacing: "-.02em",
+    lineHeight: 1.15,
+    color: T.text,
+    minWidth: 0,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
   drawerSectionGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 },
   drawerSectionGridSingle: { display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 12 },
@@ -2142,10 +2470,11 @@ const S: Record<string, CSSProperties> = {
   rrStatV: { fontSize: 15, fontWeight: 800, fontFamily: MONO, lineHeight: 1, display: "flex", alignItems: "center" },
   rrStatL: { fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" },
   rrDirections: { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 0 },
-  rrStep: { display: "flex", alignItems: "flex-start", gap: 10, padding: "6px 0" },
+  rrStep: { display: "flex", alignItems: "flex-start", gap: 10, padding: "6px 0", marginBottom: 10 },
   rrStepN: { width: 22, height: 22, borderRadius: 0, background: CHROME_SURFACE, border: CONTROL_BORDER, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },
   rrStepT: { fontSize: 12, color: T.sec, lineHeight: 1.5, paddingTop: 2 },
-  rrStepsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10, alignItems: "start" },
+  rrStepsGrid: { display: "grid", gap: 20, alignItems: "start" },
+  rrStepsColumn: { display: "grid", alignContent: "start", gap: 0, minWidth: 0 },
   accentBtn: { ...primaryActionBase },
   ghostBtn: { ...secondaryActionBase },
   iconBtn: { width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, color: T.sec, flexShrink: 0 },
