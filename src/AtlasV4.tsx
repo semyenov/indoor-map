@@ -544,7 +544,7 @@ export default function AtlasV4() {
   const [indoorData, setIndoorData] = useState<IndoorRuntimeData | null>(null);
   const [datasetError, setDatasetError] = useState<string | null>(null);
   const [activeLevel, setActiveLevel] = useState<LevelId>("L1");
-  const [viewMode, setViewMode] = useState<MapSceneMode>("explore");
+  const [viewMode, setViewMode] = useState<MapSceneMode>("plan");
   const [themeVariant, setThemeVariant] = useState<MapThemeVariant>("dark");
   const [time, setTime] = useState(new Date());
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -1811,6 +1811,12 @@ const ATLAS_THEME_VARS = {
     "--atlas-bg": "#0c1018",
     "--atlas-glass": "rgba(15,20,32,.72)",
     "--atlas-glass-heavy": "rgba(12,16,26,.92)",
+    "--atlas-chrome-surface": "rgba(255,255,255,.032)",
+    "--atlas-chrome-surface-soft": "rgba(255,255,255,.018)",
+    "--atlas-chrome-surface-strong": "rgba(255,255,255,.045)",
+    "--atlas-panel-surface": "rgba(255,255,255,.026)",
+    "--atlas-panel-surface-soft": "rgba(255,255,255,.016)",
+    "--atlas-panel-surface-strong": "rgba(255,255,255,.038)",
     "--atlas-border": "rgba(255,255,255,.07)",
     "--atlas-border-strong": "rgba(255,255,255,.12)",
     "--atlas-text": "#e4e6ea",
@@ -1821,6 +1827,13 @@ const ATLAS_THEME_VARS = {
     "--atlas-accent-border": "rgba(56,189,248,.22)",
     "--atlas-hover-surface": "rgba(255,255,255,.06)",
     "--atlas-focus-surface": "rgba(56,189,248,.08)",
+    "--atlas-btn-surface": "rgba(255,255,255,.045)",
+    "--atlas-btn-surface-hover": "rgba(255,255,255,.075)",
+    "--atlas-btn-surface-active": "rgba(56,189,248,.08)",
+    "--atlas-btn-surface-border": "rgba(255,255,255,.14)",
+    "--atlas-btn-primary-bg": "linear-gradient(180deg,#46c7ff,#27a8e4)",
+    "--atlas-btn-primary-bg-hover": "linear-gradient(180deg,#59d1ff,#2eb2ee)",
+    "--atlas-btn-primary-text": "#081018",
     "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.028)",
     "--atlas-elev-top": "0 10px 34px rgba(0,0,0,.22)",
     "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.18)",
@@ -1832,28 +1845,41 @@ const ATLAS_THEME_VARS = {
     "--atlas-overlay": "rgba(0,0,0,.08)",
   },
   light: {
-    "--atlas-bg": "#e7edf1",
-    "--atlas-glass": "rgba(247,250,252,.80)",
-    "--atlas-glass-heavy": "rgba(252,254,255,.94)",
-    "--atlas-border": "rgba(32,50,65,.10)",
-    "--atlas-border-strong": "rgba(32,50,65,.18)",
-    "--atlas-text": "#1c2d3a",
-    "--atlas-sec": "rgba(28,45,58,.72)",
-    "--atlas-muted": "rgba(28,45,58,.42)",
-    "--atlas-accent": "#2297d5",
-    "--atlas-accent-bg": "rgba(34,151,213,.10)",
-    "--atlas-accent-border": "rgba(34,151,213,.22)",
-    "--atlas-hover-surface": "rgba(28,45,58,.06)",
-    "--atlas-focus-surface": "rgba(34,151,213,.08)",
-    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.14)",
-    "--atlas-elev-top": "0 6px 16px rgba(28,45,58,.08)",
-    "--atlas-elev-bottom": "0 -1px 14px rgba(28,45,58,.06)",
-    "--atlas-elev-drawer": "0 4px 16px rgba(28,45,58,.08)",
-    "--atlas-elev-side": "-4px 0 14px rgba(28,45,58,.08)",
-    "--atlas-elev-floating": "0 3px 10px rgba(28,45,58,.07)",
-    "--atlas-elev-accent": "0 6px 14px rgba(34,151,213,.10)",
-    "--atlas-elev-accent-active": "0 6px 16px rgba(34,151,213,.14)",
-    "--atlas-overlay": "rgba(28,45,58,.035)",
+    "--atlas-bg": "#e4eaee",
+    "--atlas-glass": "rgba(239,244,247,.88)",
+    "--atlas-glass-heavy": "rgba(248,251,253,.96)",
+    "--atlas-chrome-surface": "rgba(255,255,255,.72)",
+    "--atlas-chrome-surface-soft": "rgba(245,249,251,.58)",
+    "--atlas-chrome-surface-strong": "rgba(255,255,255,.84)",
+    "--atlas-panel-surface": "rgba(247,250,252,.78)",
+    "--atlas-panel-surface-soft": "rgba(239,245,248,.68)",
+    "--atlas-panel-surface-strong": "rgba(255,255,255,.90)",
+    "--atlas-border": "rgba(39,63,81,.14)",
+    "--atlas-border-strong": "rgba(39,63,81,.22)",
+    "--atlas-text": "#162632",
+    "--atlas-sec": "rgba(22,38,50,.76)",
+    "--atlas-muted": "rgba(34,55,71,.48)",
+    "--atlas-accent": "#0f84c9",
+    "--atlas-accent-bg": "rgba(15,132,201,.14)",
+    "--atlas-accent-border": "rgba(15,132,201,.28)",
+    "--atlas-hover-surface": "rgba(28,58,78,.075)",
+    "--atlas-focus-surface": "rgba(15,132,201,.11)",
+    "--atlas-btn-surface": "rgba(255,255,255,.86)",
+    "--atlas-btn-surface-hover": "rgba(239,246,250,.98)",
+    "--atlas-btn-surface-active": "rgba(15,132,201,.12)",
+    "--atlas-btn-surface-border": "rgba(39,63,81,.18)",
+    "--atlas-btn-primary-bg": "linear-gradient(180deg,#1498df,#0f84c9)",
+    "--atlas-btn-primary-bg-hover": "linear-gradient(180deg,#1ca5ee,#1290d7)",
+    "--atlas-btn-primary-text": "#f7fbfe",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.34)",
+    "--atlas-elev-top": "0 8px 18px rgba(26,42,55,.10)",
+    "--atlas-elev-bottom": "0 -1px 16px rgba(26,42,55,.08)",
+    "--atlas-elev-drawer": "0 8px 18px rgba(26,42,55,.10)",
+    "--atlas-elev-side": "-4px 0 16px rgba(26,42,55,.08)",
+    "--atlas-elev-floating": "0 4px 12px rgba(26,42,55,.08)",
+    "--atlas-elev-accent": "0 6px 16px rgba(15,132,201,.12)",
+    "--atlas-elev-accent-active": "0 8px 18px rgba(15,132,201,.18)",
+    "--atlas-overlay": "rgba(26,42,55,.04)",
   },
 } as const;
 const T = {
@@ -1868,6 +1894,13 @@ const T = {
   accent: "var(--atlas-accent)",
   accentBg: "var(--atlas-accent-bg)",
   accentBorder: "var(--atlas-accent-border)",
+  btnSurface: "var(--atlas-btn-surface)",
+  btnSurfaceHover: "var(--atlas-btn-surface-hover)",
+  btnSurfaceActive: "var(--atlas-btn-surface-active)",
+  btnSurfaceBorder: "var(--atlas-btn-surface-border)",
+  btnPrimaryBg: "var(--atlas-btn-primary-bg)",
+  btnPrimaryBgHover: "var(--atlas-btn-primary-bg-hover)",
+  btnPrimaryText: "var(--atlas-btn-primary-text)",
   controlShadow: "var(--atlas-control-shadow)",
   elevTop: "var(--atlas-elev-top)",
   elevBottom: "var(--atlas-elev-bottom)",
@@ -1881,12 +1914,12 @@ const T = {
 
 const CONTROL_HEIGHT = 42;
 const CONTROL_INNER_HEIGHT = 34;
-const CHROME_SURFACE = "rgba(255,255,255,.032)";
-const CHROME_SURFACE_SOFT = "rgba(255,255,255,.018)";
-const CHROME_SURFACE_STRONG = "rgba(255,255,255,.045)";
-const PANEL_SURFACE = "rgba(255,255,255,.026)";
-const PANEL_SURFACE_SOFT = "rgba(255,255,255,.016)";
-const PANEL_SURFACE_STRONG = "rgba(255,255,255,.038)";
+const CHROME_SURFACE = "var(--atlas-chrome-surface)";
+const CHROME_SURFACE_SOFT = "var(--atlas-chrome-surface-soft)";
+const CHROME_SURFACE_STRONG = "var(--atlas-chrome-surface-strong)";
+const PANEL_SURFACE = "var(--atlas-panel-surface)";
+const PANEL_SURFACE_SOFT = "var(--atlas-panel-surface-soft)";
+const PANEL_SURFACE_STRONG = "var(--atlas-panel-surface-strong)";
 const CONTROL_BORDER = `1px solid ${T.border}`;
 const CONTROL_BORDER_STRONG = `1px solid ${T.borderH}`;
 const CONTROL_SHADOW = T.controlShadow;
@@ -1908,7 +1941,7 @@ const segmentedButtonBase: CSSProperties = {
   minWidth: 0,
   minHeight: CONTROL_INNER_HEIGHT,
   padding: "0 12px",
-  background: "rgba(255,255,255,.012)",
+  background: CHROME_SURFACE_SOFT,
   border: "1px solid transparent",
   borderRadius: 0,
   fontSize: 12,
@@ -1940,14 +1973,15 @@ const secondaryActionBase: CSSProperties = {
   gap: 7,
   minHeight: CONTROL_HEIGHT,
   padding: "0 15px",
-  background: CHROME_SURFACE,
-  color: T.sec,
-  border: CONTROL_BORDER,
+  background: T.btnSurface,
+  color: T.text,
+  border: `1px solid ${T.btnSurfaceBorder}`,
   borderRadius: 0,
   fontSize: 12,
   fontWeight: 650,
   fontFamily: FONT,
   letterSpacing: ".01em",
+  boxShadow: CONTROL_SHADOW,
 };
 const primaryActionBase: CSSProperties = {
   display: "inline-flex",
@@ -1956,14 +1990,15 @@ const primaryActionBase: CSSProperties = {
   gap: 8,
   minHeight: CONTROL_HEIGHT,
   padding: "0 18px",
-  background: T.accent,
-  color: "#0c1018",
+  background: T.btnPrimaryBg,
+  color: T.btnPrimaryText,
   border: `1px solid ${T.accent}`,
   borderRadius: 0,
   fontSize: 13,
   fontWeight: 700,
   fontFamily: FONT,
   letterSpacing: ".01em",
+  boxShadow: T.elevAccent,
 };
 const chromeSectionBase: CSSProperties = {
   background: PANEL_SURFACE,
@@ -2005,11 +2040,11 @@ const CSS = `
   .hud-btn::-moz-focus-inner,.hud-accent::-moz-focus-inner{border:0;padding:0}
   .hud-segment-btn:focus,.hud-segment-btn:active{outline:none!important;box-shadow:none!important}
   .hud-segment-btn:focus:not(:focus-visible):not([data-active="true"]){background:rgba(255,255,255,.012)!important;border-color:transparent!important;box-shadow:none!important;color:${T.muted}!important}
-  .hud-btn{cursor:pointer}.hud-btn:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;color:${T.text}!important}
-  .hud-btn:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important;color:${T.text}!important}
+  .hud-btn{cursor:pointer}.hud-btn:hover{background:${T.btnSurfaceHover}!important;border-color:${T.btnSurfaceBorder}!important;color:${T.text}!important}
+  .hud-btn:focus-visible{outline:none;background:${T.btnSurfaceActive}!important;border-color:${T.accentBorder}!important;box-shadow:none!important;color:${T.text}!important}
   .hud-btn[data-active="true"],.hud-btn[data-active="true"]:hover,.hud-btn[data-active="true"]:focus-visible,.hud-btn[data-active="true"]:active{outline:none;background:${T.accentBg}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1f!important;color:${T.accent}!important}
-  .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.accent}!important;border-color:${T.accent}!important;box-shadow:none!important}.hud-accent:focus-visible{outline:none;background:${T.accent}!important;border-color:${T.accent}!important;box-shadow:none!important}.hud-accent:active{transform:scale(.97)}
-  .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.accent}!important;border-color:${T.accent}!important}
+  .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.btnPrimaryBgHover}!important;border-color:${T.accent}!important;box-shadow:${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:focus-visible{outline:none;background:${T.btnPrimaryBgHover}!important;border-color:${T.accent}!important;box-shadow:${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:active{transform:scale(.97)}
+  .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.btnPrimaryBgHover}!important;border-color:${T.accent}!important;color:${T.btnPrimaryText}!important}
   .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
   .hud-input-shell:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important}
   .hud-input-shell:focus-within{background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
@@ -2102,7 +2137,7 @@ const S: Record<string, CSSProperties> = {
     gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
-    background: CHROME_SURFACE_SOFT,
+    background: "transparent",
     flexWrap: "wrap",
   },
   bottomRouteActions: {
@@ -2112,7 +2147,7 @@ const S: Record<string, CSSProperties> = {
     gap: 10,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
-    background: CHROME_SURFACE_SOFT,
+    background: "transparent",
     flexWrap: "wrap",
   },
   bottomContext: { display: "grid", gap: 4, minWidth: 0, maxWidth: 560 },

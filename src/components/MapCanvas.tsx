@@ -19,38 +19,39 @@ export type MapThemeVariant = "light" | "dark";
 
 const MAP_PALETTES = {
   light: {
-    background: "#e6ebef",
-    circulationFill: "#dbe4e9",
-    workspaceFill: "#dce2d9",
-    meetingFill: "#e7cdb1",
-    amenityFill: "#c8dcee",
-    engineeringFill: "#c8e0cf",
-    operationsFill: "#c6dceb",
-    productFill: "#d8d1ea",
-    designFill: "#ebccd6",
-    sharedFill: "#e5d7bc",
-    circulationAccentFill: "#c9dbe1",
-    verticalFill: "#d8d9e9",
-    selectedFill: "#4caada",
-    hoverFill: "#8ac9e5",
-    outline: "#53626d",
-    selectedOutline: "#1f7099",
-    hoverOutline: "#3f88ae",
-    wall: "#6b7680",
-    door: "#b88754",
-    furniture: "#aeb6bd",
-    connector: "#cfd6dd",
-    connectorSelected: "#e6c58e",
-    routeCasing: "rgba(255,255,255,0.92)",
-    routeLine: "#d94a54",
-    workstation: "#355466",
-    connectorPoi: "#db5962",
-    poiHover: "#4aa9cf",
-    poiSelected: "#56bee8",
-    label: "#314757",
-    labelHover: "#2d7599",
-    labelSelected: "#216588",
-    labelHalo: "rgba(247,250,252,0.98)",
+    background: "#edf2f5",
+    circulationFill: "#d7e2e8",
+    workspaceFill: "#dbe9de",
+    meetingFill: "#e7c7a7",
+    amenityFill: "#c8def1",
+    engineeringFill: "#c8e2ce",
+    operationsFill: "#c2d9ee",
+    productFill: "#ddd0f1",
+    designFill: "#edccda",
+    sharedFill: "#e5d2af",
+    circulationAccentFill: "#c9dde6",
+    verticalFill: "#d7dbed",
+    selectedFill: "#36aee4",
+    hoverFill: "#85cfee",
+    outline: "#586771",
+    selectedOutline: "#0b8bce",
+    hoverOutline: "#339fce",
+    wall: "#87939b",
+    wallOpacity: 0.58,
+    door: "#bc8348",
+    furniture: "#a8b2b8",
+    connector: "#c9d3db",
+    connectorSelected: "#e0b56a",
+    routeCasing: "rgba(251,253,254,0.9)",
+    routeLine: "#de4c57",
+    workstation: "#244c60",
+    connectorPoi: "#dc616a",
+    poiHover: "#309dc9",
+    poiSelected: "#3eb5e6",
+    label: "#233b48",
+    labelHover: "#1f739a",
+    labelSelected: "#0c6697",
+    labelHalo: "rgba(250,252,253,0.98)",
   },
   dark: {
     background: "#11171c",
@@ -71,6 +72,7 @@ const MAP_PALETTES = {
     selectedOutline: "#69d1ff",
     hoverOutline: "#4eb1df",
     wall: "#4d565f",
+    wallOpacity: 0.76,
     door: "#d0a06a",
     furniture: "#6f7880",
     connector: "#87919b",
@@ -217,6 +219,26 @@ const SCENE_MODE_LABELS: Record<MapSceneMode, string> = {
   explore: "Обзор",
   theatre: "Сцена",
 };
+const DEFAULT_SCENE_MODE: MapSceneMode = "plan";
+const DEFAULT_SCENE_PRESET = SCENE_PRESETS[DEFAULT_SCENE_MODE];
+const BASE_MAP_PADDING: maplibregl.PaddingOptions = {
+  top: 112,
+  right: 112,
+  bottom: 112,
+  left: 112,
+};
+const TOOLBAR_MAP_PADDING: maplibregl.PaddingOptions = {
+  top: 112,
+  right: 112,
+  bottom: 112,
+  left: 336,
+};
+const TOOLBAR_COLLAPSED_MAP_PADDING: maplibregl.PaddingOptions = {
+  top: 96,
+  right: 96,
+  bottom: 96,
+  left: 160,
+};
 
 const ToolbarIcons = {
   plan: () => (
@@ -310,6 +332,204 @@ const getLevelMeta = (levels: LevelMeta[], level: LevelId): LevelMeta => {
   }
 
   return levels.find((item) => item.id === level) ?? firstLevel;
+};
+
+type RectBounds = [number, number, number, number];
+type CoordinateInput = readonly number[];
+
+const mergeBounds = (bounds: RectBounds | null, next: RectBounds | null): RectBounds | null => {
+  if (!next) {
+    return bounds;
+  }
+
+  if (!bounds) {
+    return [...next] as RectBounds;
+  }
+
+  return [
+    Math.min(bounds[0], next[0]),
+    Math.min(bounds[1], next[1]),
+    Math.max(bounds[2], next[2]),
+    Math.max(bounds[3], next[3]),
+  ];
+};
+
+const extendBoundsWithCoordinate = (bounds: RectBounds | null, coordinate: CoordinateInput): RectBounds | null => {
+  const [longitude, latitude] = coordinate;
+
+  if (typeof longitude !== "number" || typeof latitude !== "number") {
+    return bounds;
+  }
+
+  if (!bounds) {
+    return [longitude, latitude, longitude, latitude];
+  }
+
+  return [
+    Math.min(bounds[0], longitude),
+    Math.min(bounds[1], latitude),
+    Math.max(bounds[2], longitude),
+    Math.max(bounds[3], latitude),
+  ];
+};
+
+const coordinatesBounds = (input: unknown, bounds: RectBounds | null = null): RectBounds | null => {
+  if (!Array.isArray(input)) {
+    return bounds;
+  }
+
+  if (input.length >= 2 && typeof input[0] === "number" && typeof input[1] === "number") {
+    return extendBoundsWithCoordinate(bounds, input as CoordinateInput);
+  }
+
+  let nextBounds = bounds;
+
+  for (const item of input) {
+    nextBounds = coordinatesBounds(item, nextBounds);
+  }
+
+  return nextBounds;
+};
+
+const geometryBounds = (geometry: OfficeFeature["geometry"]): RectBounds | null => {
+  if (geometry.type === "GeometryCollection") {
+    return geometry.geometries.reduce<RectBounds | null>(
+      (bounds, item) => mergeBounds(bounds, geometryBounds(item)),
+      null,
+    );
+  }
+
+  return "coordinates" in geometry ? coordinatesBounds(geometry.coordinates) : null;
+};
+
+const levelGeometryBounds = (collections: IndoorCollections, level: LevelId): RectBounds | null => {
+  let footprintBounds: RectBounds | null = null;
+  let fallbackBounds: RectBounds | null = null;
+
+  for (const collection of [collections.spaces, collections.structures, collections.pois]) {
+    for (const feature of collection.features) {
+      if (feature.properties.level !== level) {
+        continue;
+      }
+
+      const bounds = geometryBounds(feature.geometry);
+
+      if (!bounds) {
+        continue;
+      }
+
+      fallbackBounds = mergeBounds(fallbackBounds, bounds);
+
+      if (feature.geometry.type !== "Point" && feature.geometry.type !== "MultiPoint") {
+        footprintBounds = mergeBounds(footprintBounds, bounds);
+      }
+    }
+  }
+
+  return footprintBounds ?? fallbackBounds;
+};
+
+const routeBoundsForLevel = (route: RouteResult | null, level: LevelId): RectBounds | null => {
+  if (!route) {
+    return null;
+  }
+
+  let bounds: RectBounds | null = null;
+
+  for (const segment of route.segments) {
+    if (segment.level !== level || segment.coordinates.length < 2) {
+      continue;
+    }
+
+    bounds = mergeBounds(bounds, coordinatesBounds(segment.coordinates));
+  }
+
+  return bounds;
+};
+
+const mapPaddingForFrame = (
+  showControls: boolean,
+  controlsHidden: boolean,
+): maplibregl.PaddingOptions => {
+  if (!showControls) {
+    return BASE_MAP_PADDING;
+  }
+
+  return controlsHidden ? TOOLBAR_COLLAPSED_MAP_PADDING : TOOLBAR_MAP_PADDING;
+};
+
+const fitLevelBounds = (
+  map: maplibregl.Map,
+  level: LevelId,
+  levels: LevelMeta[],
+  collections: IndoorCollections,
+  mode: MapSceneMode,
+  padding: maplibregl.PaddingOptions,
+  duration: number,
+) => {
+  const preset = SCENE_PRESETS[mode];
+  const levelMeta = getLevelMeta(levels, level);
+  const bounds = levelGeometryBounds(collections, level);
+
+  if (!bounds) {
+    map.flyTo({
+      center: levelMeta.defaultCenter,
+      zoom: levelMeta.defaultZoom + preset.zoomOffset,
+      pitch: preset.pitch,
+      bearing: preset.bearing,
+      duration,
+      essential: true,
+    });
+    return;
+  }
+
+  map.fitBounds(
+    [
+      [bounds[0], bounds[1]],
+      [bounds[2], bounds[3]],
+    ],
+    {
+      padding,
+      maxZoom: levelMeta.defaultZoom + preset.zoomOffset,
+      pitch: preset.pitch,
+      bearing: preset.bearing,
+      duration,
+      essential: true,
+    },
+  );
+};
+
+const fitRouteBounds = (
+  map: maplibregl.Map,
+  route: RouteResult,
+  level: LevelId,
+  padding: maplibregl.PaddingOptions,
+  pitch: number,
+  bearing: number,
+  duration: number,
+) => {
+  const bounds = routeBoundsForLevel(route, level);
+
+  if (!bounds) {
+    return false;
+  }
+
+  map.fitBounds(
+    [
+      [bounds[0], bounds[1]],
+      [bounds[2], bounds[3]],
+    ],
+    {
+      padding,
+      maxZoom: 21.25,
+      pitch,
+      bearing,
+      duration,
+      essential: true,
+    },
+  );
+
+  return true;
 };
 
 const updateFilters = (map: maplibregl.Map, level: LevelId) => {
@@ -643,19 +863,21 @@ export function MapCanvas({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hoverRef = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(null);
+  const activeLevelRef = useRef(activeLevel);
   const onSelectFeatureRef = useRef(onSelectFeature);
   const pendingFocusRef = useRef<PendingFocusRequest | null>(null);
   const focusPulseTimerRef = useRef<number | null>(null);
   const processedZoomCommandIdRef = useRef(0);
-  const [sceneMode, setSceneMode] = useState<MapSceneMode>("explore");
-  const [pitch, setPitch] = useState<number>(SCENE_PRESETS.explore.pitch);
-  const [bearing, setBearing] = useState<number>(SCENE_PRESETS.explore.bearing);
+  const [sceneMode, setSceneMode] = useState<MapSceneMode>(externalSceneMode ?? DEFAULT_SCENE_MODE);
+  const [pitch, setPitch] = useState<number>(SCENE_PRESETS[externalSceneMode ?? DEFAULT_SCENE_MODE].pitch);
+  const [bearing, setBearing] = useState<number>(SCENE_PRESETS[externalSceneMode ?? DEFAULT_SCENE_MODE].bearing);
   const [orbitEnabled, setOrbitEnabled] = useState(false);
   const [controlsHidden, setControlsHidden] = useState(false);
   const palette = MAP_PALETTES[themeVariant];
   const selectedFeature = selectedFeatureId ? featureById.get(selectedFeatureId) ?? null : null;
   const normalizedBearing = ((Math.round(bearing) % 360) + 360) % 360;
   const roundedPitch = Math.round(pitch);
+  const activeFramePadding = mapPaddingForFrame(showControls, controlsHidden);
 
   const clearFocusPulseTimer = () => {
     const timerId = focusPulseTimerRef.current;
@@ -719,6 +941,52 @@ export function MapCanvas({
     pendingFocusRef.current = null;
   };
 
+  const syncSelectionAndView = (map: maplibregl.Map) => {
+    updateFilters(map, activeLevel);
+
+    const selectionSource = map.getSource(SELECTION_SOURCE);
+
+    if (isGeoJsonSource(selectionSource)) {
+      selectionSource.setData(buildSelectionCollection(selectedFeature));
+    }
+
+    setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", false);
+    selectedRef.current = selectedFeatureId;
+    setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", true);
+    map.triggerRepaint();
+
+    if (selectedFeature) {
+      if (selectedFeature.properties.level !== activeLevel) {
+        pendingFocusRef.current = null;
+        clearFocusPulseTimer();
+      } else {
+        const request: PendingFocusRequest = {
+          requestId: focusRequestId,
+          featureId: selectedFeature.id,
+          level: selectedFeature.properties.level,
+          center: selectedFeature.properties.focusPoint,
+        };
+
+        pendingFocusRef.current = request;
+        runFocusRequest(map, request);
+        return;
+      }
+    }
+
+    pendingFocusRef.current = null;
+    clearFocusPulseTimer();
+
+    if (route && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 720)) {
+      return;
+    }
+
+    fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+  };
+
+  useEffect(() => {
+    activeLevelRef.current = activeLevel;
+  }, [activeLevel]);
+
   useEffect(() => {
     onSelectFeatureRef.current = onSelectFeature;
   }, [onSelectFeature]);
@@ -733,9 +1001,9 @@ export function MapCanvas({
       container: containerRef.current,
       style: styleForTheme(themeVariant),
       center: levelMeta.defaultCenter,
-      zoom: levelMeta.defaultZoom + SCENE_PRESETS.explore.zoomOffset,
-      pitch: SCENE_PRESETS.explore.pitch,
-      bearing: SCENE_PRESETS.explore.bearing,
+      zoom: levelMeta.defaultZoom + DEFAULT_SCENE_PRESET.zoomOffset,
+      pitch: DEFAULT_SCENE_PRESET.pitch,
+      bearing: DEFAULT_SCENE_PRESET.bearing,
       attributionControl: false,
     });
 
@@ -815,7 +1083,7 @@ export function MapCanvas({
           "fill-extrusion-color": palette.wall,
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
           "fill-extrusion-height": ["coalesce", ["get", "height"], 3],
-          "fill-extrusion-opacity": 0.76,
+          "fill-extrusion-opacity": palette.wallOpacity,
         },
       });
 
@@ -1114,7 +1382,7 @@ export function MapCanvas({
         );
 
         if (!featureId) {
-          featureId = pickRoomFeatureIdAtLngLat(selectableSpaceFeatures, activeLevel, event.lngLat);
+          featureId = pickRoomFeatureIdAtLngLat(selectableSpaceFeatures, activeLevelRef.current, event.lngLat);
         }
 
         if (!featureId) {
@@ -1124,9 +1392,7 @@ export function MapCanvas({
         onSelectFeatureRef.current(featureId);
       });
 
-      updateFilters(map, activeLevel);
-      selectedRef.current = selectedFeatureId;
-      setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", true);
+      syncSelectionAndView(map);
     });
 
     mapRef.current = map;
@@ -1145,8 +1411,22 @@ export function MapCanvas({
       return;
     }
 
-    updateFilters(map, activeLevel);
-  }, [activeLevel]);
+    syncSelectionAndView(map);
+  }, [
+    activeFramePadding,
+    activeLevel,
+    bearing,
+    collections,
+    featureLabelSourceById,
+    featureSourceById,
+    focusRequestId,
+    levels,
+    pitch,
+    route,
+    sceneMode,
+    selectedFeature,
+    selectedFeatureId,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1180,81 +1460,6 @@ export function MapCanvas({
   }, [route]);
 
   useEffect(() => {
-    const map = mapRef.current;
-
-    if (!map || !map.isStyleLoaded()) {
-      return;
-    }
-
-    const selectionSource = map.getSource(SELECTION_SOURCE);
-
-    if (!isGeoJsonSource(selectionSource)) {
-      return;
-    }
-
-    selectionSource.setData(buildSelectionCollection(selectedFeature));
-  }, [selectedFeature]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-
-    if (!map || !map.isStyleLoaded()) {
-      return;
-    }
-
-    setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", false);
-    selectedRef.current = selectedFeatureId;
-    setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", true);
-  }, [featureLabelSourceById, featureSourceById, selectedFeatureId]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const feature = selectedFeatureId ? featureById.get(selectedFeatureId) ?? null : null;
-
-    if (!map || !map.isStyleLoaded() || !feature) {
-      pendingFocusRef.current = null;
-      clearFocusPulseTimer();
-      return;
-    }
-
-    const request: PendingFocusRequest = {
-      requestId: focusRequestId,
-      featureId: feature.id,
-      level: feature.properties.level,
-      center: feature.properties.focusPoint,
-    };
-
-    pendingFocusRef.current = request;
-
-    if (request.level !== activeLevel) {
-      return;
-    }
-
-    let cancelled = false;
-    const resolveAfterIdle = () => {
-      if (cancelled) {
-        return;
-      }
-
-      const activeRequest = pendingFocusRef.current;
-
-      if (!activeRequest || activeRequest.requestId !== request.requestId) {
-        return;
-      }
-
-      runFocusRequest(map, request);
-    };
-
-    map.once("idle", resolveAfterIdle);
-    map.triggerRepaint();
-
-    return () => {
-      cancelled = true;
-      map.off("idle", resolveAfterIdle);
-    };
-  }, [activeLevel, focusRequestId, selectedFeatureId]);
-
-  useEffect(() => {
     if (!orbitEnabled) {
       return;
     }
@@ -1280,7 +1485,6 @@ export function MapCanvas({
 
   const applySceneMode = (mode: MapSceneMode) => {
     const preset = SCENE_PRESETS[mode];
-    const levelMeta = getLevelMeta(levels, activeLevel);
     const map = mapRef.current;
 
     setSceneMode(mode);
@@ -1291,14 +1495,7 @@ export function MapCanvas({
       return;
     }
 
-    map.flyTo({
-      center: levelMeta.defaultCenter,
-      zoom: levelMeta.defaultZoom + preset.zoomOffset,
-      pitch: preset.pitch,
-      bearing: preset.bearing,
-      duration: 800,
-      essential: true,
-    });
+    fitLevelBounds(map, activeLevel, levels, collections, mode, activeFramePadding, 800);
   };
 
   const rotateBy = (delta: number) => {
