@@ -10,7 +10,7 @@
   "levels": [
     {
       "id": "L1",
-      "label": "Floor 1",
+      "label": "Этаж 1",
       "order": 1,
       "defaultCenter": [
         28,
@@ -20,7 +20,7 @@
     },
     {
       "id": "L2",
-      "label": "Floor 2",
+      "label": "Этаж 2",
       "order": 2,
       "defaultCenter": [
         28,
@@ -34,19 +34,19 @@
       "id": "room-l1-lobby",
       "level": "L1",
       "kind": "room",
-      "name": "Lobby",
+      "name": "Лобби",
       "bounds": [
         2,
         2,
         10,
         8
       ],
-      "subtitle": "Welcome + reception",
-      "department": "Operations",
+      "subtitle": "Вход и ресепшен",
+      "department": "Операции",
       "searchTokens": [
-        "lobby",
-        "reception",
-        "welcome"
+        "лобби",
+        "ресепшен",
+        "вход"
       ],
       "wallSides": {
         "north": true,
@@ -67,19 +67,19 @@
       "id": "room-l1-reception",
       "level": "L1",
       "kind": "amenity",
-      "name": "Reception Desk",
+      "name": "Стойка ресепшен",
       "bounds": [
         10,
         2,
         16,
         8
       ],
-      "subtitle": "Visitor check-in",
-      "department": "Operations",
+      "subtitle": "Регистрация посетителей",
+      "department": "Операции",
       "searchTokens": [
-        "reception desk",
-        "check-in",
-        "front desk"
+        "стойка ресепшен",
+        "регистрация",
+        "ресепшен"
       ],
       "wallSides": {
         "north": true,
@@ -100,19 +100,19 @@
       "id": "room-l1-booth-a",
       "level": "L1",
       "kind": "room",
-      "name": "Phone Booth A",
+      "name": "Кабина для звонков A",
       "bounds": [
         16,
         2,
         20,
         8
       ],
-      "subtitle": "Acoustic call booth",
-      "department": "Shared",
+      "subtitle": "Звукоизолированная кабина",
+      "department": "Общие",
       "searchTokens": [
-        "phone booth a",
-        "booth",
-        "call"
+        "кабина для звонков a",
+        "кабина",
+        "звонок"
       ],
       "wallSides": {
         "north": true,
@@ -133,19 +133,19 @@
       "id": "room-l1-wellness",
       "level": "L1",
       "kind": "room",
-      "name": "Wellness Room",
+      "name": "Комната восстановления",
       "bounds": [
         20,
         2,
         28,
         8
       ],
-      "subtitle": "Quiet reset space",
-      "department": "Shared",
+      "subtitle": "Тихое пространство для паузы",
+      "department": "Общие",
       "searchTokens": [
-        "wellness room",
-        "quiet room",
-        "reset"
+        "комната восстановления",
+        "тихая комната",
+        "пауза"
       ],
       "wallSides": {
         "north": true,
@@ -166,19 +166,19 @@
       "id": "room-l1-it-bar",
       "level": "L1",
       "kind": "amenity",
-      "name": "IT Bar",
+      "name": "ИТ-бар",
       "bounds": [
         28,
         2,
         38,
         8
       ],
-      "subtitle": "Hardware swaps and support",
-      "department": "IT",
+      "subtitle": "Поддержка и замена техники",
+      "department": "ИТ",
       "searchTokens": [
-        "it bar",
-        "support",
-        "hardware"
+        "ит-бар",
+        "поддержка",
+        "техника"
       ],
       "wallSides": {
         "north": true,
@@ -199,19 +199,19 @@
       "id": "room-l1-kitchen",
       "level": "L1",
       "kind": "amenity",
-      "name": "Kitchen",
+      "name": "Кухня",
       "bounds": [
         40,
         2,
         52,
         10
       ],
-      "subtitle": "Coffee point and snacks",
-      "department": "Shared",
+      "subtitle": "Кофе-поинт и снеки",
+      "department": "Общие",
       "searchTokens": [
-        "kitchen",
-        "coffee",
-        "snacks"
+        "кухня",
+        "кофе",
+        "снеки"
       ],
       "wallSides": {
         "north": true,
@@ -232,19 +232,19 @@
       "id": "room-l1-service-core",
       "level": "L1",
       "kind": "room",
-      "name": "Service Core",
+      "name": "Сервисное ядро",
       "bounds": [
         38,
         2,
         40,
         10
       ],
-      "subtitle": "Storage and building services",
-      "department": "Operations",
+      "subtitle": "Хранение и инженерные службы",
+      "department": "Операции",
       "searchTokens": [
-        "service core",
-        "storage",
-        "building services"
+        "сервисное ядро",
+        "хранение",
+        "инженерные службы"
       ],
       "showLabel": false,
       "wallSides": {
@@ -265,24 +265,24 @@
       "id": "room-l1-ocean",
       "level": "L1",
       "kind": "meeting_room",
-      "name": "Ocean Room",
+      "name": "Переговорная Океан",
       "bounds": [
         2,
         14,
         12,
         22
       ],
-      "subtitle": "10 seats, video conferencing",
-      "department": "Shared",
+      "subtitle": "10 мест, видеоконференции",
+      "department": "Общие",
       "searchTokens": [
-        "ocean room",
-        "meeting",
-        "room 1.2"
+        "переговорная океан",
+        "переговорная",
+        "комната 1.2"
       ],
       "capacity": 10,
       "equipment": [
-        "VC",
-        "Whiteboard"
+        "ВК",
+        "Маркерная доска"
       ],
       "status": "occupied",
       "wallSides": {
@@ -304,24 +304,24 @@
       "id": "room-l1-harbor",
       "level": "L1",
       "kind": "meeting_room",
-      "name": "Harbor Room",
+      "name": "Переговорная Гавань",
       "bounds": [
         2,
         22,
         12,
         28
       ],
-      "subtitle": "6 seats, partner calls",
-      "department": "Shared",
+      "subtitle": "6 мест, звонки с партнёрами",
+      "department": "Общие",
       "searchTokens": [
-        "harbor room",
-        "meeting",
-        "partner calls"
+        "переговорная гавань",
+        "переговорная",
+        "звонки с партнёрами"
       ],
       "capacity": 6,
       "equipment": [
-        "Display",
-        "Speakerphone"
+        "Экран",
+        "Спикерфон"
       ],
       "status": "available",
       "wallSides": {
@@ -341,17 +341,17 @@
     {
       "id": "room-l1-west-link",
       "level": "L1",
-      "name": "West Link",
+      "name": "Западный переход",
       "bounds": [
         2,
         8,
         12,
         14
       ],
-      "subtitle": "West-side circulation link",
+      "subtitle": "Западный коридорный переход",
       "searchTokens": [
-        "west link",
-        "circulation"
+        "западный переход",
+        "коридор"
       ],
       "openings": [
         {
@@ -364,23 +364,23 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l1-south-spine",
       "level": "L1",
-      "name": "South Spine",
+      "name": "Южная ось",
       "bounds": [
         12,
         8,
         38,
         10
       ],
-      "subtitle": "South circulation spine",
+      "subtitle": "Южный коридор",
       "searchTokens": [
-        "south spine",
-        "circulation"
+        "южная ось",
+        "коридор"
       ],
       "openings": [
         {
@@ -401,26 +401,26 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "zone-l1-corridor",
       "level": "L1",
       "kind": "room",
-      "name": "Central Spine",
+      "name": "Центральная ось",
       "bounds": [
         12,
         10,
         38,
         14
       ],
-      "subtitle": "Primary route corridor",
-      "department": "Circulation",
+      "subtitle": "Основной маршрутный коридор",
+      "department": "Коридоры",
       "searchTokens": [
-        "corridor",
-        "spine",
-        "hall"
+        "коридор",
+        "ось",
+        "холл"
       ],
       "focusPoint": [
         25,
@@ -449,17 +449,17 @@
     {
       "id": "room-l1-corridor-west",
       "level": "L1",
-      "name": "West Corridor",
+      "name": "Западный коридор",
       "bounds": [
         12,
         14,
         14,
         28
       ],
-      "subtitle": "West circulation link",
+      "subtitle": "Западный коридорный переход",
       "searchTokens": [
-        "west corridor",
-        "circulation"
+        "западный коридор",
+        "коридор"
       ],
       "openings": [
         {
@@ -472,23 +472,23 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l1-corridor-east",
       "level": "L1",
-      "name": "East Corridor",
+      "name": "Восточный коридор",
       "bounds": [
         38,
         14,
         40,
         28
       ],
-      "subtitle": "East circulation link",
+      "subtitle": "Восточный коридорный переход",
       "searchTokens": [
-        "east corridor",
-        "circulation"
+        "восточный коридор",
+        "коридор"
       ],
       "openings": [
         {
@@ -501,26 +501,26 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "zone-l1-engineering-north",
       "level": "L1",
       "kind": "room",
-      "name": "Engineering North",
+      "name": "Северная инженерия",
       "bounds": [
         14,
         14,
         30,
         22
       ],
-      "subtitle": "Backend + Platform",
-      "department": "Engineering",
+      "subtitle": "Бэкенд и платформа",
+      "department": "Инженерия",
       "searchTokens": [
-        "engineering north",
-        "backend",
-        "platform"
+        "северная инженерия",
+        "бэкенд",
+        "платформа"
       ],
       "wallSides": {
         "south": true,
@@ -542,19 +542,19 @@
       "id": "zone-l1-engineering-south",
       "level": "L1",
       "kind": "room",
-      "name": "Engineering South",
+      "name": "Южная инженерия",
       "bounds": [
         14,
         22,
         30,
         28
       ],
-      "subtitle": "Developer experience and SRE",
-      "department": "Engineering",
+      "subtitle": "DevEx и SRE",
+      "department": "Инженерия",
       "searchTokens": [
-        "engineering south",
-        "sre",
-        "developer experience"
+        "южная инженерия",
+        "эксплуатация",
+        "опыт разработчиков"
       ],
       "wallSides": {
         "south": true,
@@ -576,19 +576,19 @@
       "id": "zone-l1-operations",
       "level": "L1",
       "kind": "room",
-      "name": "Operations Bay",
+      "name": "Операционный блок",
       "bounds": [
         30,
         14,
         38,
         28
       ],
-      "subtitle": "People Ops + Finance",
-      "department": "Operations",
+      "subtitle": "HR-операции и финансы",
+      "department": "Операции",
       "searchTokens": [
-        "operations bay",
-        "finance",
-        "people ops"
+        "операционный блок",
+        "финансы",
+        "кадровые операции"
       ],
       "wallSides": {
         "south": true,
@@ -609,17 +609,17 @@
     {
       "id": "room-l1-east-link",
       "level": "L1",
-      "name": "East Link",
+      "name": "Восточный переход",
       "bounds": [
         38,
         10,
         52,
         14
       ],
-      "subtitle": "East-side circulation link",
+      "subtitle": "Восточный коридорный переход",
       "searchTokens": [
-        "east link",
-        "circulation"
+        "восточный переход",
+        "коридор"
       ],
       "openings": [
         {
@@ -640,29 +640,29 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l1-huddle",
       "level": "L1",
       "kind": "meeting_room",
-      "name": "Huddle 1",
+      "name": "Хадл 1",
       "bounds": [
         40,
         14,
         52,
         22
       ],
-      "subtitle": "4 seats, quick syncs",
-      "department": "Shared",
+      "subtitle": "4 места, быстрые синки",
+      "department": "Общие",
       "searchTokens": [
-        "huddle 1",
-        "small meeting"
+        "хадл 1",
+        "маленькая переговорная"
       ],
       "capacity": 4,
       "equipment": [
-        "Display"
+        "Экран"
       ],
       "status": "available",
       "wallSides": {
@@ -684,25 +684,25 @@
       "id": "room-l1-summit",
       "level": "L1",
       "kind": "meeting_room",
-      "name": "Summit Room",
+      "name": "Переговорная Саммит",
       "bounds": [
         40,
         22,
         52,
         28
       ],
-      "subtitle": "12 seats, board setup",
-      "department": "Shared",
+      "subtitle": "12 мест, формат совета",
+      "department": "Общие",
       "searchTokens": [
-        "summit room",
-        "board room",
-        "large meeting"
+        "переговорная саммит",
+        "зал совета",
+        "большая переговорная"
       ],
       "capacity": 12,
       "equipment": [
-        "VC",
-        "Whiteboard",
-        "Ceiling Mic"
+        "ВК",
+        "Маркерная доска",
+        "Потолочный микрофон"
       ],
       "status": "offline",
       "wallSides": {
@@ -722,18 +722,18 @@
     {
       "id": "room-l2-west-suite",
       "level": "L2",
-      "name": "West Suite",
+      "name": "Западная зона",
       "bounds": [
         2,
         2,
         14,
         8
       ],
-      "subtitle": "Quiet touchdown zone",
+      "subtitle": "Тихая гостевая зона",
       "searchTokens": [
-        "west suite",
-        "touchdown",
-        "quiet"
+        "западная зона",
+        "гостевая зона",
+        "тихо"
       ],
       "openings": [
         {
@@ -746,26 +746,26 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l2-war-room",
       "level": "L2",
       "kind": "room",
-      "name": "War Room",
+      "name": "Штабная",
       "bounds": [
         14,
         2,
         22,
         8
       ],
-      "subtitle": "Incident coordination",
-      "department": "Engineering",
+      "subtitle": "Координация инцидентов",
+      "department": "Инженерия",
       "searchTokens": [
-        "war room",
-        "incident",
-        "coordination"
+        "штабная",
+        "инцидент",
+        "координация"
       ],
       "wallSides": {
         "north": true,
@@ -786,19 +786,19 @@
       "id": "room-l2-library",
       "level": "L2",
       "kind": "room",
-      "name": "Library",
+      "name": "Библиотека",
       "bounds": [
         22,
         2,
         30,
         8
       ],
-      "subtitle": "Reference library and quiet reading",
-      "department": "Shared",
+      "subtitle": "Справочная библиотека и тихое чтение",
+      "department": "Общие",
       "searchTokens": [
-        "library",
-        "reading",
-        "quiet"
+        "библиотека",
+        "чтение",
+        "тихо"
       ],
       "wallSides": {
         "north": true,
@@ -819,19 +819,19 @@
       "id": "room-l2-pods",
       "level": "L2",
       "kind": "room",
-      "name": "Focus Pods",
+      "name": "Фокус-кабины",
       "bounds": [
         40,
         2,
         52,
         10
       ],
-      "subtitle": "Quiet calls and deep work",
-      "department": "Shared",
+      "subtitle": "Тихие звонки и глубокая работа",
+      "department": "Общие",
       "searchTokens": [
-        "focus pods",
-        "quiet",
-        "deep work"
+        "фокус-кабины",
+        "тихие звонки",
+        "глубокая работа"
       ],
       "status": "focus",
       "wallSides": {
@@ -853,19 +853,19 @@
       "id": "room-l2-service-core",
       "level": "L2",
       "kind": "room",
-      "name": "Support Core",
+      "name": "Ядро поддержки",
       "bounds": [
         30,
         2,
         40,
         10
       ],
-      "subtitle": "IT storage, lockers, and service chase",
-      "department": "Operations",
+      "subtitle": "ИТ-хранение, шкафчики и сервисная шахта",
+      "department": "Операции",
       "searchTokens": [
-        "support core",
-        "storage",
-        "service chase"
+        "ядро поддержки",
+        "хранение",
+        "сервисная шахта"
       ],
       "showLabel": false,
       "wallSides": {
@@ -886,24 +886,24 @@
       "id": "room-l2-cedar",
       "level": "L2",
       "kind": "meeting_room",
-      "name": "Cedar Room",
+      "name": "Переговорная Кедр",
       "bounds": [
         2,
         14,
         12,
         22
       ],
-      "subtitle": "8 seats, townhall overflow",
-      "department": "Shared",
+      "subtitle": "8 мест, запас для общих встреч",
+      "department": "Общие",
       "searchTokens": [
-        "cedar room",
-        "meeting",
-        "room 2.2"
+        "переговорная кедр",
+        "переговорная",
+        "комната 2.2"
       ],
       "capacity": 8,
       "equipment": [
-        "Display",
-        "Speakerphone"
+        "Экран",
+        "Спикерфон"
       ],
       "status": "available",
       "wallSides": {
@@ -925,23 +925,23 @@
       "id": "room-l2-birch",
       "level": "L2",
       "kind": "meeting_room",
-      "name": "Birch Room",
+      "name": "Переговорная Берёза",
       "bounds": [
         2,
         22,
         12,
         28
       ],
-      "subtitle": "5 seats, sprint reviews",
-      "department": "Shared",
+      "subtitle": "5 мест, спринт-ревью",
+      "department": "Общие",
       "searchTokens": [
-        "birch room",
-        "meeting",
-        "sprint review"
+        "переговорная берёза",
+        "переговорная",
+        "спринт-ревью"
       ],
       "capacity": 5,
       "equipment": [
-        "Display"
+        "Экран"
       ],
       "status": "occupied",
       "wallSides": {
@@ -961,17 +961,17 @@
     {
       "id": "room-l2-west-link",
       "level": "L2",
-      "name": "West Link",
+      "name": "Западный переход",
       "bounds": [
         2,
         8,
         12,
         14
       ],
-      "subtitle": "West-side circulation link",
+      "subtitle": "Западный коридорный переход",
       "searchTokens": [
-        "west link",
-        "circulation"
+        "западный переход",
+        "коридор"
       ],
       "openings": [
         {
@@ -984,23 +984,23 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l2-south-spine",
       "level": "L2",
-      "name": "South Spine",
+      "name": "Южная ось",
       "bounds": [
         12,
         8,
         30,
         10
       ],
-      "subtitle": "South circulation spine",
+      "subtitle": "Южный коридор",
       "searchTokens": [
-        "south spine",
-        "circulation"
+        "южная ось",
+        "коридор"
       ],
       "openings": [
         {
@@ -1021,26 +1021,26 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "zone-l2-corridor",
       "level": "L2",
       "kind": "room",
-      "name": "North Spine",
+      "name": "Северная ось",
       "bounds": [
         12,
         10,
         38,
         14
       ],
-      "subtitle": "Primary route corridor",
-      "department": "Circulation",
+      "subtitle": "Основной маршрутный коридор",
+      "department": "Коридоры",
       "searchTokens": [
-        "corridor",
-        "spine",
-        "hall"
+        "коридор",
+        "ось",
+        "холл"
       ],
       "focusPoint": [
         25,
@@ -1069,17 +1069,17 @@
     {
       "id": "room-l2-corridor-west",
       "level": "L2",
-      "name": "West Corridor",
+      "name": "Западный коридор",
       "bounds": [
         12,
         14,
         14,
         28
       ],
-      "subtitle": "West circulation link",
+      "subtitle": "Западный коридорный переход",
       "searchTokens": [
-        "west corridor",
-        "circulation"
+        "западный коридор",
+        "коридор"
       ],
       "openings": [
         {
@@ -1092,23 +1092,23 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l2-corridor-east",
       "level": "L2",
-      "name": "East Corridor",
+      "name": "Восточный коридор",
       "bounds": [
         38,
         14,
         40,
         28
       ],
-      "subtitle": "East circulation link",
+      "subtitle": "Восточный коридорный переход",
       "searchTokens": [
-        "east corridor",
-        "circulation"
+        "восточный коридор",
+        "коридор"
       ],
       "openings": [
         {
@@ -1121,26 +1121,26 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "zone-l2-product",
       "level": "L2",
       "kind": "room",
-      "name": "Product Studio",
+      "name": "Продуктовая студия",
       "bounds": [
         14,
         14,
         30,
         24
       ],
-      "subtitle": "Product + Research",
-      "department": "Product",
+      "subtitle": "Продукт и исследования",
+      "department": "Продукт",
       "searchTokens": [
-        "product studio",
-        "product",
-        "research"
+        "продуктовая студия",
+        "продукт",
+        "исследования"
       ],
       "wallSides": {
         "south": true,
@@ -1161,19 +1161,19 @@
       "id": "zone-l2-design",
       "level": "L2",
       "kind": "room",
-      "name": "Design Bay",
+      "name": "Дизайн-зона",
       "bounds": [
         30,
         14,
         38,
         24
       ],
-      "subtitle": "Design systems + prototyping",
-      "department": "Design",
+      "subtitle": "Дизайн-системы и прототипирование",
+      "department": "Дизайн",
       "searchTokens": [
-        "design bay",
-        "design systems",
-        "prototyping"
+        "дизайн-зона",
+        "дизайн-системы",
+        "прототипирование"
       ],
       "wallSides": {
         "south": true,
@@ -1195,19 +1195,19 @@
       "id": "zone-l2-touchdown",
       "level": "L2",
       "kind": "room",
-      "name": "Touchdown Area",
+      "name": "Гостевая зона",
       "bounds": [
         14,
         24,
         38,
         28
       ],
-      "subtitle": "Flexible hot desks for visitors",
-      "department": "Shared",
+      "subtitle": "Гибкие хот-дески для посетителей",
+      "department": "Общие",
       "searchTokens": [
-        "touchdown area",
-        "hot desk",
-        "visitors"
+        "гостевая зона",
+        "хот-деск",
+        "посетители"
       ],
       "wallSides": {
         "south": true
@@ -1234,17 +1234,17 @@
     {
       "id": "room-l2-east-link",
       "level": "L2",
-      "name": "East Link",
+      "name": "Восточный переход",
       "bounds": [
         38,
         10,
         52,
         14
       ],
-      "subtitle": "East-side circulation link",
+      "subtitle": "Восточный коридорный переход",
       "searchTokens": [
-        "east link",
-        "circulation"
+        "восточный переход",
+        "коридор"
       ],
       "openings": [
         {
@@ -1265,26 +1265,26 @@
         }
       ],
       "kind": "room",
-      "department": "Circulation",
+      "department": "Коридоры",
       "showLabel": false
     },
     {
       "id": "room-l2-lounge",
       "level": "L2",
       "kind": "amenity",
-      "name": "Lounge",
+      "name": "Лаунж",
       "bounds": [
         40,
         14,
         52,
         22
       ],
-      "subtitle": "Informal collaboration",
-      "department": "Shared",
+      "subtitle": "Неформальная работа",
+      "department": "Общие",
       "searchTokens": [
-        "lounge",
-        "informal",
-        "collaboration"
+        "лаунж",
+        "неформально",
+        "сотрудничество"
       ],
       "wallSides": {
         "south": true,
@@ -1305,19 +1305,19 @@
       "id": "room-l2-maker",
       "level": "L2",
       "kind": "amenity",
-      "name": "Maker Bench",
+      "name": "Мейкер-стол",
       "bounds": [
         40,
         22,
         52,
         28
       ],
-      "subtitle": "Prototyping and testing",
-      "department": "Design",
+      "subtitle": "Прототипирование и тестирование",
+      "department": "Дизайн",
       "searchTokens": [
-        "maker bench",
-        "prototype",
-        "testing"
+        "мейкер-стол",
+        "прототип",
+        "тестирование"
       ],
       "wallSides": {
         "west": true
@@ -1339,18 +1339,18 @@
       "id": "desk-l1-alex",
       "level": "L1",
       "kind": "workstation",
-      "name": "Desk A-14",
+      "name": "Стол A-14",
       "point": [
         22,
         20
       ],
-      "subtitle": "Alex Petrov",
-      "employee": "Alex Petrov",
-      "department": "Engineering",
+      "subtitle": "Алекс Петров",
+      "employee": "Алекс Петров",
+      "department": "Инженерия",
       "searchTokens": [
-        "alex petrov",
-        "desk a-14",
-        "backend"
+        "алекс петров",
+        "стол a-14",
+        "бэкенд"
       ],
       "roomId": "zone-l1-engineering-north"
     },
@@ -1358,18 +1358,18 @@
       "id": "desk-l1-maria",
       "level": "L1",
       "kind": "workstation",
-      "name": "Desk A-18",
+      "name": "Стол A-18",
       "point": [
         30,
         22
       ],
-      "subtitle": "Maria Volkova",
-      "employee": "Maria Volkova",
-      "department": "Engineering",
+      "subtitle": "Мария Волкова",
+      "employee": "Мария Волкова",
+      "department": "Инженерия",
       "searchTokens": [
-        "maria volkova",
-        "desk a-18",
-        "platform"
+        "мария волкова",
+        "стол a-18",
+        "платформа"
       ],
       "roomId": "zone-l1-operations"
     },
@@ -1377,18 +1377,18 @@
       "id": "desk-l1-pavel",
       "level": "L1",
       "kind": "workstation",
-      "name": "Desk O-03",
+      "name": "Стол O-03",
       "point": [
         33,
         24
       ],
-      "subtitle": "Pavel Smirnov",
-      "employee": "Pavel Smirnov",
-      "department": "Operations",
+      "subtitle": "Павел Смирнов",
+      "employee": "Павел Смирнов",
+      "department": "Операции",
       "searchTokens": [
-        "pavel smirnov",
-        "desk o-03",
-        "finance"
+        "павел смирнов",
+        "стол o-03",
+        "финансы"
       ],
       "roomId": "zone-l1-operations"
     },
@@ -1396,18 +1396,18 @@
       "id": "desk-l1-nina",
       "level": "L1",
       "kind": "workstation",
-      "name": "Desk O-06",
+      "name": "Стол O-06",
       "point": [
         35,
         20
       ],
-      "subtitle": "Nina Pavlova",
-      "employee": "Nina Pavlova",
-      "department": "Operations",
+      "subtitle": "Нина Павлова",
+      "employee": "Нина Павлова",
+      "department": "Операции",
       "searchTokens": [
-        "nina pavlova",
-        "desk o-06",
-        "people ops"
+        "нина павлова",
+        "стол o-06",
+        "кадровые операции"
       ],
       "roomId": "zone-l1-operations"
     },
@@ -1415,18 +1415,18 @@
       "id": "desk-l2-anna",
       "level": "L2",
       "kind": "workstation",
-      "name": "Desk P-04",
+      "name": "Стол P-04",
       "point": [
         20,
         20
       ],
-      "subtitle": "Anna Sidorova",
-      "employee": "Anna Sidorova",
-      "department": "Product",
+      "subtitle": "Анна Сидорова",
+      "employee": "Анна Сидорова",
+      "department": "Продукт",
       "searchTokens": [
-        "anna sidorova",
-        "desk p-04",
-        "product"
+        "анна сидорова",
+        "стол p-04",
+        "продукт"
       ],
       "roomId": "zone-l2-product"
     },
@@ -1434,18 +1434,18 @@
       "id": "desk-l2-ivan",
       "level": "L2",
       "kind": "workstation",
-      "name": "Desk P-09",
+      "name": "Стол P-09",
       "point": [
         30,
         22
       ],
-      "subtitle": "Ivan Orlov",
-      "employee": "Ivan Orlov",
-      "department": "Design",
+      "subtitle": "Иван Орлов",
+      "employee": "Иван Орлов",
+      "department": "Дизайн",
       "searchTokens": [
-        "ivan orlov",
-        "desk p-09",
-        "design"
+        "иван орлов",
+        "стол p-09",
+        "дизайн"
       ],
       "roomId": "zone-l2-design"
     },
@@ -1453,18 +1453,18 @@
       "id": "desk-l2-olga",
       "level": "L2",
       "kind": "workstation",
-      "name": "Desk P-12",
+      "name": "Стол P-12",
       "point": [
         24,
         18
       ],
-      "subtitle": "Olga Voronina",
-      "employee": "Olga Voronina",
-      "department": "Product",
+      "subtitle": "Ольга Воронина",
+      "employee": "Ольга Воронина",
+      "department": "Продукт",
       "searchTokens": [
-        "olga voronina",
-        "desk p-12",
-        "research"
+        "ольга воронина",
+        "стол p-12",
+        "исследования"
       ],
       "roomId": "zone-l2-product"
     },
@@ -1472,18 +1472,18 @@
       "id": "desk-l2-denis",
       "level": "L2",
       "kind": "workstation",
-      "name": "Desk D-02",
+      "name": "Стол D-02",
       "point": [
         34,
         20
       ],
-      "subtitle": "Denis Lebedev",
-      "employee": "Denis Lebedev",
-      "department": "Design",
+      "subtitle": "Денис Лебедев",
+      "employee": "Денис Лебедев",
+      "department": "Дизайн",
       "searchTokens": [
-        "denis lebedev",
-        "desk d-02",
-        "design systems"
+        "денис лебедев",
+        "стол d-02",
+        "дизайн-системы"
       ],
       "roomId": "zone-l2-design"
     },
@@ -1491,16 +1491,16 @@
       "id": "poi-l1-printer",
       "level": "L1",
       "kind": "amenity",
-      "name": "Printer Hub",
+      "name": "Зона печати",
       "point": [
         38,
         12
       ],
-      "subtitle": "Print and scan point",
+      "subtitle": "Печать и сканирование",
       "searchTokens": [
-        "printer hub",
-        "print",
-        "scan"
+        "зона печати",
+        "печать",
+        "сканирование"
       ],
       "roomId": "room-l1-east-link"
     },
@@ -1508,16 +1508,16 @@
       "id": "poi-l2-lockers",
       "level": "L2",
       "kind": "amenity",
-      "name": "Visitor Lockers",
+      "name": "Гостевые шкафчики",
       "point": [
         30,
         26
       ],
-      "subtitle": "Touchdown storage",
+      "subtitle": "Хранение для гостей",
       "searchTokens": [
-        "visitor lockers",
-        "lockers",
-        "storage"
+        "гостевые шкафчики",
+        "шкафчики",
+        "хранение"
       ],
       "roomId": "zone-l2-touchdown"
     },
@@ -1525,15 +1525,15 @@
       "id": "connector-l1-stairs",
       "level": "L1",
       "kind": "connector",
-      "name": "Stairs",
+      "name": "Лестница",
       "point": [
         49.2,
         24.2
       ],
-      "subtitle": "North stair core",
+      "subtitle": "Северный лестничный узел",
       "searchTokens": [
-        "stairs",
-        "stair core"
+        "лестница",
+        "лестничный узел"
       ],
       "roomId": "room-l1-summit",
       "connectorGroupId": "stairs",
@@ -1544,15 +1544,15 @@
       "id": "connector-l2-stairs",
       "level": "L2",
       "kind": "connector",
-      "name": "Stairs",
+      "name": "Лестница",
       "point": [
         49.2,
         24.2
       ],
-      "subtitle": "North stair core",
+      "subtitle": "Северный лестничный узел",
       "searchTokens": [
-        "stairs",
-        "stair core"
+        "лестница",
+        "лестничный узел"
       ],
       "roomId": "room-l2-maker",
       "connectorGroupId": "stairs",
@@ -1563,16 +1563,16 @@
       "id": "connector-l1-elevator",
       "level": "L1",
       "kind": "connector",
-      "name": "Elevator",
+      "name": "Лифт",
       "point": [
         42.15,
         24.2
       ],
-      "subtitle": "Accessible vertical core",
+      "subtitle": "Доступный вертикальный узел",
       "searchTokens": [
-        "elevator",
-        "lift",
-        "accessible"
+        "лифт",
+        "подъёмник",
+        "доступный"
       ],
       "roomId": "room-l1-summit",
       "connectorGroupId": "elevator",
@@ -1593,16 +1593,16 @@
       "id": "connector-l2-elevator",
       "level": "L2",
       "kind": "connector",
-      "name": "Elevator",
+      "name": "Лифт",
       "point": [
         42.15,
         24.2
       ],
-      "subtitle": "Accessible vertical core",
+      "subtitle": "Доступный вертикальный узел",
       "searchTokens": [
-        "elevator",
-        "lift",
-        "accessible"
+        "лифт",
+        "подъёмник",
+        "доступный"
       ],
       "roomId": "room-l2-maker",
       "connectorGroupId": "elevator",
@@ -1638,13 +1638,194 @@
         "options": {
           "westOpenings": [
             {
-              "center": 24.3,
-              "width": 1.2
+              "center": 24.225,
+              "width": 1.2500000000000036
             }
           ]
         }
       },
-      "name": "L1 Elevator Core"
+      "name": "Лифтовое ядро L1"
+    },
+    {
+      "id": "furniture-l1-elevator-cabin",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          41.15,
+          22.9,
+          43.15,
+          25.55
+        ]
+      },
+      "name": "Кабина лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.45
+    },
+    {
+      "id": "furniture-l1-elevator-ceiling",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          41.15,
+          22.9,
+          43.15,
+          25.55
+        ]
+      },
+      "name": "Потолок кабины",
+      "department": "Вертикальные связи",
+      "baseHeight": 2.34,
+      "height": 2.5
+    },
+    {
+      "id": "furniture-l1-elevator-threshold",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.540000000000006,
+          23.599999999999998,
+          40.78,
+          24.85
+        ]
+      },
+      "name": "Порог лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.06
+    },
+    {
+      "id": "furniture-l1-elevator-portal-top",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.720000000000006,
+          23.599999999999998,
+          40.870000000000005,
+          24.85
+        ]
+      },
+      "name": "Верхний портал лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 2.16,
+      "height": 2.38
+    },
+    {
+      "id": "furniture-l1-elevator-portal-north",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.720000000000006,
+          25.35,
+          40.870000000000005,
+          25.63
+        ]
+      },
+      "name": "Северная стойка лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.16
+    },
+    {
+      "id": "furniture-l1-elevator-portal-south",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.720000000000006,
+          22.82,
+          40.870000000000005,
+          23.099999999999998
+        ]
+      },
+      "name": "Южная стойка лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.16
+    },
+    {
+      "id": "furniture-l1-elevator-guide-rail-a",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          43.36,
+          23.119999999999997,
+          43.5,
+          23.38
+        ]
+      },
+      "name": "Направляющая лифта A",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.92
+    },
+    {
+      "id": "furniture-l1-elevator-guide-rail-b",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          43.36,
+          25.07,
+          43.5,
+          25.330000000000002
+        ]
+      },
+      "name": "Направляющая лифта B",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.92
+    },
+    {
+      "id": "furniture-l1-elevator-panel",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          43.459999999999994,
+          23.18,
+          43.72,
+          25.27
+        ]
+      },
+      "name": "Панель лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.44,
+      "height": 1.82
+    },
+    {
+      "id": "door-l1-elevator",
+      "level": "L1",
+      "featureKind": "door",
+      "geometry": {
+        "type": "line",
+        "coordinates": [
+          [
+            40.7,
+            23.599999999999998
+          ],
+          [
+            40.7,
+            24.85
+          ]
+        ]
+      },
+      "name": "Дверь кабины лифта"
     },
     {
       "id": "wall-l2-elevator-core",
@@ -1663,13 +1844,194 @@
         "options": {
           "westOpenings": [
             {
-              "center": 24.3,
-              "width": 1.2
+              "center": 24.225,
+              "width": 1.2500000000000036
             }
           ]
         }
       },
-      "name": "L2 Elevator Core"
+      "name": "Лифтовое ядро L2"
+    },
+    {
+      "id": "furniture-l2-elevator-cabin",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          41.15,
+          22.9,
+          43.15,
+          25.55
+        ]
+      },
+      "name": "Кабина лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.45
+    },
+    {
+      "id": "furniture-l2-elevator-ceiling",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          41.15,
+          22.9,
+          43.15,
+          25.55
+        ]
+      },
+      "name": "Потолок кабины",
+      "department": "Вертикальные связи",
+      "baseHeight": 2.34,
+      "height": 2.5
+    },
+    {
+      "id": "furniture-l2-elevator-threshold",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.540000000000006,
+          23.599999999999998,
+          40.78,
+          24.85
+        ]
+      },
+      "name": "Порог лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.06
+    },
+    {
+      "id": "furniture-l2-elevator-portal-top",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.720000000000006,
+          23.599999999999998,
+          40.870000000000005,
+          24.85
+        ]
+      },
+      "name": "Верхний портал лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 2.16,
+      "height": 2.38
+    },
+    {
+      "id": "furniture-l2-elevator-portal-north",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.720000000000006,
+          25.35,
+          40.870000000000005,
+          25.63
+        ]
+      },
+      "name": "Северная стойка лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.16
+    },
+    {
+      "id": "furniture-l2-elevator-portal-south",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          40.720000000000006,
+          22.82,
+          40.870000000000005,
+          23.099999999999998
+        ]
+      },
+      "name": "Южная стойка лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.16
+    },
+    {
+      "id": "furniture-l2-elevator-guide-rail-a",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          43.36,
+          23.119999999999997,
+          43.5,
+          23.38
+        ]
+      },
+      "name": "Направляющая лифта A",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.92
+    },
+    {
+      "id": "furniture-l2-elevator-guide-rail-b",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          43.36,
+          25.07,
+          43.5,
+          25.330000000000002
+        ]
+      },
+      "name": "Направляющая лифта B",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.92
+    },
+    {
+      "id": "furniture-l2-elevator-panel",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          43.459999999999994,
+          23.18,
+          43.72,
+          25.27
+        ]
+      },
+      "name": "Панель лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.44,
+      "height": 1.82
+    },
+    {
+      "id": "door-l2-elevator",
+      "level": "L2",
+      "featureKind": "door",
+      "geometry": {
+        "type": "line",
+        "coordinates": [
+          [
+            40.7,
+            23.599999999999998
+          ],
+          [
+            40.7,
+            24.85
+          ]
+        ]
+      },
+      "name": "Дверь кабины лифта"
     },
     {
       "id": "furniture-l1-table-ocean",
@@ -1684,7 +2046,7 @@
           19.6
         ]
       },
-      "name": "Ocean Table",
+      "name": "Стол Океан",
       "baseHeight": 0,
       "height": 0.92
     },
@@ -1701,7 +2063,7 @@
           21.5
         ]
       },
-      "name": "Desk Cluster A",
+      "name": "Кластер столов A",
       "baseHeight": 0,
       "height": 0.92
     },
@@ -1718,7 +2080,7 @@
           23.8
         ]
       },
-      "name": "Desk Cluster B",
+      "name": "Кластер столов B",
       "baseHeight": 0,
       "height": 0.92
     },
@@ -1735,7 +2097,7 @@
           24.8
         ]
       },
-      "name": "Ops Desks",
+      "name": "Операционные столы",
       "baseHeight": 0,
       "height": 0.92
     },
@@ -1752,92 +2114,56 @@
           7.6
         ]
       },
-      "name": "Kitchen Island",
+      "name": "Кухонный остров",
       "baseHeight": 0,
       "height": 0.92
     },
     {
-      "id": "furniture-l1-elevator-cabin",
+      "id": "furniture-l1-stairs-landing-low",
       "level": "L1",
       "featureKind": "furniture",
       "geometry": {
         "type": "rect",
         "bounds": [
-          41.15,
-          22.9,
-          43.15,
-          25.55
+          47.18,
+          22.78,
+          51.12,
+          23.220000000000002
         ]
       },
-      "name": "Elevator Cabin",
-      "department": "Vertical circulation",
+      "name": "Нижняя площадка лестницы",
+      "department": "Вертикальные связи",
       "baseHeight": 0,
-      "height": 2.45
+      "height": 0.22
     },
     {
-      "id": "furniture-l1-elevator-panel",
+      "id": "furniture-l1-stairs-landing-high",
       "level": "L1",
       "featureKind": "furniture",
       "geometry": {
         "type": "rect",
         "bounds": [
-          43.2,
-          23.15,
-          43.45,
-          25.25
+          47.559999999999995,
+          25.92,
+          50.74,
+          26.24
         ]
       },
-      "name": "Elevator Panel",
-      "department": "Vertical circulation",
-      "baseHeight": 0.4,
-      "height": 1.55
-    },
-    {
-      "id": "furniture-l1-stairs-landing",
-      "level": "L1",
-      "featureKind": "furniture",
-      "geometry": {
-        "type": "rect",
-        "bounds": [
-          47.35,
-          22.7,
-          50.95,
-          23.2
-        ]
-      },
-      "name": "Stairs Landing",
-      "department": "Vertical circulation",
-      "baseHeight": 0,
-      "height": 0.26
-    },
-    {
-      "id": "furniture-l1-stairs-top",
-      "level": "L1",
-      "featureKind": "furniture",
-      "geometry": {
-        "type": "rect",
-        "bounds": [
-          47.75,
-          25.9,
-          50.55,
-          26.2
-        ]
-      },
-      "name": "Stairs Upper Landing",
-      "department": "Vertical circulation",
+      "name": "Верхняя площадка лестницы",
+      "department": "Вертикальные связи",
       "baseHeight": 2.86,
-      "height": 2.98
+      "height": 3.02
     },
     {
-      "id": "furniture-l1-stairs",
+      "id": "furniture-l1-stairs-run",
       "level": "L1",
       "featureKind": "furniture",
       "geometry": {
         "type": "stair_run",
         "bounds": [
-          47.55,
+          47.4,
           23.3,
-          50.75,
+          50.9,
           26
         ],
         "stepCount": 9,
@@ -1845,8 +2171,98 @@
         "treadThickness": 0.08,
         "treadCoverage": 0.44
       },
-      "name": "L1 Stairs",
-      "department": "Vertical circulation"
+      "name": "Лестница L1",
+      "department": "Вертикальные связи"
+    },
+    {
+      "id": "furniture-l1-stairs-stringer-west",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          47.26,
+          23.3,
+          47.44,
+          26
+        ]
+      },
+      "name": "Левый косоур",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.74
+    },
+    {
+      "id": "furniture-l1-stairs-stringer-east",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          50.86,
+          23.3,
+          51.04,
+          26
+        ]
+      },
+      "name": "Правый косоур",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.74
+    },
+    {
+      "id": "furniture-l1-stairs-rail-west",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          47.199999999999996,
+          23.38,
+          47.32,
+          25.92
+        ]
+      },
+      "name": "Левое ограждение",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.86,
+      "height": 3.02
+    },
+    {
+      "id": "furniture-l1-stairs-rail-east",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          50.98,
+          23.38,
+          51.1,
+          25.92
+        ]
+      },
+      "name": "Правое ограждение",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.86,
+      "height": 3.02
+    },
+    {
+      "id": "furniture-l1-stairs-base",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          47.6,
+          23.46,
+          50.699999999999996,
+          25.8
+        ]
+      },
+      "name": "Основание лестницы",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.14
     },
     {
       "id": "furniture-l2-table-cedar",
@@ -1861,7 +2277,7 @@
           19.6
         ]
       },
-      "name": "Cedar Table",
+      "name": "Стол Кедр",
       "baseHeight": 0,
       "height": 0.92
     },
@@ -1878,7 +2294,7 @@
           18.7
         ]
       },
-      "name": "Soft Seating A",
+      "name": "Мягкая зона A",
       "baseHeight": 0,
       "height": 0.98
     },
@@ -1895,7 +2311,7 @@
           19.4
         ]
       },
-      "name": "Soft Seating B",
+      "name": "Мягкая зона B",
       "baseHeight": 0,
       "height": 0.98
     },
@@ -1912,7 +2328,7 @@
           22.4
         ]
       },
-      "name": "Product Wall",
+      "name": "Продуктовая стена",
       "baseHeight": 0,
       "height": 1.35
     },
@@ -1929,92 +2345,56 @@
           26.6
         ]
       },
-      "name": "Maker Bench",
+      "name": "Мейкер-стол",
       "baseHeight": 0,
       "height": 1
     },
     {
-      "id": "furniture-l2-elevator-cabin",
+      "id": "furniture-l2-stairs-landing-low",
       "level": "L2",
       "featureKind": "furniture",
       "geometry": {
         "type": "rect",
         "bounds": [
-          41.15,
-          22.9,
-          43.15,
-          25.55
+          47.18,
+          22.78,
+          51.12,
+          23.220000000000002
         ]
       },
-      "name": "Elevator Cabin",
-      "department": "Vertical circulation",
+      "name": "Нижняя площадка лестницы",
+      "department": "Вертикальные связи",
       "baseHeight": 0,
-      "height": 2.45
+      "height": 0.22
     },
     {
-      "id": "furniture-l2-elevator-panel",
+      "id": "furniture-l2-stairs-landing-high",
       "level": "L2",
       "featureKind": "furniture",
       "geometry": {
         "type": "rect",
         "bounds": [
-          43.2,
-          23.15,
-          43.45,
-          25.25
+          47.559999999999995,
+          25.92,
+          50.74,
+          26.24
         ]
       },
-      "name": "Elevator Panel",
-      "department": "Vertical circulation",
-      "baseHeight": 0.4,
-      "height": 1.55
-    },
-    {
-      "id": "furniture-l2-stairs-landing",
-      "level": "L2",
-      "featureKind": "furniture",
-      "geometry": {
-        "type": "rect",
-        "bounds": [
-          47.35,
-          22.7,
-          50.95,
-          23.2
-        ]
-      },
-      "name": "Stairs Landing",
-      "department": "Vertical circulation",
-      "baseHeight": 0,
-      "height": 0.26
-    },
-    {
-      "id": "furniture-l2-stairs-top",
-      "level": "L2",
-      "featureKind": "furniture",
-      "geometry": {
-        "type": "rect",
-        "bounds": [
-          47.75,
-          25.9,
-          50.55,
-          26.2
-        ]
-      },
-      "name": "Stairs Upper Landing",
-      "department": "Vertical circulation",
+      "name": "Верхняя площадка лестницы",
+      "department": "Вертикальные связи",
       "baseHeight": 2.86,
-      "height": 2.98
+      "height": 3.02
     },
     {
-      "id": "furniture-l2-stairs",
+      "id": "furniture-l2-stairs-run",
       "level": "L2",
       "featureKind": "furniture",
       "geometry": {
         "type": "stair_run",
         "bounds": [
-          47.55,
+          47.4,
           23.3,
-          50.75,
+          50.9,
           26
         ],
         "stepCount": 9,
@@ -2022,46 +2402,98 @@
         "treadThickness": 0.08,
         "treadCoverage": 0.44
       },
-      "name": "L2 Stairs",
-      "department": "Vertical circulation"
+      "name": "Лестница L2",
+      "department": "Вертикальные связи"
     },
     {
-      "id": "door-l1-elevator",
-      "level": "L1",
-      "featureKind": "door",
-      "geometry": {
-        "type": "line",
-        "coordinates": [
-          [
-            40.7,
-            23.65
-          ],
-          [
-            40.7,
-            24.95
-          ]
-        ]
-      },
-      "name": "Elevator Cabin Door"
-    },
-    {
-      "id": "door-l2-elevator",
+      "id": "furniture-l2-stairs-stringer-west",
       "level": "L2",
-      "featureKind": "door",
+      "featureKind": "furniture",
       "geometry": {
-        "type": "line",
-        "coordinates": [
-          [
-            40.7,
-            23.65
-          ],
-          [
-            40.7,
-            24.95
-          ]
+        "type": "rect",
+        "bounds": [
+          47.26,
+          23.3,
+          47.44,
+          26
         ]
       },
-      "name": "Elevator Cabin Door"
+      "name": "Левый косоур",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.74
+    },
+    {
+      "id": "furniture-l2-stairs-stringer-east",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          50.86,
+          23.3,
+          51.04,
+          26
+        ]
+      },
+      "name": "Правый косоур",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.74
+    },
+    {
+      "id": "furniture-l2-stairs-rail-west",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          47.199999999999996,
+          23.38,
+          47.32,
+          25.92
+        ]
+      },
+      "name": "Левое ограждение",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.86,
+      "height": 3.02
+    },
+    {
+      "id": "furniture-l2-stairs-rail-east",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          50.98,
+          23.38,
+          51.1,
+          25.92
+        ]
+      },
+      "name": "Правое ограждение",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.86,
+      "height": 3.02
+    },
+    {
+      "id": "furniture-l2-stairs-base",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          47.6,
+          23.46,
+          50.699999999999996,
+          25.8
+        ]
+      },
+      "name": "Основание лестницы",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 0.14
     }
   ]
 }

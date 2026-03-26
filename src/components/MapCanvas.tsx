@@ -19,38 +19,38 @@ export type MapThemeVariant = "light" | "dark";
 
 const MAP_PALETTES = {
   light: {
-    background: "#dfe5e8",
-    circulationFill: "#d8e0e3",
-    workspaceFill: "#d6dccf",
-    meetingFill: "#e6c3a0",
-    amenityFill: "#bfd7f0",
-    engineeringFill: "#bfe6cf",
-    operationsFill: "#bde2f2",
-    productFill: "#d7caf5",
-    designFill: "#f3c3d3",
-    sharedFill: "#e5d2af",
-    circulationAccentFill: "#bfd6dc",
-    verticalFill: "#d8d3ee",
-    selectedFill: "#56b7ed",
-    hoverFill: "#8fd3f4",
-    outline: "#495761",
-    selectedOutline: "#1f6d97",
-    hoverOutline: "#3a7fa5",
-    wall: "#667079",
-    door: "#b27c45",
-    furniture: "#a8b1b8",
-    connector: "#c8cfd6",
-    connectorSelected: "#e5c28c",
-    routeCasing: "rgba(255,255,255,0.88)",
-    routeLine: "#d83d46",
-    workstation: "#294858",
-    connectorPoi: "#d84a54",
-    poiHover: "#3fa0c7",
-    poiSelected: "#4bb9f2",
-    label: "#2a3f52",
-    labelHover: "#2f7aa1",
-    labelSelected: "#205f84",
-    labelHalo: "rgba(244,247,249,0.98)",
+    background: "#e6ebef",
+    circulationFill: "#dbe4e9",
+    workspaceFill: "#dce2d9",
+    meetingFill: "#e7cdb1",
+    amenityFill: "#c8dcee",
+    engineeringFill: "#c8e0cf",
+    operationsFill: "#c6dceb",
+    productFill: "#d8d1ea",
+    designFill: "#ebccd6",
+    sharedFill: "#e5d7bc",
+    circulationAccentFill: "#c9dbe1",
+    verticalFill: "#d8d9e9",
+    selectedFill: "#4caada",
+    hoverFill: "#8ac9e5",
+    outline: "#53626d",
+    selectedOutline: "#1f7099",
+    hoverOutline: "#3f88ae",
+    wall: "#6b7680",
+    door: "#b88754",
+    furniture: "#aeb6bd",
+    connector: "#cfd6dd",
+    connectorSelected: "#e6c58e",
+    routeCasing: "rgba(255,255,255,0.92)",
+    routeLine: "#d94a54",
+    workstation: "#355466",
+    connectorPoi: "#db5962",
+    poiHover: "#4aa9cf",
+    poiSelected: "#56bee8",
+    label: "#314757",
+    labelHover: "#2d7599",
+    labelSelected: "#216588",
+    labelHalo: "rgba(247,250,252,0.98)",
   },
   dark: {
     background: "#11171c",
@@ -92,19 +92,19 @@ type MapPalette = (typeof MAP_PALETTES)[MapThemeVariant];
 
 const zoneFillExpression = (palette: MapPalette): ExpressionSpecification => [
   "case",
-  ["==", ["get", "department"], "Engineering"],
+  ["==", ["get", "department"], "Инженерия"],
   palette.engineeringFill,
-  ["==", ["get", "department"], "Operations"],
+  ["==", ["get", "department"], "Операции"],
   palette.operationsFill,
-  ["==", ["get", "department"], "Product"],
+  ["==", ["get", "department"], "Продукт"],
   palette.productFill,
-  ["==", ["get", "department"], "Design"],
+  ["==", ["get", "department"], "Дизайн"],
   palette.designFill,
-  ["==", ["get", "department"], "Vertical circulation"],
+  ["==", ["get", "department"], "Вертикальные связи"],
   palette.verticalFill,
-  ["==", ["get", "department"], "Circulation"],
+  ["==", ["get", "department"], "Коридоры"],
   palette.circulationAccentFill,
-  ["==", ["get", "department"], "Shared"],
+  ["==", ["get", "department"], "Общие"],
   palette.sharedFill,
   palette.circulationFill,
 ];
@@ -119,19 +119,19 @@ const roomFillExpression = (palette: MapPalette): ExpressionSpecification => [
   palette.meetingFill,
   ["==", ["get", "kind"], "amenity"],
   palette.amenityFill,
-  ["==", ["get", "department"], "Engineering"],
+  ["==", ["get", "department"], "Инженерия"],
   palette.engineeringFill,
-  ["==", ["get", "department"], "Operations"],
+  ["==", ["get", "department"], "Операции"],
   palette.operationsFill,
-  ["==", ["get", "department"], "Product"],
+  ["==", ["get", "department"], "Продукт"],
   palette.productFill,
-  ["==", ["get", "department"], "Design"],
+  ["==", ["get", "department"], "Дизайн"],
   palette.designFill,
-  ["==", ["get", "department"], "Vertical circulation"],
+  ["==", ["get", "department"], "Вертикальные связи"],
   palette.verticalFill,
-  ["==", ["get", "department"], "Circulation"],
+  ["==", ["get", "department"], "Коридоры"],
   palette.circulationAccentFill,
-  ["==", ["get", "department"], "Shared"],
+  ["==", ["get", "department"], "Общие"],
   palette.sharedFill,
   palette.workspaceFill,
 ];
@@ -156,10 +156,14 @@ const POI_SOURCE = "pois";
 const ROOM_LABEL_SOURCE = "room-label-points";
 const POI_LABEL_SOURCE = "poi-label-points";
 const ROUTE_SOURCE = "route";
+const SELECTION_SOURCE = "selection";
 type FilteredLayerId =
   | "zone-fill"
   | "room-fill"
+  | "selection-area-fill"
   | "room-outline"
+  | "selection-area-glow"
+  | "selection-area-outline"
   | "room-labels"
   | "room-hit-area"
   | "wall-extrusion"
@@ -168,13 +172,18 @@ type FilteredLayerId =
   | "furniture-extrusion"
   | "poi-circle"
   | "poi-labels"
+  | "selection-halo"
+  | "selection-core"
   | "route-line"
   | "route-glow";
 
 const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "zone-fill",
   "room-fill",
+  "selection-area-fill",
   "room-outline",
+  "selection-area-glow",
+  "selection-area-outline",
   "room-labels",
   "room-hit-area",
   "wall-extrusion",
@@ -183,6 +192,8 @@ const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "furniture-extrusion",
   "poi-circle",
   "poi-labels",
+  "selection-halo",
+  "selection-core",
   "route-line",
   "route-glow",
 ];
@@ -201,6 +212,11 @@ const SCENE_PRESETS: Record<MapSceneMode, ScenePreset> = {
 };
 
 const SCENE_MODES: MapSceneMode[] = ["plan", "explore", "theatre"];
+const SCENE_MODE_LABELS: Record<MapSceneMode, string> = {
+  plan: "План",
+  explore: "Обзор",
+  theatre: "Сцена",
+};
 
 const ToolbarIcons = {
   plan: () => (
@@ -307,8 +323,20 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
     map.setFilter("room-fill", floorFilter(level, ["room", "meeting_room", "amenity"], "Polygon"));
   }
 
+  if (hasLayer("selection-area-fill")) {
+    map.setFilter("selection-area-fill", ["all", ["==", ["geometry-type"], "Polygon"], ["==", ["get", "role"], "shape"], ["==", ["get", "level"], level]]);
+  }
+
   if (hasLayer("room-outline")) {
     map.setFilter("room-outline", floorFilter(level, ["room", "meeting_room", "amenity"], "Polygon"));
+  }
+
+  if (hasLayer("selection-area-glow")) {
+    map.setFilter("selection-area-glow", ["all", ["==", ["geometry-type"], "Polygon"], ["==", ["get", "role"], "shape"], ["==", ["get", "level"], level]]);
+  }
+
+  if (hasLayer("selection-area-outline")) {
+    map.setFilter("selection-area-outline", ["all", ["==", ["geometry-type"], "Polygon"], ["==", ["get", "role"], "shape"], ["==", ["get", "level"], level]]);
   }
 
   if (hasLayer("room-labels")) {
@@ -328,11 +356,11 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   }
 
   if (hasLayer("connector-structure")) {
-    map.setFilter("connector-structure", departmentFilter(level, ["furniture"], "Polygon", "Vertical circulation"));
+    map.setFilter("connector-structure", departmentFilter(level, ["furniture"], "Polygon", "Вертикальные связи"));
   }
 
   if (hasLayer("furniture-extrusion")) {
-    map.setFilter("furniture-extrusion", excludedDepartmentFilter(level, ["furniture"], "Polygon", "Vertical circulation"));
+    map.setFilter("furniture-extrusion", excludedDepartmentFilter(level, ["furniture"], "Polygon", "Вертикальные связи"));
   }
 
   if (hasLayer("poi-circle")) {
@@ -341,6 +369,14 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
 
   if (hasLayer("poi-labels")) {
     map.setFilter("poi-labels", floorFilter(level, ["workstation", "connector"], "Point"));
+  }
+
+  if (hasLayer("selection-halo")) {
+    map.setFilter("selection-halo", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "role"], "marker"], ["==", ["get", "level"], level]]);
+  }
+
+  if (hasLayer("selection-core")) {
+    map.setFilter("selection-core", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "role"], "marker"], ["==", ["get", "level"], level]]);
   }
 
   if (hasLayer("route-line")) {
@@ -352,22 +388,45 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   }
 };
 
-const popupHtml = (featureById: Map<string, OfficeFeature>, featureId: string) => {
-  const feature = featureById.get(featureId);
-
-  if (!feature) {
-    return "<strong>Unknown feature</strong>";
-  }
-
-  const { name, subtitle, department, capacity } = feature.properties;
-  const lines = [name, subtitle, department, capacity ? `${capacity} seats` : undefined].filter(Boolean);
-
-  return lines.map((line, index) => (index === 0 ? `<strong>${line}</strong>` : `<div>${line}</div>`)).join("");
-};
-
 const interactiveLayerOrder: string[] = ["poi-circle", "poi-labels", "room-labels", "room-fill", "zone-fill", "room-hit-area"];
 const selectableFeatureKinds: FeatureKind[] = ["room", "meeting_room", "amenity"];
 const preferredInteractiveKinds: FeatureKind[] = ["workstation", "connector", "meeting_room", "room", "amenity"];
+
+const buildSelectionCollection = (feature: OfficeFeature | null) => ({
+  type: "FeatureCollection" as const,
+  features: feature
+    ? [
+        {
+          type: "Feature" as const,
+          id: feature.id,
+          geometry: feature.geometry,
+          properties: {
+            featureId: feature.id,
+            level: feature.properties.level,
+            kind: feature.properties.kind,
+            role: "shape",
+          },
+        },
+        {
+          type: "Feature" as const,
+          id: `${feature.id}::marker`,
+          geometry: {
+            type: "Point" as const,
+            coordinates:
+              feature.geometry.type === "Polygon"
+                ? [feature.properties.focusPoint[0], feature.properties.focusPoint[1] - 0.35]
+                : feature.properties.focusPoint,
+          },
+          properties: {
+            featureId: feature.id,
+            level: feature.properties.level,
+            kind: feature.properties.kind,
+            role: "marker",
+          },
+        },
+      ]
+    : [],
+});
 
 const toFeatureId = (featureId: string | number | undefined): string | null => {
   if (typeof featureId === "string") {
@@ -584,7 +643,6 @@ export function MapCanvas({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hoverRef = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(null);
-  const popupRef = useRef<maplibregl.Popup | null>(null);
   const onSelectFeatureRef = useRef(onSelectFeature);
   const pendingFocusRef = useRef<PendingFocusRequest | null>(null);
   const focusPulseTimerRef = useRef<number | null>(null);
@@ -608,20 +666,6 @@ export function MapCanvas({
 
     window.clearTimeout(timerId);
     focusPulseTimerRef.current = null;
-  };
-
-  const openFeaturePopup = (map: maplibregl.Map, featureId: string) => {
-    const feature = featureById.get(featureId);
-
-    if (!feature) {
-      return;
-    }
-
-    popupRef.current?.remove();
-    popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: `map-popup map-popup-${themeVariant}` })
-      .setLngLat(feature.properties.focusPoint)
-      .setHTML(popupHtml(featureById, featureId))
-      .addTo(map);
   };
 
   const runFocusRequest = (map: maplibregl.Map, request: PendingFocusRequest) => {
@@ -659,7 +703,6 @@ export function MapCanvas({
           duration: 320,
           essential: true,
         });
-        openFeaturePopup(map, request.featureId);
         pendingFocusRef.current = null;
         focusPulseTimerRef.current = null;
       }, 240);
@@ -673,7 +716,6 @@ export function MapCanvas({
       duration: 760,
       essential: true,
     });
-    openFeaturePopup(map, request.featureId);
     pendingFocusRef.current = null;
   };
 
@@ -704,6 +746,7 @@ export function MapCanvas({
       map.addSource(ROOM_LABEL_SOURCE, { type: "geojson", data: collections.roomLabels });
       map.addSource(POI_LABEL_SOURCE, { type: "geojson", data: collections.poiLabels });
       map.addSource(ROUTE_SOURCE, { type: "geojson", data: buildRouteCollection(route) });
+      map.addSource(SELECTION_SOURCE, { type: "geojson", data: buildSelectionCollection(selectedFeature) });
 
       map.addLayer({
         id: "zone-fill",
@@ -724,6 +767,17 @@ export function MapCanvas({
         paint: {
           "fill-color": roomFillExpression(palette),
           "fill-opacity": 0.86,
+        },
+      });
+
+      map.addLayer({
+        id: "selection-area-fill",
+        type: "fill",
+        source: SELECTION_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Polygon"], ["==", ["get", "role"], "shape"], ["==", ["get", "level"], activeLevel]],
+        paint: {
+          "fill-color": palette.selectedFill,
+          "fill-opacity": 0.2,
         },
       });
 
@@ -792,7 +846,7 @@ export function MapCanvas({
         id: "furniture-extrusion",
         type: "fill-extrusion",
         source: STRUCTURE_SOURCE,
-        filter: excludedDepartmentFilter(activeLevel, ["furniture"], "Polygon", "Vertical circulation"),
+        filter: excludedDepartmentFilter(activeLevel, ["furniture"], "Polygon", "Вертикальные связи"),
         paint: {
           "fill-extrusion-color": palette.furniture,
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
@@ -805,7 +859,7 @@ export function MapCanvas({
         id: "connector-structure",
         type: "fill-extrusion",
         source: STRUCTURE_SOURCE,
-        filter: departmentFilter(activeLevel, ["furniture"], "Polygon", "Vertical circulation"),
+        filter: departmentFilter(activeLevel, ["furniture"], "Polygon", "Вертикальные связи"),
         paint: {
           "fill-extrusion-color": [
             "case",
@@ -816,6 +870,37 @@ export function MapCanvas({
           "fill-extrusion-base": ["coalesce", ["get", "baseHeight"], 0],
           "fill-extrusion-height": ["coalesce", ["get", "height"], 1],
           "fill-extrusion-opacity": 0.86,
+        },
+      });
+
+      map.addLayer({
+        id: "selection-area-glow",
+        type: "line",
+        source: SELECTION_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Polygon"], ["==", ["get", "role"], "shape"], ["==", ["get", "level"], activeLevel]],
+        layout: {
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": palette.selectedOutline,
+          "line-width": 9,
+          "line-opacity": 0.22,
+          "line-blur": 1.1,
+        },
+      });
+
+      map.addLayer({
+        id: "selection-area-outline",
+        type: "line",
+        source: SELECTION_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Polygon"], ["==", ["get", "role"], "shape"], ["==", ["get", "level"], activeLevel]],
+        layout: {
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": palette.selectedOutline,
+          "line-width": 3.2,
+          "line-opacity": 0.98,
         },
       });
 
@@ -876,6 +961,48 @@ export function MapCanvas({
             palette.workstation,
           ],
           "circle-stroke-color": "#f7fafc",
+          "circle-stroke-width": 2,
+        },
+      });
+
+      map.addLayer({
+        id: "selection-halo",
+        type: "circle",
+        source: SELECTION_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "role"], "marker"], ["==", ["get", "level"], activeLevel]],
+        paint: {
+          "circle-radius": [
+            "case",
+            ["==", ["get", "kind"], "connector"],
+            14,
+            ["==", ["get", "kind"], "workstation"],
+            13,
+            12,
+          ],
+          "circle-color": palette.selectedOutline,
+          "circle-opacity": 0.12,
+          "circle-stroke-color": palette.selectedOutline,
+          "circle-stroke-width": 1.6,
+          "circle-stroke-opacity": 0.32,
+        },
+      });
+
+      map.addLayer({
+        id: "selection-core",
+        type: "circle",
+        source: SELECTION_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "role"], "marker"], ["==", ["get", "level"], activeLevel]],
+        paint: {
+          "circle-radius": [
+            "case",
+            ["==", ["get", "kind"], "connector"],
+            5,
+            ["==", ["get", "kind"], "workstation"],
+            4.5,
+            4.5,
+          ],
+          "circle-color": palette.selectedFill,
+          "circle-stroke-color": palette.labelHalo,
           "circle-stroke-width": 2,
         },
       });
@@ -995,11 +1122,6 @@ export function MapCanvas({
         }
 
         onSelectFeatureRef.current(featureId);
-        popupRef.current?.remove();
-        popupRef.current = new maplibregl.Popup({ offset: 12, closeButton: false, className: `map-popup map-popup-${themeVariant}` })
-          .setLngLat(event.lngLat)
-          .setHTML(popupHtml(featureById, featureId))
-          .addTo(map);
       });
 
       updateFilters(map, activeLevel);
@@ -1011,7 +1133,6 @@ export function MapCanvas({
 
     return () => {
       clearFocusPulseTimer();
-      popupRef.current?.remove();
       map.remove();
       mapRef.current = null;
     };
@@ -1057,6 +1178,22 @@ export function MapCanvas({
 
     routeSource.setData(buildRouteCollection(route));
   }, [route]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !map.isStyleLoaded()) {
+      return;
+    }
+
+    const selectionSource = map.getSource(SELECTION_SOURCE);
+
+    if (!isGeoJsonSource(selectionSource)) {
+      return;
+    }
+
+    selectionSource.setData(buildSelectionCollection(selectedFeature));
+  }, [selectedFeature]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1230,8 +1367,8 @@ export function MapCanvas({
       {showControls ? <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
         <div className="map-toolbar-header">
           <div className="map-toolbar-copy">
-            <span className="map-toolbar-kicker">View Control</span>
-            <strong>Scene Deck</strong>
+            <span className="map-toolbar-kicker">Управление видом</span>
+            <strong>Сцена карты</strong>
           </div>
           <div className="map-toolbar-header-actions">
             {!controlsHidden ? <span className="map-toolbar-badge">{activeLevel}</span> : null}
@@ -1241,17 +1378,17 @@ export function MapCanvas({
               onClick={() => setControlsHidden((current) => !current)}
               type="button"
             >
-              {controlsHidden ? "Show" : "Hide"}
+              {controlsHidden ? "Показать" : "Скрыть"}
             </button>
           </div>
         </div>
         {!controlsHidden ? (
           <div className="map-toolbar-body">
             <section className="map-toolbar-section">
-              <span className="map-toolbar-section-label">Scene Preset</span>
+              <span className="map-toolbar-section-label">Режим сцены</span>
               <div className="map-toolbar-group map-toolbar-group-segmented">
                 {SCENE_MODES.map((mode) => {
-                  const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+                  const label = SCENE_MODE_LABELS[mode];
                   const Icon = ToolbarIcons[mode];
 
                   return (
@@ -1270,14 +1407,14 @@ export function MapCanvas({
             </section>
 
             <section className="map-toolbar-section">
-              <span className="map-toolbar-section-label">Orientation</span>
+              <span className="map-toolbar-section-label">Ориентация</span>
               <div className="map-readout-grid">
                 <div className="map-readout">
-                  <span>Bearing</span>
+                  <span>Азимут</span>
                   <strong>{normalizedBearing}°</strong>
                 </div>
                 <div className="map-readout">
-                  <span>Tilt</span>
+                  <span>Наклон</span>
                   <strong>{roundedPitch}°</strong>
                 </div>
               </div>
@@ -1296,15 +1433,15 @@ export function MapCanvas({
                   type="button"
                 >
                   <ToolbarIcons.orbit />
-                  <span>Orbit</span>
+                  <span>Орбита</span>
                 </button>
               </div>
             </section>
 
             <section className="map-toolbar-section">
-              <span className="map-toolbar-section-label">Camera Tilt</span>
+              <span className="map-toolbar-section-label">Наклон камеры</span>
               <label className="map-slider">
-                <span>Camera tilt</span>
+                <span>Наклон камеры</span>
                 <input
                   max="75"
                   min="0"
@@ -1321,12 +1458,12 @@ export function MapCanvas({
             {selectedFeature ? (
               <div className="map-focus-row">
                 <div className="map-focus-copy">
-                  <span className="map-focus-label">Selection</span>
+                  <span className="map-focus-label">Выбор</span>
                   <strong>{selectedFeature.properties.name}</strong>
                 </div>
                 <button className="map-tool focus-tool" disabled={!selectedFeature} onClick={focusSelection} type="button">
                   <ToolbarIcons.focus />
-                  <span>Focus</span>
+                  <span>Фокус</span>
                 </button>
               </div>
             ) : null}

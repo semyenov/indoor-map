@@ -27,7 +27,7 @@ const routeableKinds = new Set(["room", "meeting_room", "amenity", "connector"])
 type GroupKey = "level" | "kind" | "dept" | "status";
 type AtlasKind = "room" | "meeting" | "amenity" | "connector" | "workstation";
 type IndoorFeature = IndoorRuntimeData["dataset"]["features"][number];
-type DrawerMode = "search" | "route";
+type DrawerMode = "search" | "route" | "detail" | "route-result" | "ops";
 
 type AtlasSpace = {
   id: string;
@@ -53,36 +53,36 @@ type AtlasPerson = {
 };
 
 const GROUP_OPTIONS: Array<{ key: GroupKey; label: string }> = [
-  { key: "level", label: "Floor" },
-  { key: "kind", label: "Type" },
-  { key: "dept", label: "Department" },
-  { key: "status", label: "Status" },
+  { key: "level", label: "Этаж" },
+  { key: "kind", label: "Тип" },
+  { key: "dept", label: "Отдел" },
+  { key: "status", label: "Статус" },
 ];
 
 const VIEW_MODES: Array<{ id: MapSceneMode; label: string }> = [
-  { id: "plan", label: "Plan" },
-  { id: "explore", label: "Explore" },
-  { id: "theatre", label: "Theatre" },
+  { id: "plan", label: "План" },
+  { id: "explore", label: "Обзор" },
+  { id: "theatre", label: "Сцена" },
 ];
 
 const THEME_OPTIONS: Array<{ id: MapThemeVariant; label: string }> = [
-  { id: "light", label: "Light" },
-  { id: "dark", label: "Dark" },
+  { id: "light", label: "Светлая" },
+  { id: "dark", label: "Тёмная" },
 ];
 
 const ST: Record<RoomStatus, { c: string; bg: string; label: string }> = {
-  available: { c: "#34d399", bg: "rgba(52,211,153,.12)", label: "Available" },
-  occupied: { c: "#f87171", bg: "rgba(248,113,113,.12)", label: "Occupied" },
-  focus: { c: "#fbbf24", bg: "rgba(251,191,36,.12)", label: "Focus" },
-  offline: { c: "#64748b", bg: "rgba(100,116,139,.10)", label: "Offline" },
+  available: { c: "#34d399", bg: "rgba(52,211,153,.12)", label: "Свободно" },
+  occupied: { c: "#f87171", bg: "rgba(248,113,113,.12)", label: "Занято" },
+  focus: { c: "#fbbf24", bg: "rgba(251,191,36,.12)", label: "Фокус" },
+  offline: { c: "#64748b", bg: "rgba(100,116,139,.10)", label: "Не в сети" },
 };
 
 const KIND_L: Record<AtlasKind, string> = {
-  room: "Workspace",
-  meeting: "Meeting Room",
-  amenity: "Amenity",
-  connector: "Connector",
-  workstation: "Workstation",
+  room: "Рабочая зона",
+  meeting: "Переговорная",
+  amenity: "Сервисная зона",
+  connector: "Переход",
+  workstation: "Рабочее место",
 };
 
 const getAtlasKind = (feature: IndoorFeature): AtlasKind => {
@@ -158,33 +158,124 @@ const featureLevel = (featureById: Map<string, IndoorFeature>, featureId: string
 
 const routeConnectorLabel = (connectorTypes: readonly ("stairs" | "elevator")[]) => {
   const unique = [...new Set(connectorTypes)];
-  return unique.length > 0 ? unique.join(" + ") : "flat";
+  const connectorLabel = (type: "stairs" | "elevator") => (type === "stairs" ? "лестница" : "лифт");
+  return unique.length > 0 ? unique.map(connectorLabel).join(" + ") : "без перехода";
+};
+
+const levelOrder = (level: LevelId) => Number(level.replace(/\D+/g, "")) || 0;
+
+const featureDisplayName = (feature: IndoorFeature | null | undefined) =>
+  feature ? feature.properties.employee ?? feature.properties.name : null;
+
+const edgeFeatureRef = (
+  edgeId: string,
+  prefix: string,
+  featureById: Map<string, IndoorFeature>,
+): string | null => {
+  if (!edgeId.startsWith(prefix)) {
+    return null;
+  }
+
+  const tail = edgeId.slice(prefix.length);
+  const candidates = [...featureById.keys()]
+    .filter((featureId) => tail === featureId || tail.startsWith(`${featureId}-`))
+    .sort((left, right) => right.length - left.length);
+
+  return candidates[0] ?? null;
+};
+
+const connectorVerb = (connectorType: "stairs" | "elevator", fromLevel: LevelId, toLevel: LevelId) => {
+  const ascending = levelOrder(toLevel) > levelOrder(fromLevel);
+
+  if (connectorType === "elevator") {
+    return ascending ? "Поднимитесь на лифте" : "Спуститесь на лифте";
+  }
+
+  return ascending ? "Поднимитесь по лестнице" : "Спуститесь по лестнице";
 };
 
 const routeSteps = (
   route: RouteResult | null,
   fromLabel: string,
   toLabel: string,
+  routingGraph: IndoorRuntimeData["dataset"]["routing"]["graph"],
+  featureById: Map<string, IndoorFeature>,
 ) => {
   if (!route) {
     return [];
   }
 
-  const steps = [`Leave ${fromLabel}`];
+  const nodeById = new Map(routingGraph.nodes.map((node) => [node.id, node]));
+  const steps: string[] = [];
+  const pushStep = (step: string | null) => {
+    if (!step) {
+      return;
+    }
 
-  if (route.summary.connectorTypes.length > 0) {
-    route.summary.levels.slice(1).forEach((level, index) => {
-      const connector = route.summary.connectorTypes[index] ?? route.summary.connectorTypes[0] ?? "connector";
-      steps.push(`Take ${connector} to ${level}`);
-    });
+    if (steps.at(-1) === step) {
+      return;
+    }
+
+    steps.push(step);
+  };
+
+  pushStep(`Выйдите из ${fromLabel}`);
+
+  for (const leg of route.legs) {
+    const fromNode = nodeById.get(leg.fromNodeId);
+    const toNode = nodeById.get(leg.toNodeId);
+    const fromFeature = fromNode?.featureRef ? featureById.get(fromNode.featureRef) ?? null : null;
+    const toFeature = toNode?.featureRef ? featureById.get(toNode.featureRef) ?? null : null;
+
+    if (leg.connectorType && fromNode && toNode) {
+      pushStep(`${connectorVerb(leg.connectorType, fromNode.level, toNode.level)} на ${toNode.level}`);
+      continue;
+    }
+
+    const passRoomId = edgeFeatureRef(leg.id, "edge-room-pass-", featureById);
+
+    if (passRoomId) {
+      const passFeature = featureById.get(passRoomId) ?? null;
+      const passName = featureDisplayName(passFeature);
+
+      if (passName && passName !== fromLabel && passName !== toLabel) {
+        pushStep(`Следуйте через ${passName}`);
+      }
+
+      continue;
+    }
+
+    const poiFeatureId = edgeFeatureRef(leg.id, "edge-poi-", featureById);
+
+    if (poiFeatureId) {
+      const poiFeature = featureById.get(poiFeatureId) ?? null;
+      const poiName = featureDisplayName(poiFeature);
+
+      if (poiFeature?.properties.kind === "connector" && poiName && poiName !== fromLabel && poiName !== toLabel) {
+        pushStep(`Подойдите к ${poiName}`);
+      }
+
+      continue;
+    }
+
+    if (toFeature && featureDisplayName(toFeature) && featureDisplayName(toFeature) !== fromLabel && featureDisplayName(toFeature) !== toLabel && toFeature.id !== fromFeature?.id) {
+      pushStep(`Перейдите в ${featureDisplayName(toFeature)}`);
+    }
   }
 
-  steps.push(`Continue toward ${toLabel}`);
-  steps.push(`Arrive at ${toLabel}`);
+  pushStep(`Войдите в ${toLabel}`);
+  pushStep(`Вы пришли: ${toLabel}`);
   return steps;
 };
 
-const routeDurationLabel = (distance: number) => `~${Math.max(1, Math.round(distance / 60))} min walk`;
+const routeDurationLabel = (distance: number) => `~${Math.max(1, Math.round(distance / 60))} мин пешком`;
+
+const STATUS_ORDER: Record<RoomStatus, number> = {
+  available: 0,
+  occupied: 1,
+  focus: 2,
+  offline: 3,
+};
 
 const Ic = {
   Search: ({ s = 15 }: { s?: number }) => (
@@ -217,9 +308,10 @@ const Ic = {
     </svg>
   ),
   Floor: () => (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M7 1.5L1.5 5L7 8.5L12.5 5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" fill="currentColor" opacity="0.06" />
-      <path d="M1.5 8L7 11.5L12.5 8" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" />
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <rect x="2.25" y="3.25" width="11.5" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1.25" />
+      <path d="M8 3.5V12.5M2.5 8H13.5" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" />
+      <circle cx="5.25" cy="5.25" r="0.75" fill="currentColor" opacity="0.7" />
     </svg>
   ),
   Check: () => (
@@ -235,22 +327,24 @@ const Ic = {
   ),
   Compass: () => (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M5 11L7 7L11 5L9 9L5 11Z" fill="currentColor" opacity="0.2" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.25" />
+      <path d="M10.9 5.1L8.9 9L5.1 10.9L7.1 7L10.9 5.1Z" fill="currentColor" opacity="0.18" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="1" fill="currentColor" />
     </svg>
   ),
   Eye: () => (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M1.5 7S3.5 3 7 3S12.5 7 12.5 7S10.5 11 7 11S1.5 7 1.5 7Z" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M2 8C3.45 5.55 5.52 4.25 8 4.25C10.48 4.25 12.55 5.55 14 8C12.55 10.45 10.48 11.75 8 11.75C5.52 11.75 3.45 10.45 2 8Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="2.15" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="8" r="0.85" fill="currentColor" opacity="0.82" />
     </svg>
   ),
   Grid: () => (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="8" y="1.5" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="1.5" y="8" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="8" y="8" width="4.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <rect x="2.25" y="2.25" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="9.75" y="2.25" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" opacity="0.75" />
+      <rect x="2.25" y="9.75" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" opacity="0.75" />
+      <rect x="9.75" y="9.75" width="4" height="4" rx="0.8" fill="currentColor" opacity="0.18" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   ),
   Walk: () => (
@@ -323,7 +417,7 @@ function SpaceCard({ space, onClick, selectedFeatureId, compact = false }: Space
           </span>
         ) : null}
       </div>
-      {!compact && space.dept !== "Shared" ? <span style={S.cardDept}>{space.dept}</span> : null}
+      {!compact && space.dept !== "Общие" ? <span style={S.cardDept}>{space.dept}</span> : null}
     </button>
   );
 }
@@ -400,7 +494,6 @@ export default function AtlasV4() {
   const [routeFromGroup, setRouteFromGroup] = useState<GroupKey>("level");
   const [routeToGroup, setRouteToGroup] = useState<GroupKey>("level");
   const [accessibleOnly, setAccessibleOnly] = useState(false);
-  const [opsOpen, setOpsOpen] = useState(false);
   const [focusRequestId, setFocusRequestId] = useState(0);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -409,6 +502,7 @@ export default function AtlasV4() {
   const [zoomCommand, setZoomCommand] = useState<{ id: number; delta: 1 | -1 } | null>(null);
   const topSearchRef = useRef<HTMLInputElement | null>(null);
   const deferredBrowseQuery = useDeferredValue(browseQ);
+  const themeVars = ATLAS_THEME_VARS[themeVariant] as Record<string, string>;
 
   useEffect(() => {
     let cancelled = false;
@@ -487,7 +581,7 @@ export default function AtlasV4() {
           level: feature.properties.level,
           kind: atlasKind,
           kindLabel: KIND_L[atlasKind],
-          dept: feature.properties.department ?? "Shared",
+          dept: feature.properties.department ?? "Общие",
           cap: feature.properties.capacity ?? 0,
           status,
           employee: feature.properties.employee,
@@ -508,7 +602,7 @@ export default function AtlasV4() {
           name: feature.properties.employee ?? feature.properties.name,
           desk: feature.properties.name,
           level: feature.properties.level,
-          dept: feature.properties.department ?? "Shared",
+          dept: feature.properties.department ?? "Общие",
         }))
         .sort((left, right) => left.name.localeCompare(right.name)),
     [featureById],
@@ -546,18 +640,28 @@ export default function AtlasV4() {
   const selectedSpace = selectedFeatureId ? atlasSpaces.find((space) => space.featureId === selectedFeatureId) ?? null : null;
   const selectedRouteTarget = routeTargets.find((target) => target.featureId === selectedFeatureId) ?? null;
   const selectedStatus = featureStatus(featureById, selectedFeatureId, roomStatuses) ?? "offline";
+  const selectedStatusLabel = ST[selectedStatus].label;
   const routeSummaryDistance = route ? Math.round(route.summary.distance) : 0;
-  const routeStepsList = routeSteps(route, routeFrom?.name ?? "Start", routeTo?.name ?? "Destination");
+  const routeStepsList = routeSteps(
+    route,
+    routeFrom?.name ?? "Старт",
+    routeTo?.name ?? "Точка назначения",
+    routingGraph,
+    featureById,
+  );
+  const isWorkspaceDrawerMode = drawerMode === "search" || drawerMode === "route";
+  const isInfoDrawerMode = drawerMode === "detail" || drawerMode === "route-result" || drawerMode === "ops";
+  const activeViewModeLabel = VIEW_MODES.find((mode) => mode.id === viewMode)?.label ?? viewMode;
   const bottomHeadline = route
-    ? `${routeFrom?.name ?? "Start"} → ${routeTo?.name ?? "Destination"}`
+    ? `${routeFrom?.name ?? "Старт"} → ${routeTo?.name ?? "Точка назначения"}`
     : selectedFeature
       ? selectedFeature.properties.employee ?? selectedFeature.properties.name
-      : "Ready to navigate";
+      : "Готово к навигации";
   const bottomMeta = route
-    ? `${routeSummaryDistance} m · ${routeDurationLabel(route.summary.distance)}`
+    ? `${routeSummaryDistance} м · ${routeDurationLabel(route.summary.distance)}`
     : selectedFeature
-      ? `${selectedFeature.properties.department ?? "Shared"} · ${selectedFeature.properties.level}`
-      : `${activeLevel} · ${viewMode}`;
+      ? `${selectedFeature.properties.department ?? "Общие"} · ${selectedFeature.properties.level}`
+      : `${activeLevel} · ${activeViewModeLabel}`;
   const matchedSearchResults = browseQ.trim()
     ? searchOffice(searchEntries, browseQ).map((entry) => atlasSpaces.find((space) => space.featureId === entry.featureId)).filter((space): space is AtlasSpace => Boolean(space))
     : [];
@@ -572,6 +676,19 @@ export default function AtlasV4() {
   );
 
   const levelRooms = atlasSpaces.filter((space) => space.level === activeLevel && space.cap > 0);
+  const opsRooms = [...levelRooms].sort((left, right) => STATUS_ORDER[left.status] - STATUS_ORDER[right.status] || left.name.localeCompare(right.name));
+  const levelStatusCounts = levelRooms.reduce<Record<RoomStatus, number>>(
+    (counts, space) => {
+      counts[space.status] += 1;
+      return counts;
+    },
+    { available: 0, occupied: 0, focus: 0, offline: 0 },
+  );
+  const levelRoomCount = levelRooms.length;
+  const occupiedNow = levelStatusCounts.occupied + levelStatusCounts.focus;
+  const levelAvailabilityRate = levelRoomCount > 0 ? Math.round((levelStatusCounts.available / levelRoomCount) * 100) : 0;
+  const levelLoadRate = levelRoomCount > 0 ? Math.round((occupiedNow / levelRoomCount) * 100) : 0;
+  const totalTrackedRooms = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
 
   useEffect(() => {
     if (routeFromId || routeTargets.length === 0) {
@@ -590,6 +707,10 @@ export default function AtlasV4() {
     startTransition(() => {
       setSelectedFeatureId(featureId);
       setFocusRequestId((current) => current + 1);
+      if (drawerMode !== "route") {
+        setDrawerMode("detail");
+        setDrawerOpen(true);
+      }
 
       if (nextLevel) {
         setActiveLevel(nextLevel);
@@ -628,7 +749,7 @@ export default function AtlasV4() {
 
     if (fromNodeIds.length === 0 || toNodeIds.length === 0) {
       setRoute(null);
-      setRouteError("Pick both endpoints.");
+      setRouteError("Выберите обе точки маршрута.");
       return;
     }
 
@@ -636,13 +757,14 @@ export default function AtlasV4() {
 
     if (!result) {
       setRoute(null);
-      setRouteError(accessibleOnly ? "No accessible route found." : "No route found.");
+      setRouteError(accessibleOnly ? "Доступный маршрут не найден." : "Маршрут не найден.");
       return;
     }
 
     setRoute(result);
     setRouteError(null);
-    setDrawerOpen(false);
+    setDrawerMode("route-result");
+    setDrawerOpen(true);
     const firstLevel = result.summary.levels[0];
 
     if (firstLevel) {
@@ -656,7 +778,7 @@ export default function AtlasV4() {
 
   if (datasetError) {
     return (
-      <div style={S.shell}>
+      <div style={{ ...S.shell, ...(themeVars as CSSProperties) }}>
         <style>{CSS}</style>
         <div style={S.emptyState}>Dataset error: {datasetError}</div>
       </div>
@@ -665,7 +787,7 @@ export default function AtlasV4() {
 
   if (!indoorData || !dataset || !indexes) {
     return (
-      <div style={S.shell}>
+      <div style={{ ...S.shell, ...(themeVars as CSSProperties) }}>
         <style>{CSS}</style>
         <div style={S.emptyState}>Loading indoor dataset…</div>
       </div>
@@ -673,11 +795,11 @@ export default function AtlasV4() {
   }
 
   return (
-    <div style={S.shell}>
+    <div style={{ ...S.shell, ...(themeVars as CSSProperties) }}>
       <style>{CSS}</style>
 
       <div style={S.mapBg}>
-        <Suspense fallback={<div style={S.mapLoading}>Loading map…</div>}>
+        <Suspense fallback={<div style={S.mapLoading}>Загрузка карты…</div>}>
           <LazyMapCanvas
             activeLevel={activeLevel}
             collections={dataset.collections}
@@ -700,7 +822,7 @@ export default function AtlasV4() {
 
       <header style={S.topBar}>
         <div style={S.topBrandBlock}>
-          <div style={S.topSectionLabel}>Workspace</div>
+          <div style={S.topSectionLabel}>Пространство</div>
           <div style={S.topBrandRow}>
             <div style={S.logo}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -711,12 +833,12 @@ export default function AtlasV4() {
               </svg>
               <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.02em" }}>Atlas</span>
             </div>
-            <div style={S.searchField}>
+            <div style={S.searchField} className="hud-input-shell">
               <Ic.Search s={14} />
               <input
                 ref={topSearchRef}
                 style={S.searchInput}
-                placeholder="Search spaces & people…"
+                placeholder="Поиск помещений и людей…"
                 value={browseQ}
                 onFocus={openBrowse}
                 onChange={(event) => {
@@ -744,13 +866,14 @@ export default function AtlasV4() {
         </div>
 
         <div style={S.topSceneBlock}>
-          <div style={S.topSectionLabel}>Scene</div>
+          <div style={S.topSectionLabel}>Сцена</div>
           <div style={S.viewModes}>
             {VIEW_MODES.map((mode) => (
               <button
                 key={mode.id}
-                style={{ ...S.vmBtn, ...(viewMode === mode.id ? S.vmActive : {}) }}
-                className="hud-btn"
+                style={{ ...S.segmentBtn, ...S.segmentBtnEqual, ...(viewMode === mode.id ? S.segmentBtnActive : {}) }}
+                className="hud-btn hud-segment-btn"
+                data-active={viewMode === mode.id ? "true" : undefined}
                 onClick={() => setViewMode(mode.id)}
                 type="button"
               >
@@ -762,14 +885,29 @@ export default function AtlasV4() {
         </div>
 
         <div style={S.topActionBlock}>
-          <div style={S.topSectionLabel}>Controls</div>
+          <div style={S.topSectionLabel}>Управление</div>
           <div style={S.topActionRow}>
-            <div style={S.themeSwitch}>
+            <div style={S.topFloorGroup}>
+              {levels.map((level) => (
+                <button
+                  key={level.id}
+                  style={{ ...S.segmentBtn, ...S.segmentBtnMono, ...(activeLevel === level.id ? S.segmentBtnActive : {}) }}
+                  className="hud-btn hud-segment-btn"
+                  data-active={activeLevel === level.id ? "true" : undefined}
+                  onClick={() => setActiveLevel(level.id)}
+                  type="button"
+                >
+                  {level.id}
+                </button>
+              ))}
+            </div>
+            <div style={S.topFloorGroup}>
               {THEME_OPTIONS.map((option) => (
                 <button
                   key={option.id}
-                  style={{ ...S.themeBtn, ...(themeVariant === option.id ? S.themeBtnActive : {}) }}
-                  className="hud-btn"
+                  style={{ ...S.segmentBtn, ...(themeVariant === option.id ? S.segmentBtnActive : {}) }}
+                  className="hud-btn hud-segment-btn"
+                  data-active={themeVariant === option.id ? "true" : undefined}
                   onClick={() => setThemeVariant(option.id)}
                   type="button"
                 >
@@ -777,10 +915,31 @@ export default function AtlasV4() {
                 </button>
               ))}
             </div>
-            <button style={S.opsBtn} className="hud-btn" onClick={() => setOpsOpen((current) => !current)} type="button">
+            <div style={S.zoomStack}>
+              <button style={S.zoomBtn} className="hud-btn hud-segment-btn" onClick={() => queueZoom(-1)} type="button">
+                −
+              </button>
+              <div style={S.zoomDivider} />
+              <button style={S.zoomBtn} className="hud-btn hud-segment-btn" onClick={() => queueZoom(1)} type="button">
+                +
+              </button>
+            </div>
+            <button
+              style={S.opsBtn}
+              className="hud-btn"
+              onClick={() => {
+                if (drawerOpen && drawerMode === "ops") {
+                  closeDrawer();
+                  return;
+                }
+                setDrawerMode("ops");
+                setDrawerOpen(true);
+              }}
+              type="button"
+            >
               <Ic.Grid />
               <span style={S.opsBadge}>
-                <span style={{ ...S.liveDot, background: ST.available.c, width: 6, height: 6 }} /> {statusCounts.available} free
+                <span style={{ ...S.liveDot, background: ST.available.c, width: 6, height: 6 }} /> {statusCounts.available} свободно
               </span>
             </button>
             <div style={S.syncChip}>
@@ -794,12 +953,34 @@ export default function AtlasV4() {
       <div style={S.bottomBar}>
         <div style={{ ...S.bottomContextBlock, ...(drawerOpen && drawerMode === "route" ? S.bottomContextBlockRoute : {}) }}>
           <div style={S.bottomContext}>
-            <div style={S.bottomModuleLabel}>{drawerOpen && drawerMode === "route" ? "Route Builder" : route ? "Active route" : selectedFeature ? "Selection" : "Workspace"}</div>
+            <div style={S.bottomModuleLabel}>
+              {drawerOpen && drawerMode === "route"
+                ? "Построение маршрута"
+                : drawerOpen && drawerMode === "route-result"
+                  ? "Активный маршрут"
+                  : drawerOpen && drawerMode === "detail"
+                    ? "Выбор"
+                    : drawerOpen && drawerMode === "ops"
+                      ? "Операции"
+                      : route
+                        ? "Активный маршрут"
+                        : selectedFeature
+                          ? "Выбор"
+                          : "Пространство"}
+            </div>
             <div style={S.bottomHeadline}>
               {drawerOpen && drawerMode === "route" ? (
                 <>
-                  {routeFrom?.name ?? "Choose start"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Choose destination"}
+                  {routeFrom?.name ?? "Выберите старт"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Выберите точку назначения"}
                 </>
+              ) : drawerOpen && drawerMode === "route-result" && route ? (
+                <>
+                  {routeFrom?.name ?? "Старт"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Точка назначения"}
+                </>
+              ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
+                selectedFeature.properties.employee ?? selectedFeature.properties.name
+              ) : drawerOpen && drawerMode === "ops" ? (
+                "Оперативная сводка"
               ) : (
                 bottomHeadline
               )}
@@ -807,52 +988,33 @@ export default function AtlasV4() {
             <div style={S.bottomMetaRow}>
               {drawerOpen && drawerMode === "route" ? (
                 <>
-                  <span style={S.bottomMeta}>{routeFrom && routeTo ? "Ready to build route" : "Pick both endpoints to continue"}</span>
+                  <span style={S.bottomMeta}>{routeFrom && routeTo ? "Маршрут готов к построению" : "Выберите обе точки, чтобы продолжить"}</span>
                   {routeFrom ? <span style={S.bottomChip}>{routeFrom.level}</span> : null}
                   {routeTo ? <span style={S.bottomChip}>{routeTo.level}</span> : null}
+                </>
+              ) : drawerOpen && drawerMode === "route-result" && route ? (
+                <>
+                  <span style={S.bottomMeta}>{routeSummaryDistance} м · {routeDurationLabel(route.summary.distance)}</span>
+                  {route.summary.levels.map((level) => (
+                    <span key={level} style={S.bottomChip}>{level}</span>
+                  ))}
+                </>
+              ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
+                <>
+                  <span style={S.bottomMeta}>{selectedFeature.properties.department ?? "Общие"} · {selectedFeature.properties.level}</span>
+                  <span style={S.bottomChip}>{selectedStatusLabel}</span>
+                </>
+              ) : drawerOpen && drawerMode === "ops" ? (
+                <>
+                  <span style={S.bottomMeta}>{statusCounts.available} свободно · {statusCounts.occupied} занято</span>
+                  <span style={S.bottomChip}>{activeLevel}</span>
                 </>
               ) : (
                 <>
                   <span style={S.bottomMeta}>{bottomMeta}</span>
-                  <span style={S.bottomChip}>{activeLevel}</span>
-                  <span style={S.bottomChip}>{viewMode}</span>
                   {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
                 </>
               )}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ ...S.bottomModule, ...S.bottomFloorModule }}>
-          <div style={S.bottomModuleLabel}>Floor</div>
-          <div style={S.floorPicker}>
-            {levels.map((level) => (
-              <button
-                key={level.id}
-                style={{ ...S.floorBtn, ...(activeLevel === level.id ? S.floorBtnActive : {}) }}
-                className="hud-btn"
-                onClick={() => setActiveLevel(level.id)}
-                type="button"
-              >
-                {level.id}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={S.bottomUtilityBlock}>
-          <div style={S.bottomModuleLabel}>View</div>
-          <div style={S.bottomUtilityRow}>
-            <span style={S.bottomChip}>{themeVariant}</span>
-            <span style={S.bottomChip}>{route ? routeConnectorLabel(route.summary.connectorTypes) : "flat"}</span>
-            <div style={S.zoomStack}>
-              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(-1)} type="button">
-                −
-              </button>
-              <div style={S.zoomDivider} />
-              <button style={S.zoomBtn} className="hud-btn" onClick={() => queueZoom(1)} type="button">
-                +
-              </button>
             </div>
           </div>
         </div>
@@ -869,10 +1031,10 @@ export default function AtlasV4() {
               >
                 {accessibleOnly ? <Ic.Check /> : null}
               </div>
-              <span>Accessible only</span>
+              <span>Только доступные маршруты</span>
             </label>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              Close
+              Закрыть
             </button>
             <button
               style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
@@ -880,14 +1042,70 @@ export default function AtlasV4() {
               onClick={buildRoute}
               type="button"
             >
-              <Ic.Nav /> Build route
+              <Ic.Nav /> Построить маршрут
+            </button>
+          </div>
+        ) : drawerOpen && drawerMode === "route-result" && route ? (
+          <div style={S.bottomRouteActions}>
+            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
+              Закрыть
+            </button>
+            <button style={S.ghostBtn} className="hud-btn" onClick={() => openRouteBuilder()} type="button">
+              <Ic.Route /> Изменить маршрут
+            </button>
+            <button
+              style={S.accentBtn}
+              className="hud-accent"
+              onClick={() => {
+                setRoute(null);
+                setRouteError(null);
+                closeDrawer();
+              }}
+              type="button"
+            >
+              Очистить
+            </button>
+          </div>
+        ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
+          <div style={S.bottomRouteActions}>
+            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
+              Закрыть
+            </button>
+            <button
+              style={{ ...S.ghostBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
+              className="hud-btn"
+              onClick={() => openRouteBuilder(selectedRouteTarget?.id ?? null, routeToId)}
+              type="button"
+            >
+              <Ic.Route /> Маршрут отсюда
+            </button>
+            <button
+              style={{ ...S.accentBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
+              className="hud-accent"
+              onClick={() => openRouteBuilder(routeTargets.find((target) => target.featureId === "room-l1-lobby")?.id ?? null, selectedRouteTarget?.id ?? null)}
+              type="button"
+            >
+              <Ic.Nav /> Построить сюда
+            </button>
+          </div>
+        ) : drawerOpen && drawerMode === "search" ? (
+          <div style={S.bottomRouteActions}>
+            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
+              Закрыть поиск
+            </button>
+          </div>
+        ) : drawerOpen && drawerMode === "ops" ? (
+          <div style={S.bottomRouteActions}>
+            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
+              Закрыть панель
             </button>
           </div>
         ) : (
           <div style={S.bottomActionPrimary}>
             <button
               style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
-              className={drawerOpen && drawerMode === "route" ? "hud-accent" : "hud-btn"}
+              className="hud-accent"
+              data-active={drawerOpen && drawerMode === "route" ? "true" : undefined}
               onClick={() => {
                 if (drawerOpen && drawerMode === "route") {
                   setDrawerOpen(false);
@@ -897,427 +1115,435 @@ export default function AtlasV4() {
               }}
               type="button"
             >
-              <Ic.Route /> <span>{route ? "Edit route" : "Build route"}</span>
+              <Ic.Route /> <span>{route ? "Изменить маршрут" : "Построить маршрут"}</span>
             </button>
           </div>
         )}
       </div>
 
-      {drawerOpen && drawerMode === "search" ? (
-        <div style={S.searchDrawerLayer} onClick={closeSearch}>
-          <div style={S.searchDrawerSheet} className="hud-glass oa-slide-up" onClick={(event) => event.stopPropagation()}>
-            <div style={S.browsePanel}>
-            <div style={S.bpHeader}>
-              <div style={S.bpToolbar}>
-                <div style={S.bpGroupRow}>
-                  <span style={S.bpGroupLabel}>Group by</span>
-                  {GROUP_OPTIONS.map((group) => (
-                    <button
-                      key={group.key}
-                      style={{ ...S.pill, ...(browseGroup === group.key ? S.pillActive : {}) }}
-                      className="hud-btn"
-                      onClick={() => setBrowseGroup(group.key)}
-                      type="button"
-                    >
-                      {group.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={S.bpToolbarMeta}>
-                  <span style={S.bpCount}>
-                    {browseQ.trim() ? `${matchedSearchResults.length} indexed hits` : `${browseSpaces.length} spaces`}
-                    {browsePeople.length > 0 ? ` · ${browsePeople.length} people` : ""}
-                  </span>
-                  <button style={S.iconBtn} className="hud-btn" onClick={closeSearch} type="button">
-                    <Ic.X />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div style={S.bpBody}>
-              {browsePeople.length > 0 ? (
-                <div style={S.bpPeopleSection}>
-                  <div style={S.bpSectionTitle}>
-                    <Ic.User /> People
-                  </div>
-                  <div style={S.bpPeopleGrid}>
-                    {browsePeople.slice(0, 6).map((person) => (
-                      <PersonRow key={person.featureId} person={person} onClick={(nextPerson) => {
-                        onSelectFeature(nextPerson.featureId);
-                        setBrowseQ("");
-                        closeSearch();
-                      }} />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <GroupedGrid
-                spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
-                groupKey={browseGroup}
-                onSelect={(space) => {
-                  onSelectFeature(space.featureId);
-                  setBrowseQ("");
-                  closeSearch();
-                }}
-                selectedFeatureId={selectedFeatureId}
-              />
-            </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {drawerOpen && drawerMode === "route" ? (
-        <div style={S.drawerLayer} onClick={closeDrawer}>
-          <div style={S.drawerSheet} className="hud-glass oa-slide-up" onClick={(event) => event.stopPropagation()}>
-            <div style={S.routePanel}>
-            <div style={S.rpColumns}>
-              <div style={S.rpCol}>
-                <div style={S.rpColHeader}>
-                  <div style={{ flex: 1 }}>
-                    <div style={S.rpColLabel}>From — Starting point</div>
-                    {routeFrom ? (
-                      <div style={S.rpSelected}>
-                        <span style={S.rpSelectedName}>{routeFrom.name}</span>
-                        <span style={S.rpSelectedLevel}>{routeFrom.level}</span>
-                        <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteFromId("")} type="button">
-                          <Ic.X s={10} />
+      {drawerOpen ? (
+        <div
+          style={{
+            ...S.drawerLayer,
+            ...(isWorkspaceDrawerMode ? S.drawerLayerWorkspace : S.drawerLayerInfo),
+            ...(isInfoDrawerMode ? S.drawerLayerInfoInteractive : null),
+          }}
+          onClick={isWorkspaceDrawerMode ? closeDrawer : undefined}
+        >
+          <div
+            style={{
+              ...S.drawerSheet,
+              ...(isWorkspaceDrawerMode ? S.drawerSheetWorkspace : S.drawerSheetInfo),
+            }}
+            className="hud-glass oa-slide-up"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {drawerMode === "search" ? (
+              <div style={S.browsePanel}>
+                <div style={S.bpHeader}>
+                  <div style={S.bpToolbar}>
+                    <div style={S.bpGroupRow}>
+                      <span style={S.bpGroupLabel}>Группировать</span>
+                      {GROUP_OPTIONS.map((group) => (
+                        <button
+                          key={group.key}
+                          style={{ ...S.pill, ...(browseGroup === group.key ? S.pillActive : {}) }}
+                          className="hud-btn"
+                          data-active={browseGroup === group.key ? "true" : undefined}
+                          onClick={() => setBrowseGroup(group.key)}
+                          type="button"
+                        >
+                          {group.label}
                         </button>
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: 12, color: T.muted }}>Pick a starting room below</span>
-                    )}
-                  </div>
-                </div>
-                <div style={S.rpColSearch}>
-                  <Ic.Search s={13} />
-                  <input style={S.rpColInput} placeholder="Filter…" value={routeFromQ} onChange={(event) => setRouteFromQ(event.target.value)} />
-                  {routeFromQ ? (
-                    <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setRouteFromQ("")} type="button">
-                      <Ic.X s={10} />
-                    </button>
-                  ) : null}
-                </div>
-                <div style={S.rpColToolbar}>
-                  <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>GROUP</span>
-                  {GROUP_OPTIONS.slice(0, 3).map((group) => (
-                    <button
-                      key={group.key}
-                      style={{ ...S.pillSm, ...(routeFromGroup === group.key ? S.pillSmActive : {}) }}
-                      className="hud-btn"
-                      onClick={() => setRouteFromGroup(group.key)}
-                      type="button"
-                    >
-                      {group.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={S.rpColBody}>
-                  <GroupedGrid
-                    spaces={routeFromChoices}
-                    groupKey={routeFromGroup}
-                    onSelect={(space) => setRouteFromId(space.routeTargetId ?? "")}
-                    selectedFeatureId={routeFrom?.featureId ?? null}
-                    compact
-                  />
-                </div>
-              </div>
-
-              <div style={S.rpSwapCol}>
-                <button
-                  style={S.rpSwapBtn}
-                  className="hud-btn"
-                  onClick={() => {
-                    const fromId = routeFromId;
-                    setRouteFromId(routeToId);
-                    setRouteToId(fromId);
-                  }}
-                  type="button"
-                >
-                  <Ic.Swap />
-                </button>
-              </div>
-
-              <div style={{ ...S.rpCol, ...S.rpColLast }}>
-                <div style={S.rpColHeader}>
-                  <div style={{ flex: 1 }}>
-                    <div style={S.rpColLabel}>To — Destination</div>
-                    {routeTo ? (
-                      <div style={S.rpSelected}>
-                        <span style={S.rpSelectedName}>{routeTo.name}</span>
-                        <span style={S.rpSelectedLevel}>{routeTo.level}</span>
-                        <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteToId("")} type="button">
-                          <Ic.X s={10} />
-                        </button>
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: 12, color: T.muted }}>Pick a destination below</span>
-                    )}
-                  </div>
-                </div>
-                <div style={S.rpColSearch}>
-                  <Ic.Search s={13} />
-                  <input style={S.rpColInput} placeholder="Filter…" value={routeToQ} onChange={(event) => setRouteToQ(event.target.value)} />
-                  {routeToQ ? (
-                    <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setRouteToQ("")} type="button">
-                      <Ic.X s={10} />
-                    </button>
-                  ) : null}
-                </div>
-                <div style={S.rpColToolbar}>
-                  <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>GROUP</span>
-                  {GROUP_OPTIONS.slice(0, 3).map((group) => (
-                    <button
-                      key={group.key}
-                      style={{ ...S.pillSm, ...(routeToGroup === group.key ? S.pillSmActive : {}) }}
-                      className="hud-btn"
-                      onClick={() => setRouteToGroup(group.key)}
-                      type="button"
-                    >
-                      {group.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={S.rpColBody}>
-                  <GroupedGrid
-                    spaces={routeToChoices}
-                    groupKey={routeToGroup}
-                    onSelect={(space) => setRouteToId(space.routeTargetId ?? "")}
-                    selectedFeatureId={routeTo?.featureId ?? null}
-                    compact
-                  />
-                </div>
-              </div>
-            </div>
-
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {route && !drawerOpen ? (
-        <div style={S.routeResultFloat} className="hud-glass oa-slide-left">
-          <div style={S.panelHeaderTight}>
-            <div style={{ display: "grid", gap: 4 }}>
-              <div style={S.panelSectionLabel}>Active Route</div>
-              <div style={S.sidePanelTitle}>
-                {routeFrom?.name ?? "Start"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Destination"}
-              </div>
-              <div style={S.sidePanelSubline}>
-                {routeSummaryDistance} m · {routeDurationLabel(route.summary.distance)}
-              </div>
-            </div>
-            <button
-              style={S.iconBtn}
-              className="hud-btn"
-              onClick={() => {
-                setRoute(null);
-                setRouteError(null);
-              }}
-              type="button"
-            >
-              <Ic.X />
-            </button>
-          </div>
-
-          <div style={S.sidePanelBody}>
-            <div style={S.sidePanelSection}>
-              <div style={S.sidePanelSectionHeader}>
-                <span style={S.panelSectionLabel}>Overview</span>
-              </div>
-              <div style={S.rrPath}>
-                {routeFrom?.name ?? "Start"} <Ic.ArrowR /> {routeTo?.name ?? "Destination"}
-              </div>
-
-              <div style={S.rrStatsPanel}>
-                {[
-                  { v: String(route.nodeIds.length), l: "Nodes" },
-                  { v: String(route.legs.length), l: "Legs" },
-                  { v: String(route.summary.levels.length), l: "Levels" },
-                  { v: routeConnectorLabel(route.summary.connectorTypes), l: "Via" },
-                ].map((stat) => (
-                  <div key={stat.l} style={S.rrStatCard}>
-                    <span style={S.rrStatV}>{stat.v}</span>
-                    <span style={S.rrStatL}>{stat.l}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ ...S.sidePanelSection, minHeight: 0, flex: 1 }}>
-              <div style={S.sidePanelSectionHeader}>
-                <span style={S.panelSectionLabel}>Steps</span>
-              </div>
-              <div style={S.panelInsetScroll}>
-                {routeStepsList.map((step, index) => (
-                  <div key={step} style={S.rrStep}>
-                    <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", borderColor: T.accent } : {}) }}>
-                      {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
+                      ))}
                     </div>
-                    <span style={S.rrStepT}>{step}</span>
+                    <div style={S.bpToolbarMeta}>
+                      <span style={S.bpCount}>
+                        {browseQ.trim() ? `${matchedSearchResults.length} совпадений` : `${browseSpaces.length} помещений`}
+                        {browsePeople.length > 0 ? ` · ${browsePeople.length} человек` : ""}
+                      </span>
+                      <button style={S.iconBtn} className="hud-btn" onClick={closeSearch} type="button">
+                        <Ic.X />
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div style={S.sidePanelFooter}>
-            <button style={S.accentBtn} className="hud-accent" onClick={() => openRouteBuilder()} type="button">
-              <Ic.Route /> Edit route
-            </button>
-            <button
-              style={S.ghostBtn}
-              className="hud-btn"
-              onClick={() => {
-                setRoute(null);
-                setRouteError(null);
-              }}
-              type="button"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {selectedFeature && !drawerOpen && !route ? (
-        <div style={S.detailFloat} className="hud-glass oa-slide-left">
-          <div style={S.panelHeaderTight}>
-            <div style={{ display: "grid", gap: 6 }}>
-              <div style={S.panelSectionLabel}>{KIND_L[getAtlasKind(selectedFeature)]}</div>
-              <h2 style={S.sidePanelTitle}>{selectedFeature.properties.employee ?? selectedFeature.properties.name}</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ ...S.statusPill, color: ST[selectedStatus].c, background: ST[selectedStatus].bg }}>
-                  <Ic.Pulse /> {ST[selectedStatus].label}
-                </span>
-                <span style={S.infoChip}>{selectedFeature.properties.level}</span>
-                {(selectedFeature.properties.capacity ?? 0) > 0 ? <span style={S.sidePanelSubline}>{selectedFeature.properties.capacity} seats</span> : null}
-              </div>
-            </div>
-            <button style={S.iconBtn} className="hud-btn" onClick={() => setSelectedFeatureId(null)} type="button">
-              <Ic.X />
-            </button>
-          </div>
-          <div style={S.sidePanelBody}>
-            {selectedFeature.properties.employee ? (
-              <div style={S.panelInsetAccent}>
-                <div style={S.personAv}>{selectedFeature.properties.employee[0]}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedFeature.properties.employee}</div>
-                  <div style={{ fontSize: 11, color: T.muted }}>{selectedFeature.properties.name}</div>
+                </div>
+                <div style={S.bpBody}>
+                  {browsePeople.length > 0 ? (
+                    <div style={S.bpPeopleSection}>
+                      <div style={S.bpSectionTitle}>
+                        <Ic.User /> Люди
+                      </div>
+                      <div style={S.bpPeopleGrid}>
+                        {browsePeople.slice(0, 6).map((person) => (
+                          <PersonRow
+                            key={person.featureId}
+                            person={person}
+                            onClick={(nextPerson) => {
+                              setBrowseQ("");
+                              onSelectFeature(nextPerson.featureId);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  <GroupedGrid
+                    spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
+                    groupKey={browseGroup}
+                    onSelect={(space) => {
+                      setBrowseQ("");
+                      onSelectFeature(space.featureId);
+                    }}
+                    selectedFeatureId={selectedFeatureId}
+                  />
                 </div>
               </div>
             ) : null}
-            <div style={S.sidePanelSection}>
-              <div style={S.sidePanelSectionHeader}>
-                <span style={S.panelSectionLabel}>Workspace</span>
-              </div>
-              <div style={S.panelMetaGrid}>
-                {[
-                  ["Department", selectedFeature.properties.department ?? "Shared"],
-                  ["Level", selectedFeature.properties.level],
-                  ["ID", selectedFeature.id],
-                  ["Route", selectedRouteTarget?.routeNodeId ?? "N/A"],
-                ].map(([label, value]) => (
-                  <div key={label} style={S.panelMetaCell}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, ...(label === "ID" || label === "Route" ? { fontFamily: MONO, fontSize: 10 } : {}) }}>{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {(selectedFeature.properties.equipment ?? []).length > 0 ? (
-              <div style={S.sidePanelSection}>
-                <div style={S.sidePanelSectionHeader}>
-                  <div style={S.panelSectionLabel}>Equipment</div>
-                </div>
-                <div style={S.panelChipRow}>
-                {(selectedFeature.properties.equipment ?? []).map((equipment) => (
-                  <span key={equipment} style={S.infoChip}>
-                    {equipment}
-                  </span>
-                ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-          <div style={S.sidePanelFooterColumn}>
-            <button
-              style={{ ...S.accentBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
-              className="hud-accent"
-              onClick={() => openRouteBuilder(routeTargets.find((target) => target.featureId === "room-l1-lobby")?.id ?? null, selectedRouteTarget?.id ?? null)}
-              type="button"
-            >
-              <Ic.Nav /> Navigate here
-            </button>
-            <button
-              style={{ ...S.ghostBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
-              className="hud-btn"
-              onClick={() => openRouteBuilder(selectedRouteTarget?.id ?? null, routeToId)}
-              type="button"
-            >
-              <Ic.Route /> Route from here
-            </button>
-          </div>
-        </div>
-      ) : null}
 
-      {opsOpen && !drawerOpen ? (
-        <div style={S.opsPanel} className="hud-glass oa-fade">
-          <div style={S.panelHeaderTight}>
-            <div style={{ display: "grid", gap: 0 }}>
-              <span style={S.panelSectionLabel}>Overview</span>
-              <span style={{ ...S.sidePanelTitle, fontSize: 16 }}>Operations</span>
-            </div>
-            <button style={S.iconBtn} className="hud-btn" onClick={() => setOpsOpen(false)} type="button">
-              <Ic.X />
-            </button>
-          </div>
-          <div style={S.sidePanelBody}>
-            <div style={S.sidePanelSection}>
-              <div style={S.sidePanelSectionHeader}>
-                <span style={S.panelSectionLabel}>Status</span>
-              </div>
-              <div style={S.rrStatsPanel}>
-                {Object.entries(ST).map(([statusKey, config]) => (
-                  <div key={statusKey} style={S.rrStatCard}>
-                    <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, lineHeight: 1, color: config.c }}>{statusCounts[statusKey as RoomStatus]}</span>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{config.label}</span>
+            {drawerMode === "route" ? (
+              <div style={S.routePanel}>
+                <div style={S.rpColumns}>
+                  <div style={S.rpCol}>
+                    <div style={S.rpColHeader}>
+                      <div style={{ flex: 1 }}>
+                        <div style={S.rpColLabel}>Откуда — стартовая точка</div>
+                        {routeFrom ? (
+                          <div style={S.rpSelected}>
+                            <span style={S.rpSelectedName}>{routeFrom.name}</span>
+                            <span style={S.rpSelectedLevel}>{routeFrom.level}</span>
+                            <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteFromId("")} type="button">
+                              <Ic.X s={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 12, color: T.muted }}>Выберите стартовую точку ниже</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={S.rpColSearch} className="hud-input-shell">
+                      <Ic.Search s={13} />
+                      <input style={S.rpColInput} placeholder="Фильтр…" value={routeFromQ} onChange={(event) => setRouteFromQ(event.target.value)} />
+                      {routeFromQ ? (
+                        <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setRouteFromQ("")} type="button">
+                          <Ic.X s={10} />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div style={S.rpColToolbar}>
+                      <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                      {GROUP_OPTIONS.slice(0, 3).map((group) => (
+                        <button
+                          key={group.key}
+                          style={{ ...S.pillSm, ...(routeFromGroup === group.key ? S.pillSmActive : {}) }}
+                          className="hud-btn"
+                          data-active={routeFromGroup === group.key ? "true" : undefined}
+                          onClick={() => setRouteFromGroup(group.key)}
+                          type="button"
+                        >
+                          {group.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={S.rpColBody}>
+                      <GroupedGrid
+                        spaces={routeFromChoices}
+                        groupKey={routeFromGroup}
+                        onSelect={(space) => setRouteFromId(space.routeTargetId ?? "")}
+                        selectedFeatureId={routeFrom?.featureId ?? null}
+                        compact
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ ...S.sidePanelSection, minHeight: 0, flex: 1 }}>
-              <div style={S.sidePanelSectionHeader}>
-                <span style={S.panelSectionLabel}>Live Rooms</span>
-              </div>
-              <div style={S.panelInsetScroll}>
-                {levelRooms.map((space) => {
-                  const config = ST[space.status];
-                  return (
+
+                  <div style={S.rpSwapCol}>
                     <button
-                      key={space.id}
-                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", background: "none", border: "1px solid transparent", borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", marginBottom: 6 }}
-                      className="hud-card"
+                      style={S.rpSwapBtn}
+                      className="hud-btn"
                       onClick={() => {
-                        onSelectFeature(space.featureId);
-                        setOpsOpen(false);
+                        const fromId = routeFromId;
+                        setRouteFromId(routeToId);
+                        setRouteToId(fromId);
                       }}
                       type="button"
                     >
-                      <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
-                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{space.name}</span>
-                        <span style={{ fontSize: 11, color: T.muted }}>{space.level} · {space.cap} seats</span>
-                      </div>
-                      <span style={{ ...S.statusPill, fontSize: 10, padding: "2px 8px", color: config.c, background: config.bg }}>{config.label}</span>
+                      <Ic.Swap />
                     </button>
-                  );
-                })}
+                  </div>
+
+                  <div style={{ ...S.rpCol, ...S.rpColLast }}>
+                    <div style={S.rpColHeader}>
+                      <div style={{ flex: 1 }}>
+                        <div style={S.rpColLabel}>Куда — точка назначения</div>
+                        {routeTo ? (
+                          <div style={S.rpSelected}>
+                            <span style={S.rpSelectedName}>{routeTo.name}</span>
+                            <span style={S.rpSelectedLevel}>{routeTo.level}</span>
+                            <button style={S.rpClearBtn} className="hud-btn" onClick={() => setRouteToId("")} type="button">
+                              <Ic.X s={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: 12, color: T.muted }}>Выберите точку назначения ниже</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={S.rpColSearch} className="hud-input-shell">
+                      <Ic.Search s={13} />
+                      <input style={S.rpColInput} placeholder="Фильтр…" value={routeToQ} onChange={(event) => setRouteToQ(event.target.value)} />
+                      {routeToQ ? (
+                        <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setRouteToQ("")} type="button">
+                          <Ic.X s={10} />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div style={S.rpColToolbar}>
+                      <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                      {GROUP_OPTIONS.slice(0, 3).map((group) => (
+                        <button
+                          key={group.key}
+                          style={{ ...S.pillSm, ...(routeToGroup === group.key ? S.pillSmActive : {}) }}
+                          className="hud-btn"
+                          data-active={routeToGroup === group.key ? "true" : undefined}
+                          onClick={() => setRouteToGroup(group.key)}
+                          type="button"
+                        >
+                          {group.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={S.rpColBody}>
+                      <GroupedGrid
+                        spaces={routeToChoices}
+                        groupKey={routeToGroup}
+                        onSelect={(space) => setRouteToId(space.routeTargetId ?? "")}
+                        selectedFeatureId={routeTo?.featureId ?? null}
+                        compact
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : null}
+
+            {drawerMode === "route-result" && route ? (
+              <div style={S.drawerInfoPanel}>
+                <div style={S.sidePanelBody}>
+                  <div style={S.sidePanelSectionCompact}>
+                    <div style={S.sidePanelSectionHeader}>
+                      <span style={S.panelSectionLabel}>Обзор</span>
+                    </div>
+                    <div style={S.rrPath}>
+                      {routeFrom?.name ?? "Старт"} <Ic.ArrowR /> {routeTo?.name ?? "Точка назначения"}
+                    </div>
+                  </div>
+                  <div style={{ ...S.sidePanelSectionCompact, minHeight: 0 }}>
+                    <div style={S.sidePanelSectionHeader}>
+                      <span style={S.panelSectionLabel}>Шаги</span>
+                    </div>
+                    <div style={{ ...S.panelInsetScroll, ...S.infoPanelScrollArea, ...S.rrStepsGrid }}>
+                      {routeStepsList.map((step, index) => (
+                        <div key={step} style={S.rrStep}>
+                          <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", border: `1px solid ${T.accent}` } : {}) }}>
+                            {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
+                          </div>
+                          <span style={S.rrStepT}>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {drawerMode === "detail" && selectedFeature ? (
+              <div style={S.drawerInfoPanel}>
+                <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
+                  {(() => {
+                    const equipment = selectedFeature.properties.equipment ?? [];
+                    const hasEquipment = equipment.length > 0;
+                    const hasSubtitle = Boolean(selectedFeature.properties.subtitle);
+                    const hasCapacity = (selectedFeature.properties.capacity ?? 0) > 0;
+
+                    return (
+                      <>
+                  {selectedFeature.properties.employee ? (
+                    <div style={S.detailSummaryCard}>
+                      <div style={S.personAv}>{selectedFeature.properties.employee[0]}</div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedFeature.properties.employee}</div>
+                        <div style={{ fontSize: 11, color: T.muted }}>{selectedFeature.properties.name}</div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {hasSubtitle || hasCapacity ? (
+                    <div style={S.detailSummaryCard}>
+                      <div style={S.detailSummaryContent}>
+                        <div style={S.detailSummaryRow}>
+                          {hasSubtitle ? (
+                            <div style={S.detailSummaryText}>{selectedFeature.properties.subtitle}</div>
+                          ) : <div />}
+                          <div style={S.detailSummaryMeta}>
+                            <span style={S.infoChip}>{selectedFeature.properties.department ?? "Общие"}</span>
+                            {hasCapacity ? <span style={S.infoChip}>{selectedFeature.properties.capacity} мест</span> : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div style={S.detailMetaGrid}>
+                    {[
+                      ["Отдел", selectedFeature.properties.department ?? "Общие"],
+                      ["Этаж", selectedFeature.properties.level],
+                      ["ID", selectedFeature.id],
+                      ["Маршрут", selectedRouteTarget?.routeNodeId ?? "Н/Д"],
+                    ].map(([label, value]) => (
+                      <div key={label} style={S.detailMetaCell}>
+                        <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, ...(label === "ID" || label === "Маршрут" ? { fontFamily: MONO, fontSize: 10 } : {}) }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {hasEquipment ? (
+                    <div style={S.detailEquipmentRow}>
+                      {equipment.map((equipment) => (
+                        <span key={equipment} style={S.infoChip}>
+                          {equipment}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            ) : null}
+
+            {drawerMode === "ops" ? (
+              <div style={S.drawerInfoPanel}>
+                <div style={S.sidePanelBody}>
+                  <div style={S.opsOverviewGrid}>
+                    <div style={S.opsHeroCard}>
+                      <div style={S.sidePanelSectionHeader}>
+                        <span style={S.panelSectionLabel}>Этаж</span>
+                        <div style={S.panelChipRow}>
+                          <span style={S.infoChip}>{activeLevel}</span>
+                          <span style={S.infoChip}>{levelRoomCount} помещений</span>
+                        </div>
+                      </div>
+                      <div style={S.opsHeroMain}>
+                        <div style={S.opsHeroMetricBlock}>
+                          <span style={{ ...S.opsHeroMetric, color: ST.available.c }}>{levelStatusCounts.available}</span>
+                          <span style={S.opsHeroMetricLabel}>свободно сейчас</span>
+                        </div>
+                        <div style={S.opsHeroCopy}>
+                          <div style={S.opsHeroTitle}>Оперативная загрузка этажа</div>
+                          <div style={S.sidePanelSubline}>
+                            Доступно {levelAvailabilityRate}% помещений. В использовании сейчас {occupiedNow} из {levelRoomCount}.
+                          </div>
+                        </div>
+                      </div>
+                      <div style={S.opsBreakdownBar}>
+                        {Object.entries(ST).map(([statusKey, config]) => {
+                          const count = levelStatusCounts[statusKey as RoomStatus];
+                          return (
+                            <div
+                              key={statusKey}
+                              style={{
+                                ...S.opsBreakdownSegment,
+                                flex: Math.max(count, 1),
+                                background: count > 0 ? config.bg : "rgba(255,255,255,.02)",
+                                border: count > 0 ? `1px solid ${config.c}22` : CONTROL_BORDER,
+                                color: count > 0 ? config.c : T.muted,
+                              }}
+                            >
+                              <span style={S.opsBreakdownValue}>{count}</span>
+                              <span style={S.opsBreakdownLabel}>{config.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={S.opsMetaRow}>
+                        <div style={S.opsMetaCard}>
+                          <span style={S.opsMetaLabel}>ДОСТУПНОСТЬ</span>
+                          <span style={S.opsMetaValue}>{levelAvailabilityRate}%</span>
+                        </div>
+                        <div style={S.opsMetaCard}>
+                          <span style={S.opsMetaLabel}>ЗАГРУЗКА</span>
+                          <span style={S.opsMetaValue}>{levelLoadRate}%</span>
+                        </div>
+                        <div style={S.opsMetaCard}>
+                          <span style={S.opsMetaLabel}>ВНЕ СЕТИ</span>
+                          <span style={S.opsMetaValue}>{levelStatusCounts.offline}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={S.sidePanelSection}>
+                      <div style={S.sidePanelSectionHeader}>
+                        <span style={S.panelSectionLabel}>Общий статус</span>
+                        <span style={S.infoChip}>{totalTrackedRooms} помещений</span>
+                      </div>
+                      <div style={S.opsStatusGrid}>
+                        {Object.entries(ST).map(([statusKey, config]) => (
+                          <div key={statusKey} style={S.opsStatusCard}>
+                            <span style={{ ...S.opsStatusValue, color: config.c }}>{statusCounts[statusKey as RoomStatus]}</span>
+                            <span style={S.opsStatusLabel}>{config.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={S.sidePanelSection}>
+                    <div style={S.sidePanelSectionHeader}>
+                      <span style={S.panelSectionLabel}>Живые помещения</span>
+                      <div style={S.panelChipRow}>
+                        <span style={S.infoChip}>{opsRooms.length} позиций</span>
+                        <span style={S.infoChip}>{levelStatusCounts.available} свободно</span>
+                      </div>
+                    </div>
+                    <div style={S.opsRoomGrid}>
+                      {opsRooms.map((space) => {
+                        const config = ST[space.status];
+                        return (
+                          <button
+                            key={space.id}
+                            style={{
+                              ...S.opsRoomCard,
+                              ...(selectedFeatureId === space.featureId ? S.opsRoomCardSelected : {}),
+                            }}
+                            className="hud-card"
+                            onClick={() => {
+                              onSelectFeature(space.featureId);
+                            }}
+                            type="button"
+                          >
+                            <div style={S.opsRoomHeader}>
+                              <div style={S.opsRoomTitleRow}>
+                                <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
+                                <span style={S.opsRoomName}>{space.name}</span>
+                              </div>
+                              <span style={{ ...S.statusPill, ...S.opsStatusPill, color: config.c, background: config.bg }}>{config.label}</span>
+                            </div>
+                            <div style={S.opsRoomMeta}>
+                              <span style={S.opsRoomMetaItem}>{space.level}</span>
+                              <span style={S.opsRoomMetaItem}>{space.cap} мест</span>
+                              <span style={S.opsRoomMetaItem}>{space.kindLabel}</span>
+                            </div>
+                            <div style={S.opsRoomFooter}>
+                              <span style={S.opsRoomDept}>{space.dept}</span>
+                              {space.status === "occupied" || space.status === "focus" ? (
+                                <span style={S.opsRoomSignal}>Требует внимания</span>
+                              ) : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -1327,21 +1553,185 @@ export default function AtlasV4() {
 
 const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif";
 const MONO = "'JetBrains Mono', 'SF Mono', monospace";
-const TOP_BAR_CLEARANCE = 72;
+const TOP_BAR_CLEARANCE = 96;
 const BOTTOM_BAR_CLEARANCE = 96;
 const SIDE_PANEL_TOP_INSET = 16;
+const ATLAS_THEME_VARS = {
+  dark: {
+    "--atlas-bg": "#0c1018",
+    "--atlas-glass": "rgba(15,20,32,.72)",
+    "--atlas-glass-heavy": "rgba(12,16,26,.92)",
+    "--atlas-border": "rgba(255,255,255,.07)",
+    "--atlas-border-strong": "rgba(255,255,255,.12)",
+    "--atlas-text": "#e4e6ea",
+    "--atlas-sec": "rgba(255,255,255,.50)",
+    "--atlas-muted": "rgba(255,255,255,.28)",
+    "--atlas-accent": "#38bdf8",
+    "--atlas-accent-bg": "rgba(56,189,248,.10)",
+    "--atlas-accent-border": "rgba(56,189,248,.22)",
+    "--atlas-hover-surface": "rgba(255,255,255,.06)",
+    "--atlas-focus-surface": "rgba(56,189,248,.08)",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.028)",
+    "--atlas-elev-top": "0 10px 34px rgba(0,0,0,.22)",
+    "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.18)",
+    "--atlas-elev-drawer": "0 8px 34px rgba(0,0,0,.24)",
+    "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.18)",
+    "--atlas-elev-floating": "0 6px 18px rgba(0,0,0,.18)",
+    "--atlas-elev-accent": "0 10px 26px rgba(56,189,248,.16)",
+    "--atlas-elev-accent-active": "0 10px 28px rgba(56,189,248,.22)",
+    "--atlas-overlay": "rgba(0,0,0,.08)",
+  },
+  light: {
+    "--atlas-bg": "#e7edf1",
+    "--atlas-glass": "rgba(247,250,252,.80)",
+    "--atlas-glass-heavy": "rgba(252,254,255,.94)",
+    "--atlas-border": "rgba(32,50,65,.10)",
+    "--atlas-border-strong": "rgba(32,50,65,.18)",
+    "--atlas-text": "#1c2d3a",
+    "--atlas-sec": "rgba(28,45,58,.72)",
+    "--atlas-muted": "rgba(28,45,58,.42)",
+    "--atlas-accent": "#2297d5",
+    "--atlas-accent-bg": "rgba(34,151,213,.10)",
+    "--atlas-accent-border": "rgba(34,151,213,.22)",
+    "--atlas-hover-surface": "rgba(28,45,58,.06)",
+    "--atlas-focus-surface": "rgba(34,151,213,.08)",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.14)",
+    "--atlas-elev-top": "0 6px 16px rgba(28,45,58,.08)",
+    "--atlas-elev-bottom": "0 -1px 14px rgba(28,45,58,.06)",
+    "--atlas-elev-drawer": "0 4px 16px rgba(28,45,58,.08)",
+    "--atlas-elev-side": "-4px 0 14px rgba(28,45,58,.08)",
+    "--atlas-elev-floating": "0 3px 10px rgba(28,45,58,.07)",
+    "--atlas-elev-accent": "0 6px 14px rgba(34,151,213,.10)",
+    "--atlas-elev-accent-active": "0 6px 16px rgba(34,151,213,.14)",
+    "--atlas-overlay": "rgba(28,45,58,.035)",
+  },
+} as const;
 const T = {
-  bg: "#0c1018",
-  glass: "rgba(15,20,32,.72)",
-  glassH: "rgba(12,16,26,.92)",
-  border: "rgba(255,255,255,.07)",
-  borderH: "rgba(255,255,255,.12)",
-  text: "#e4e6ea",
-  sec: "rgba(255,255,255,.50)",
-  muted: "rgba(255,255,255,.28)",
-  accent: "#38bdf8",
-  accentBg: "rgba(56,189,248,.10)",
-  accentBorder: "rgba(56,189,248,.22)",
+  bg: "var(--atlas-bg)",
+  glass: "var(--atlas-glass)",
+  glassH: "var(--atlas-glass-heavy)",
+  border: "var(--atlas-border)",
+  borderH: "var(--atlas-border-strong)",
+  text: "var(--atlas-text)",
+  sec: "var(--atlas-sec)",
+  muted: "var(--atlas-muted)",
+  accent: "var(--atlas-accent)",
+  accentBg: "var(--atlas-accent-bg)",
+  accentBorder: "var(--atlas-accent-border)",
+  controlShadow: "var(--atlas-control-shadow)",
+  elevTop: "var(--atlas-elev-top)",
+  elevBottom: "var(--atlas-elev-bottom)",
+  elevDrawer: "var(--atlas-elev-drawer)",
+  elevSide: "var(--atlas-elev-side)",
+  elevFloating: "var(--atlas-elev-floating)",
+  elevAccent: "var(--atlas-elev-accent)",
+  elevAccentActive: "var(--atlas-elev-accent-active)",
+  overlay: "var(--atlas-overlay)",
+};
+
+const CONTROL_HEIGHT = 42;
+const CONTROL_INNER_HEIGHT = 34;
+const CHROME_SURFACE = "rgba(255,255,255,.032)";
+const CHROME_SURFACE_SOFT = "rgba(255,255,255,.018)";
+const CHROME_SURFACE_STRONG = "rgba(255,255,255,.045)";
+const PANEL_SURFACE = "rgba(255,255,255,.026)";
+const PANEL_SURFACE_SOFT = "rgba(255,255,255,.016)";
+const PANEL_SURFACE_STRONG = "rgba(255,255,255,.038)";
+const CONTROL_BORDER = `1px solid ${T.border}`;
+const CONTROL_BORDER_STRONG = `1px solid ${T.borderH}`;
+const CONTROL_SHADOW = T.controlShadow;
+const segmentedFrame: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+  padding: 4,
+  minHeight: CONTROL_HEIGHT,
+  background: CHROME_SURFACE,
+  border: CONTROL_BORDER,
+  boxShadow: CONTROL_SHADOW,
+};
+const segmentedButtonBase: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  minWidth: 0,
+  minHeight: CONTROL_INNER_HEIGHT,
+  padding: "0 12px",
+  background: "rgba(255,255,255,.012)",
+  border: "1px solid transparent",
+  borderRadius: 0,
+  fontSize: 12,
+  fontWeight: 600,
+  fontFamily: FONT,
+  color: T.muted,
+  whiteSpace: "nowrap",
+};
+const segmentedButtonActive: CSSProperties = {
+  color: T.accent,
+  background: T.accentBg,
+  border: `1px solid ${T.accentBorder}`,
+  boxShadow: `inset 0 0 0 1px ${T.accent}1f`,
+};
+const utilityControlBase: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: CONTROL_HEIGHT,
+  padding: "0 14px",
+  borderRadius: 0,
+  background: CHROME_SURFACE,
+  border: CONTROL_BORDER,
+  boxShadow: CONTROL_SHADOW,
+};
+const secondaryActionBase: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 7,
+  minHeight: CONTROL_HEIGHT,
+  padding: "0 15px",
+  background: CHROME_SURFACE,
+  color: T.sec,
+  border: CONTROL_BORDER,
+  borderRadius: 0,
+  fontSize: 12,
+  fontWeight: 650,
+  fontFamily: FONT,
+  letterSpacing: ".01em",
+};
+const primaryActionBase: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  minHeight: CONTROL_HEIGHT,
+  padding: "0 18px",
+  background: T.accent,
+  color: "#0c1018",
+  border: `1px solid ${T.accent}`,
+  borderRadius: 0,
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: FONT,
+  letterSpacing: ".01em",
+};
+const chromeSectionBase: CSSProperties = {
+  background: PANEL_SURFACE,
+  border: CONTROL_BORDER,
+  boxShadow: CONTROL_SHADOW,
+};
+const microChipBase: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: 28,
+  padding: "0 10px",
+  fontSize: 11,
+  fontWeight: 650,
+  color: T.sec,
+  background: CHROME_SURFACE,
+  border: CONTROL_BORDER,
+  borderRadius: 0,
+  letterSpacing: ".01em",
 };
 
 const CSS = `
@@ -1360,9 +1750,19 @@ const CSS = `
   .hud-glass{background:${T.glass};backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%);border:1px solid ${T.border}}
   .hud-glass-heavy{background:${T.glassH};backdrop-filter:blur(40px) saturate(145%);-webkit-backdrop-filter:blur(40px) saturate(145%);border:1px solid ${T.borderH}}
   .hud-hover{cursor:pointer;transition:background .12s,border-color .12s}.hud-hover:hover{background:${T.glassH}!important;border-color:${T.borderH}!important}
-  .hud-btn{cursor:pointer;transition:background .1s,color .1s}.hud-btn:hover{background:rgba(255,255,255,.06)!important}
-  .hud-accent{cursor:pointer;transition:background .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:#0ea5e9!important;box-shadow:0 4px 20px rgba(56,189,248,.3)!important}.hud-accent:active{transform:scale(.97)}
-  .hud-card{cursor:pointer;transition:background .1s,border-color .1s,box-shadow .1s}.hud-card:hover{background:rgba(255,255,255,.05)!important;border-color:rgba(255,255,255,.12)!important}
+  .hud-btn,.hud-card,.hud-accent,.hud-input-shell{transition:background .12s,border-color .12s,color .12s,box-shadow .12s,transform .08s}
+  .hud-btn,.hud-accent{-webkit-appearance:none;appearance:none;outline:none}
+  .hud-btn::-moz-focus-inner,.hud-accent::-moz-focus-inner{border:0;padding:0}
+  .hud-segment-btn:focus,.hud-segment-btn:active{outline:none!important;box-shadow:none!important}
+  .hud-segment-btn:focus:not(:focus-visible):not([data-active="true"]){background:rgba(255,255,255,.012)!important;border-color:transparent!important;box-shadow:none!important;color:${T.muted}!important}
+  .hud-btn{cursor:pointer}.hud-btn:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;color:${T.text}!important}
+  .hud-btn:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important;color:${T.text}!important}
+  .hud-btn[data-active="true"],.hud-btn[data-active="true"]:hover,.hud-btn[data-active="true"]:focus-visible,.hud-btn[data-active="true"]:active{outline:none;background:${T.accentBg}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1f!important;color:${T.accent}!important}
+  .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.accent}!important;border-color:${T.accent}!important;box-shadow:none!important}.hud-accent:focus-visible{outline:none;background:${T.accent}!important;border-color:${T.accent}!important;box-shadow:none!important}.hud-accent:active{transform:scale(.97)}
+  .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.accent}!important;border-color:${T.accent}!important}
+  .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
+  .hud-input-shell:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important}
+  .hud-input-shell:focus-within{background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
 `;
 
 const S: Record<string, CSSProperties> = {
@@ -1384,31 +1784,34 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    border: `1px solid ${T.borderH}`,
+    border: CONTROL_BORDER_STRONG,
     borderRadius: 0,
-    boxShadow: "0 10px 34px rgba(0,0,0,.22)",
+    boxShadow: T.elevTop,
     minHeight: TOP_BAR_CLEARANCE,
   },
-  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", borderRight: `1px solid ${T.border}` },
+  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", borderRight: CONTROL_BORDER, background: CHROME_SURFACE_SOFT },
   topBrandRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
   topSectionLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
-  logo: { display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, borderRadius: 0, flexShrink: 0 },
-  searchField: { display: "flex", alignItems: "center", gap: 10, padding: "0 12px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, minWidth: 320, minHeight: 38, flex: 1 },
+  logo: { display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minHeight: CONTROL_HEIGHT, background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, flexShrink: 0 },
+  searchField: { display: "flex", alignItems: "center", gap: 10, padding: "0 14px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 320, minHeight: CONTROL_HEIGHT, flex: 1 },
   searchInput: { flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: T.text, fontSize: 13, fontWeight: 500, fontFamily: FONT },
-  searchClearBtn: { width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 0, color: T.muted, flexShrink: 0 },
-  kbd: { marginLeft: "auto", padding: "2px 7px", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: "rgba(255,255,255,.04)", borderRadius: 3, border: `1px solid ${T.border}` },
-  topSceneBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", borderRight: `1px solid ${T.border}` },
-  topActionBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 300 },
-  topActionRow: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
+  searchClearBtn: { width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.05)", border: "1px solid transparent", borderRadius: 0, color: T.muted, flexShrink: 0 },
+  kbd: { marginLeft: "auto", padding: "0 8px", minHeight: 24, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: "rgba(255,255,255,.04)", borderRadius: 0, border: CONTROL_BORDER },
+  topSceneBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", borderRight: CONTROL_BORDER, minWidth: 280, background: CHROME_SURFACE_SOFT },
+  topActionBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 420, background: CHROME_SURFACE_SOFT },
+  topActionRow: { display: "flex", alignItems: "stretch", justifyContent: "flex-end", gap: 8, flexWrap: "nowrap" },
+  topFloorGroup: { ...segmentedFrame },
   themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
   themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
   themeBtnActive: { color: T.text, background: "rgba(255,255,255,.08)" },
-  viewModes: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
-  vmBtn: { display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 500, fontFamily: FONT, color: T.muted, whiteSpace: "nowrap" },
-  vmActive: { color: T.text, background: "rgba(255,255,255,.08)" },
-  opsBtn: { display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, fontFamily: FONT, color: T.sec, minHeight: 38 },
-  opsBadge: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600 },
-  syncChip: { display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 0, fontSize: 10, color: T.sec, minHeight: 38, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
+  viewModes: { ...segmentedFrame, width: "100%" },
+  segmentBtn: { ...segmentedButtonBase },
+  segmentBtnEqual: { flex: "1 1 0" },
+  segmentBtnMono: { fontFamily: MONO, fontWeight: 700, letterSpacing: ".01em" },
+  segmentBtnActive: { ...segmentedButtonActive },
+  opsBtn: { ...utilityControlBase, gap: 8, fontFamily: FONT, color: T.sec },
+  opsBadge: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" },
+  syncChip: { ...utilityControlBase, gap: 7, padding: "0 12px", fontSize: 10, fontFamily: MONO, color: T.sec, whiteSpace: "nowrap", letterSpacing: ".04em" },
   liveDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0, animation: "oa-pulse 2.5s ease infinite" },
   bottomBar: {
     position: "absolute",
@@ -1417,55 +1820,30 @@ const S: Record<string, CSSProperties> = {
     bottom: 0,
     zIndex: 10,
     display: "grid",
-    gridTemplateColumns: "minmax(360px, 1.45fr) 210px 240px minmax(320px, 1fr)",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
     alignItems: "stretch",
     gap: 0,
     padding: 0,
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    border: `1px solid ${T.borderH}`,
+    border: CONTROL_BORDER_STRONG,
     borderRadius: 0,
-    boxShadow: "0 -2px 28px rgba(0,0,0,.18)",
+    boxShadow: T.elevBottom,
     minHeight: BOTTOM_BAR_CLEARANCE,
   },
-  bottomModule: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    gap: 8,
-    minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "12px 14px",
-    background: "rgba(255,255,255,.03)",
-    borderRight: `1px solid ${T.border}`,
-    borderRadius: 0,
-  },
-  bottomFloorModule: { borderRight: `1px solid ${T.borderH}` },
   bottomModuleLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
-  bottomMainRail: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    minHeight: BOTTOM_BAR_CLEARANCE,
-    background: "rgba(255,255,255,.04)",
-  },
   bottomContextBlock: {
     display: "flex",
     alignItems: "center",
     minWidth: 0,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
-    background: "linear-gradient(90deg, rgba(255,255,255,.045), rgba(255,255,255,.028))",
-    borderRight: `1px solid ${T.borderH}`,
+    background: "linear-gradient(90deg, rgba(255,255,255,.055), rgba(255,255,255,.024))",
+    borderRight: CONTROL_BORDER_STRONG,
   },
   bottomContextBlockRoute: {
     padding: "14px 16px",
-  },
-  bottomActionCluster: {
-    display: "grid",
-    gridTemplateColumns: "auto auto",
-    alignItems: "stretch",
-    borderLeft: `1px solid ${T.border}`,
-    background: "rgba(255,255,255,.02)",
   },
   bottomActionPrimary: {
     display: "flex",
@@ -1474,8 +1852,8 @@ const S: Record<string, CSSProperties> = {
     gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
-    background: "rgba(255,255,255,.025)",
-    borderLeft: `1px solid ${T.borderH}`,
+    background: CHROME_SURFACE_SOFT,
+    borderLeft: CONTROL_BORDER_STRONG,
     flexWrap: "wrap",
   },
   bottomRouteActions: {
@@ -1485,12 +1863,10 @@ const S: Record<string, CSSProperties> = {
     gap: 10,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
-    background: "rgba(255,255,255,.025)",
-    borderLeft: `1px solid ${T.borderH}`,
+    background: CHROME_SURFACE_SOFT,
+    borderLeft: CONTROL_BORDER_STRONG,
     flexWrap: "wrap",
   },
-  bottomActionBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,.03)", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap" },
-  bottomActionBtnActive: { background: T.accentBg, color: T.accent, borderColor: T.accentBorder },
   bottomContext: { display: "grid", gap: 4, minWidth: 0, maxWidth: 560 },
   bottomHeadline: {
     fontSize: 15,
@@ -1503,38 +1879,25 @@ const S: Record<string, CSSProperties> = {
   },
   bottomMetaRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
   bottomMeta: { fontSize: 11, color: T.sec, fontWeight: 500 },
-  bottomChip: {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "3px 8px",
-    fontSize: 10,
-    fontWeight: 700,
-    fontFamily: MONO,
-    color: T.sec,
-    background: "rgba(255,255,255,.04)",
-    border: `1px solid ${T.border}`,
-    borderRadius: 0,
-    textTransform: "uppercase",
-  },
+  bottomChip: { ...microChipBase, padding: "0 8px", fontSize: 10, fontWeight: 700, fontFamily: MONO, textTransform: "uppercase" },
   floorPicker: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4 },
-  floorBtn: { padding: "9px 14px", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: MONO, color: T.muted },
-  floorBtnActive: { color: T.accent, background: T.accentBg },
-  bottomUtilityBlock: {
-    display: "grid",
-    alignContent: "center",
-    gap: 8,
-    minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "12px 16px",
-    minWidth: 0,
-    background: "rgba(255,255,255,.03)",
-    borderRight: `1px solid ${T.borderH}`,
+  zoomStack: { ...utilityControlBase, padding: 0, overflow: "hidden" },
+  zoomBtn: {
+    width: 36,
+    minHeight: CONTROL_HEIGHT,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "none",
+    border: "1px solid transparent",
+    fontSize: 17,
+    fontWeight: 400,
+    fontFamily: FONT,
+    color: T.sec,
   },
-  bottomUtilityRow: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" },
-  zoomStack: { display: "flex", alignItems: "center", borderRadius: 0, overflow: "hidden", background: "rgba(255,255,255,.025)", border: `1px solid ${T.border}` },
-  zoomBtn: { width: 34, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", fontSize: 18, fontWeight: 300, fontFamily: FONT, color: T.sec },
-  zoomDivider: { width: 1, height: 18, background: T.border },
-  fab: { display: "flex", alignItems: "center", gap: 8, padding: "11px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 24px rgba(56,189,248,.25)" },
-  fabActive: { background: "#0ea5e9", boxShadow: "0 4px 24px rgba(56,189,248,.3)" },
+  zoomDivider: { width: 1, height: 22, background: T.border },
+  fab: { ...primaryActionBase, whiteSpace: "nowrap", boxShadow: T.elevAccent },
+  fabActive: { background: "#0ea5e9", border: "1px solid #0ea5e9", boxShadow: T.elevAccentActive },
   searchDrawerLayer: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE,
@@ -1542,7 +1905,7 @@ const S: Record<string, CSSProperties> = {
     bottom: BOTTOM_BAR_CLEARANCE,
     left: 0,
     zIndex: 9,
-    background: "rgba(0,0,0,.08)",
+    background: T.overlay,
     display: "flex",
     alignItems: "stretch",
     justifyContent: "stretch",
@@ -1555,7 +1918,7 @@ const S: Record<string, CSSProperties> = {
     maxHeight: "none",
     borderRadius: 0,
     overflow: "hidden",
-    boxShadow: "0 8px 34px rgba(0,0,0,.24)",
+    boxShadow: T.elevDrawer,
   },
   drawerLayer: {
     position: "absolute",
@@ -1564,21 +1927,40 @@ const S: Record<string, CSSProperties> = {
     bottom: BOTTOM_BAR_CLEARANCE,
     left: 0,
     zIndex: 9,
-    background: "rgba(0,0,0,.08)",
+    background: T.overlay,
     display: "flex",
-    alignItems: "stretch",
+    alignItems: "flex-end",
     justifyContent: "stretch",
     padding: 0,
   },
+  drawerLayerWorkspace: {
+    alignItems: "stretch",
+  },
+  drawerLayerInfo: {
+    alignItems: "flex-end",
+  },
+  drawerLayerInfoInteractive: {
+    pointerEvents: "none",
+    background: "transparent",
+  },
   drawerSheet: {
     width: "100%",
-    height: "100%",
     minHeight: 0,
-    maxHeight: "none",
     borderRadius: 0,
     overflow: "hidden",
-    borderTop: `1px solid ${T.borderH}`,
-    boxShadow: "0 8px 34px rgba(0,0,0,.24)",
+    borderTop: CONTROL_BORDER_STRONG,
+    boxShadow: T.elevDrawer,
+    display: "flex",
+    flexDirection: "column",
+  },
+  drawerSheetWorkspace: {
+    height: "100%",
+    maxHeight: "none",
+  },
+  drawerSheetInfo: {
+    height: "auto",
+    maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`,
+    pointerEvents: "auto",
   },
   browsePanel: {
     width: "100%",
@@ -1589,12 +1971,12 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
-  bpHeader: { padding: "12px 16px", borderBottom: `1px solid ${T.borderH}`, flexShrink: 0, background: "rgba(255,255,255,.035)" },
+  bpHeader: { padding: "12px 16px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
   bpToolbarMeta: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
   bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
   bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
   bpDivider: { width: 1, height: 20, background: T.border },
-  bpToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
+  bpToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between" },
   bpGroupRow: { display: "flex", alignItems: "center", gap: 5 },
   bpGroupLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginRight: 4 },
   bpCount: { fontSize: 11, color: T.muted, fontWeight: 500 },
@@ -1602,10 +1984,10 @@ const S: Record<string, CSSProperties> = {
   bpPeopleSection: { marginBottom: 18 },
   bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 },
   bpPeopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 4 },
-  pill: { padding: "5px 12px", fontSize: 11, fontWeight: 600, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.sec, fontFamily: FONT },
-  pillActive: { background: T.accentBg, borderColor: T.accentBorder, color: T.accent },
-  pillSm: { padding: "3px 9px", fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}`, borderRadius: 0, color: T.muted, fontFamily: FONT },
-  pillSmActive: { background: T.accentBg, borderColor: T.accentBorder, color: T.accent },
+  pill: { ...microChipBase, padding: "0 12px", minHeight: 30, fontSize: 11, fontWeight: 600, color: T.sec, fontFamily: FONT },
+  pillActive: { ...segmentedButtonActive },
+  pillSm: { ...microChipBase, padding: "0 10px", minHeight: 26, fontSize: 10, fontWeight: 600, color: T.muted, fontFamily: FONT },
+  pillSmActive: { ...segmentedButtonActive },
   groupedGrid: { display: "flex", flexDirection: "column", gap: 18 },
   group: {},
   groupHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 },
@@ -1613,8 +1995,8 @@ const S: Record<string, CSSProperties> = {
   groupCount: { fontSize: 10, fontWeight: 600, color: T.muted, background: "rgba(255,255,255,.04)", padding: "1px 7px", borderRadius: 10 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 6 },
   gridCompact: { gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 4 },
-  card: { display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", background: "rgba(255,255,255,.02)", border: `1px solid ${T.border}`, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
-  cardSelected: { borderColor: T.accent, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
+  card: { display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
+  cardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   cardNameRow: { display: "flex", alignItems: "center", gap: 7 },
   statusDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
@@ -1624,7 +2006,7 @@ const S: Record<string, CSSProperties> = {
   cardKind: { fontSize: 11, color: T.muted, fontWeight: 500 },
   cardCap: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.sec, fontWeight: 500 },
   cardDept: { fontSize: 10, color: T.muted, fontWeight: 500, marginTop: -2 },
-  personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "rgba(255,255,255,.02)", border: `1px solid ${T.border}`, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left" },
+  personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left" },
   personAv: { width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,rgba(56,189,248,.2),rgba(56,189,248,.05))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.accent, flexShrink: 0 },
   personInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 },
   routePanel: {
@@ -1636,7 +2018,7 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
     padding: "14px 16px",
-    background: "rgba(255,255,255,.018)",
+    background: PANEL_SURFACE_SOFT,
   },
   rpColumns: {
     flex: 1,
@@ -1651,33 +2033,34 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
     minWidth: 0,
-    background: "rgba(255,255,255,.02)",
-    border: `1px solid ${T.border}`,
+    background: PANEL_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
   },
-  rpColLast: { borderRight: `1px solid ${T.border}` },
+  rpColLast: { borderRight: CONTROL_BORDER },
   rpColHeader: {
     display: "flex",
     alignItems: "flex-start",
     gap: 8,
     padding: "10px 14px",
-    borderBottom: `1px solid ${T.border}`,
+    borderBottom: CONTROL_BORDER,
     flexShrink: 0,
-    background: "rgba(255,255,255,.028)",
+    background: PANEL_SURFACE_STRONG,
   },
   rpColLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 },
-  rpSelected: { display: "flex", alignItems: "center", gap: 7, padding: "5px 10px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 0, marginTop: 0 },
+  rpSelected: { display: "flex", alignItems: "center", gap: 7, padding: "0 10px", minHeight: 30, background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, borderRadius: 0, marginTop: 0 },
   rpSelectedName: { fontSize: 13, fontWeight: 650 },
   rpSelectedLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, marginLeft: "auto" },
-  rpClearBtn: { width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.06)", border: "none", borderRadius: 3, color: T.muted, marginLeft: 4, flexShrink: 0 },
+  rpClearBtn: { width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.06)", border: "1px solid transparent", borderRadius: 0, color: T.muted, marginLeft: 4, flexShrink: 0 },
   rpColSearch: {
     display: "flex",
     alignItems: "center",
     gap: 7,
     padding: "10px 14px",
-    borderBottom: `1px solid ${T.border}`,
+    borderBottom: CONTROL_BORDER,
     color: T.muted,
     flexShrink: 0,
-    background: "rgba(255,255,255,.012)",
+    background: PANEL_SURFACE_SOFT,
   },
   rpColInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 12, fontFamily: FONT },
   rpColToolbar: {
@@ -1685,9 +2068,9 @@ const S: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 5,
     padding: "10px 14px",
-    borderBottom: `1px solid ${T.border}`,
+    borderBottom: CONTROL_BORDER,
     flexShrink: 0,
-    background: "rgba(255,255,255,.012)",
+    background: PANEL_SURFACE_SOFT,
   },
   rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
   rpSwapCol: {
@@ -1707,22 +2090,32 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(255,255,255,.035)",
-    border: `1px solid ${T.border}`,
+    background: CHROME_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: `${CONTROL_SHADOW}, ${T.elevFloating}`,
     borderRadius: 0,
     color: T.muted,
-    boxShadow: "0 6px 18px rgba(0,0,0,.18)",
     position: "relative",
     zIndex: 1,
   },
+  drawerInfoPanel: {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    background: PANEL_SURFACE_SOFT,
+  },
+  drawerSectionGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 },
+  drawerSectionGridSingle: { display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 12 },
+  sidePanelSectionFull: { gridColumn: "1 / -1" },
   rpFooter: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 16,
     padding: "12px 16px",
-    borderTop: `1px solid ${T.borderH}`,
-    background: "rgba(255,255,255,.035)",
+    borderTop: CONTROL_BORDER_STRONG,
+    background: PANEL_SURFACE_STRONG,
     flexShrink: 0,
   },
   rpFooterSummary: { display: "grid", gap: 3, minWidth: 0 },
@@ -1737,9 +2130,9 @@ const S: Record<string, CSSProperties> = {
   },
   rpFooterMeta: { fontSize: 11, color: T.sec },
   rpFooterActions: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" },
-  rpResult: { padding: "16px 20px", borderTop: `1px solid ${T.border}`, flexShrink: 0, display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" },
+  rpResult: { padding: "16px 20px", borderTop: CONTROL_BORDER, flexShrink: 0, display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" },
   rrHero: { display: "flex", alignItems: "center", gap: 14, flex: "1 1 400px", flexWrap: "wrap" },
-  rrIcon: { width: 42, height: 42, borderRadius: 6, background: T.accent, color: "#0c1018", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  rrIcon: { width: 42, height: 42, borderRadius: 0, background: T.accentBg, color: T.accent, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   rrMain: { display: "flex", flexDirection: "column" },
   rrDist: { fontSize: 22, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.02em" },
   rrTime: { fontSize: 11, color: T.sec },
@@ -1750,11 +2143,12 @@ const S: Record<string, CSSProperties> = {
   rrStatL: { fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" },
   rrDirections: { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 0 },
   rrStep: { display: "flex", alignItems: "flex-start", gap: 10, padding: "6px 0" },
-  rrStepN: { width: 22, height: 22, borderRadius: "50%", background: "rgba(255,255,255,.05)", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },
+  rrStepN: { width: 22, height: 22, borderRadius: 0, background: CHROME_SURFACE, border: CONTROL_BORDER, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },
   rrStepT: { fontSize: 12, color: T.sec, lineHeight: 1.5, paddingTop: 2 },
-  accentBtn: { display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", background: T.accent, color: "#0c1018", border: "none", borderRadius: 0, fontSize: 13, fontWeight: 700, fontFamily: FONT },
-  ghostBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 14px", background: "none", color: T.sec, border: `1px solid ${T.border}`, borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT },
-  iconBtn: { width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.04)", border: "none", borderRadius: 0, color: T.sec, flexShrink: 0 },
+  rrStepsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10, alignItems: "start" },
+  accentBtn: { ...primaryActionBase },
+  ghostBtn: { ...secondaryActionBase },
+  iconBtn: { width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, color: T.sec, flexShrink: 0 },
   detailFloat: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE + SIDE_PANEL_TOP_INSET,
@@ -1768,8 +2162,8 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderLeft: `1px solid ${T.borderH}`,
-    boxShadow: "-8px 0 28px rgba(0,0,0,.18)",
+    borderLeft: CONTROL_BORDER_STRONG,
+    boxShadow: T.elevSide,
     overflow: "hidden",
   },
   routeResultFloat: {
@@ -1785,8 +2179,8 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderLeft: `1px solid ${T.borderH}`,
-    boxShadow: "-8px 0 28px rgba(0,0,0,.18)",
+    borderLeft: CONTROL_BORDER_STRONG,
+    boxShadow: T.elevSide,
     overflow: "hidden",
   },
   statusPill: { display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", fontSize: 11, fontWeight: 600, borderRadius: 20 },
@@ -1803,24 +2197,56 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderLeft: `1px solid ${T.borderH}`,
-    boxShadow: "-8px 0 28px rgba(0,0,0,.18)",
+    borderLeft: CONTROL_BORDER_STRONG,
+    boxShadow: T.elevSide,
     overflow: "hidden",
   },
   checkRow: { display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none", fontSize: 12, color: T.sec, fontWeight: 500 },
   checkBox: { width: 15, height: 15, borderRadius: 4, border: "1.5px solid rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
-  checkBoxOn: { background: T.accent, borderColor: T.accent },
+  checkBoxOn: { background: T.accent, border: `1.5px solid ${T.accent}` },
   rrStatsPanel: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
-  rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}` },
-  floatHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 12, borderBottom: `1px solid ${T.borderH}`, background: "rgba(255,255,255,.035)" },
+  rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  opsOverviewGrid: { display: "grid", gridTemplateColumns: "minmax(0,1.7fr) minmax(320px,.95fr)", gap: 12, alignItems: "stretch" },
+  opsHeroCard: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 0 },
+  opsHeroMain: { display: "flex", alignItems: "flex-start", gap: 16 },
+  opsHeroMetricBlock: { display: "grid", gap: 4, minWidth: 108, flexShrink: 0 },
+  opsHeroMetric: { fontSize: 42, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.04em", lineHeight: 0.95 },
+  opsHeroMetricLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  opsHeroCopy: { display: "grid", gap: 4, minWidth: 0, paddingTop: 2 },
+  opsHeroTitle: { fontSize: 16, fontWeight: 750, letterSpacing: "-.02em", color: T.text },
+  opsBreakdownBar: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 },
+  opsBreakdownSegment: { display: "grid", gap: 4, padding: "10px 12px", minWidth: 0 },
+  opsBreakdownValue: { fontSize: 16, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
+  opsBreakdownLabel: { fontSize: 10, fontWeight: 600, color: "currentColor", textTransform: "uppercase", letterSpacing: ".05em", opacity: 0.9 },
+  opsMetaRow: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 },
+  opsMetaCard: { display: "grid", gap: 4, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  opsMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  opsMetaValue: { fontSize: 18, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.03em", lineHeight: 1 },
+  opsStatusGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
+  opsStatusCard: { display: "grid", gap: 4, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  opsStatusValue: { fontSize: 26, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
+  opsStatusLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
+  opsRoomGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 10 },
+  opsRoomCard: { width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", minHeight: 132 },
+  opsRoomCardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
+  opsRoomHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  opsRoomTitleRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
+  opsRoomName: { fontSize: 14, fontWeight: 650, lineHeight: 1.3, minWidth: 0 },
+  opsStatusPill: { marginLeft: "auto", flexShrink: 0, fontSize: 10, padding: "3px 9px" },
+  opsRoomMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  opsRoomMetaItem: { ...microChipBase, padding: "0 8px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, fontFamily: MONO, letterSpacing: ".03em" },
+  opsRoomFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: "auto" },
+  opsRoomDept: { fontSize: 11, color: T.muted, fontWeight: 500, minWidth: 0 },
+  opsRoomSignal: { fontSize: 10, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: ".05em", flexShrink: 0 },
+  floatHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 12, borderBottom: CONTROL_BORDER_STRONG, background: PANEL_SURFACE_STRONG },
   panelHeaderTight: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 8,
     padding: "14px 16px",
-    borderBottom: `1px solid ${T.borderH}`,
-    background: "rgba(255,255,255,.03)",
+    borderBottom: CONTROL_BORDER_STRONG,
+    background: PANEL_SURFACE_STRONG,
     flexShrink: 0,
   },
   sidePanelBody: {
@@ -1830,16 +2256,24 @@ const S: Record<string, CSSProperties> = {
     overflowY: "auto",
     minHeight: 0,
     padding: "14px 16px",
-    flex: 1,
-    background: "rgba(255,255,255,.016)",
+    flex: "0 1 auto",
+    maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE + 104}px)`,
+    background: PANEL_SURFACE_SOFT,
+  },
+  sidePanelBodyDetail: {
+    paddingTop: 12,
+    gap: 8,
+  },
+  infoPanelScrollArea: {
+    maxHeight: 280,
   },
   sidePanelFooter: {
     display: "flex",
     gap: 8,
     flexWrap: "wrap",
     padding: "14px 16px",
-    borderTop: `1px solid ${T.borderH}`,
-    background: "rgba(255,255,255,.03)",
+    borderTop: CONTROL_BORDER_STRONG,
+    background: PANEL_SURFACE_STRONG,
     flexShrink: 0,
   },
   sidePanelFooterColumn: {
@@ -1847,25 +2281,34 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: 8,
     padding: "14px 16px",
-    borderTop: `1px solid ${T.borderH}`,
-    background: "rgba(255,255,255,.03)",
+    borderTop: CONTROL_BORDER_STRONG,
+    background: PANEL_SURFACE_STRONG,
     flexShrink: 0,
   },
   sidePanelTitle: { margin: 0, fontSize: 16, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15 },
   sidePanelSubline: { fontSize: 11, color: T.sec },
-  sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: "rgba(255,255,255,.028)", border: `1px solid ${T.border}` },
+  sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  sidePanelSectionCompact: { display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
   sidePanelSectionHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
   floatKicker: { fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: T.accent },
   floatTitle: { margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: "-.03em", lineHeight: 1.15 },
   floatSubline: { fontSize: 12, color: T.sec },
-  panelInset: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: "rgba(255,255,255,.035)", border: `1px solid ${T.border}`, borderRadius: 0 },
-  panelInsetAccent: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 0 },
+  panelInset: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0 },
+  panelInsetAccent: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, borderRadius: 0 },
   panelInsetScroll: { overflowY: "auto", padding: "0 0 2px", minHeight: 0, flex: 1 },
   panelSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", fontFamily: MONO },
   panelMetaGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
-  panelMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: "rgba(255,255,255,.035)", border: `1px solid ${T.border}`, borderRadius: 0 },
+  panelMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0 },
   panelChipRow: { display: "flex", gap: 6, flexWrap: "wrap" },
   panelActionRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   panelActionColumn: { display: "flex", flexDirection: "column", gap: 8 },
-  infoChip: { display: "inline-flex", alignItems: "center", padding: "4px 10px", fontSize: 11, fontWeight: 600, color: T.sec, background: "rgba(255,255,255,.04)", border: `1px solid ${T.border}`, borderRadius: 0 },
+  infoChip: { ...microChipBase, padding: "0 10px", fontSize: 11, fontWeight: 600, color: T.sec },
+  detailSummaryCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  detailSummaryContent: { display: "grid", gap: 6, minWidth: 0, width: "100%" },
+  detailSummaryRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 },
+  detailSummaryMeta: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, flexShrink: 0, whiteSpace: "nowrap" },
+  detailSummaryText: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.35, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  detailMetaGrid: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 6 },
+  detailMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "9px 10px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  detailEquipmentRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 2 },
 };

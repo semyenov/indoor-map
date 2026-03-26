@@ -387,11 +387,11 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
       const stepY1 = y1 + stepDepth * index;
       const stepY2 = stepY1 + stepDepth * treadCoverage;
       const baseHeight = rise * index;
-      const inset = index * 0.05;
+      const inset = index * 0.03;
 
       steps.push(
         polygon(`${idPrefix}-step-${index + 1}`, level, "furniture", `${idPrefix} Step ${index + 1}`, x1 + inset, stepY1, x2 - inset, stepY2, {
-          department: "Vertical circulation",
+          department: "Вертикальные связи",
           baseHeight,
           height: baseHeight + treadThickness,
         }),
@@ -750,7 +750,7 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
   };
 
   const roomTraversalPath = (room: CanonicalRoom, start: Coordinate, end: Coordinate): Coordinate[] => {
-    if (room.department === "Circulation") {
+    if (room.department === "Коридоры") {
       const width = room.bounds[2] - room.bounds[0];
       const height = room.bounds[3] - room.bounds[1];
       const aspectRatio = Math.max(width, height) / Math.max(1, Math.min(width, height));
@@ -1165,12 +1165,12 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
     feature.properties.routeNodeId = featureRouteNodeIdByFeatureId.get(feature.id);
   }
 
-  const searchableRooms = source.rooms.filter((room) => room.showLabel !== false && room.department !== "Circulation");
+  const searchableRooms = source.rooms.filter((room) => room.showLabel !== false && room.department !== "Коридоры");
   const searchEntries: SearchEntry[] = [
     ...searchableRooms.map((room) => {
       const level = levelById.get(room.level);
       const roomLabel =
-        room.kind === "meeting_room" ? "Meeting room" : room.kind === "amenity" ? "Amenity" : "Room";
+        room.kind === "meeting_room" ? "Переговорная" : room.kind === "amenity" ? "Сервисная зона" : "Помещение";
 
       return {
         id: `search-${room.id}`,
@@ -1186,8 +1186,8 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
       label: poi.employee ?? poi.name,
       description:
         poi.kind === "workstation"
-          ? `${poi.name} · ${poi.department ?? "Workspace"}`
-          : `${poi.kind === "connector" ? "Connector" : "Amenity"} · ${levelById.get(poi.level)?.label ?? poi.level}`,
+          ? `${poi.name} · ${poi.department ?? "Рабочая зона"}`
+          : `${poi.kind === "connector" ? "Переход" : "Сервисная зона"} · ${levelById.get(poi.level)?.label ?? poi.level}`,
       level: poi.level,
       featureId: poi.id,
       tokens: [
