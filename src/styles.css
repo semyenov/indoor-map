@@ -1142,14 +1142,6 @@ select:focus-visible {
   background: var(--bg-map-shell);
 }
 
-.map-route-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: visible;
-}
-
 .map-toolbar {
   position: absolute;
   top: 1rem;

@@ -532,6 +532,7 @@ export default function AtlasV4() {
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [focusRequestId, setFocusRequestId] = useState(0);
   const [route, setRoute] = useState<RouteResult | null>(null);
+  const [routeRevision, setRouteRevision] = useState(0);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [roomStatuses, setRoomStatuses] = useState<RoomStatuses>({});
   const [occupancyUpdatedAt, setOccupancyUpdatedAt] = useState<Date | null>(null);
@@ -815,6 +816,7 @@ export default function AtlasV4() {
     if (fromNodeIds.length === 0 || toNodeIds.length === 0) {
       console.debug("[route:build] aborted: missing endpoints");
       setRoute(null);
+      setRouteRevision((current) => current + 1);
       setRouteError("Выберите обе точки маршрута.");
       return;
     }
@@ -826,6 +828,7 @@ export default function AtlasV4() {
         accessibleOnly,
       });
       setRoute(null);
+      setRouteRevision((current) => current + 1);
       setRouteError(accessibleOnly ? "Доступный маршрут не найден." : "Маршрут не найден.");
       return;
     }
@@ -839,6 +842,7 @@ export default function AtlasV4() {
     });
 
     setRoute(result);
+    setRouteRevision((current) => current + 1);
     setRouteError(null);
     setDrawerMode("route-result");
     setDrawerOpen(true);
@@ -938,6 +942,7 @@ export default function AtlasV4() {
       <div style={S.mapBg}>
         <Suspense fallback={<div style={S.mapLoading}>Загрузка карты…</div>}>
           <LazyMapCanvas
+            key={`map:${themeVariant}:${activeLevel}:${routeRevision}`}
             activeLevel={activeLevel}
             collections={dataset.collections}
             externalSceneMode={viewMode}
@@ -1215,6 +1220,7 @@ export default function AtlasV4() {
               className="hud-accent"
               onClick={() => {
                 setRoute(null);
+                setRouteRevision((current) => current + 1);
                 setRouteError(null);
                 closeDrawer();
               }}

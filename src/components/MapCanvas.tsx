@@ -9,7 +9,12 @@ import {
   RotateCw,
   type LucideIcon,
 } from "lucide-react";
-import maplibregl, { type ExpressionSpecification, type FilterSpecification, type StyleSpecification } from "maplibre-gl";
+import maplibregl, {
+  type CustomRenderMethodInput,
+  type ExpressionSpecification,
+  type FilterSpecification,
+  type StyleSpecification,
+} from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { buildRouteCollection, buildRouteMarkerCollection } from "../lib/routing";
 import type {
@@ -167,8 +172,9 @@ const STRUCTURE_SOURCE = "structures";
 const POI_SOURCE = "pois";
 const ROOM_LABEL_SOURCE = "room-label-points";
 const POI_LABEL_SOURCE = "poi-label-points";
-const ROUTE_SOURCE = "route";
-const ROUTE_MARKER_SOURCE = "route-markers";
+const ROUTE_PATH_SOURCE = "route-path";
+const ROUTE_BREADCRUMB_SOURCE = "route-breadcrumbs";
+const ROUTE_CUSTOM_LAYER_ID = "route-custom";
 const SELECTION_SOURCE = "selection";
 type FilteredLayerId =
   | "zone-fill"
@@ -187,10 +193,12 @@ type FilteredLayerId =
   | "poi-labels"
   | "selection-halo"
   | "selection-core"
-  | "route-line"
-  | "route-glow"
-  | "route-node"
-  | "route-node-glow";
+  | "route-path-glow"
+  | "route-path"
+  | "route-breadcrumb-glow"
+  | "route-breadcrumb"
+  | "route-terminal-glow"
+  | "route-terminal";
 
 const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "zone-fill",
@@ -209,10 +217,12 @@ const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "poi-labels",
   "selection-halo",
   "selection-core",
-  "route-line",
-  "route-glow",
-  "route-node",
-  "route-node-glow",
+  "route-path-glow",
+  "route-path",
+  "route-breadcrumb-glow",
+  "route-breadcrumb",
+  "route-terminal-glow",
+  "route-terminal",
 ];
 
 export type MapSceneMode = "plan" | "explore" | "theatre";
@@ -221,29 +231,33 @@ type ScenePreset = {
   bearing: number;
   zoomOffset: number;
 };
+const ROUTE_SAMPLE_STEP = 0.0000025;
 
-type ProjectedRouteMarker = {
-  id: string;
-  x: number;
-  y: number;
-  terminal: boolean;
+type RGBAColor = readonly [number, number, number, number];
+
+type RouteCustomLayer = maplibregl.CustomLayerInterface & {
+  map?: maplibregl.Map;
+  gl?: WebGLRenderingContext | WebGL2RenderingContext;
+  program?: WebGLProgram | null;
+  pathBuffer?: WebGLBuffer | null;
+  terminalBuffer?: WebGLBuffer | null;
+  aPos?: number;
+  uMatrix?: WebGLUniformLocation | null;
+  uPointSize?: WebGLUniformLocation | null;
+  uColor?: WebGLUniformLocation | null;
+  pathVertices?: Float32Array;
+  terminalVertices?: Float32Array;
+  pathVertexCount: number;
+  terminalVertexCount: number;
+  colors: {
+    casing: RGBAColor;
+    line: RGBAColor;
+  };
+  hasLoggedRender: boolean;
+  uploadBuffers: () => void;
+  updateData: (route: RouteResult | null, level: LevelId) => void;
+  updatePalette: (palette: MapPalette) => void;
 };
-
-type ProjectedRouteOverlay = {
-  width: number;
-  height: number;
-  pathData: string;
-  markers: ProjectedRouteMarker[];
-};
-
-const EMPTY_ROUTE_OVERLAY: ProjectedRouteOverlay = {
-  width: 0,
-  height: 0,
-  pathData: "",
-  markers: [],
-};
-
-const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 const SCENE_PRESETS: Record<MapSceneMode, ScenePreset> = {
   plan: { pitch: 18, bearing: 0, zoomOffset: -0.15 },
@@ -540,133 +554,376 @@ const fitRouteBounds = (
   return true;
 };
 
-const buildSvgPathData = (segments: Array<Array<{ x: number; y: number }>>) =>
-  segments
-    .filter((segment) => segment.length > 1)
-    .map((segment) => {
-      const [firstPoint, ...remainingPoints] = segment;
+const parseColor = (value: string): RGBAColor => {
+  if (value.startsWith("#")) {
+    const normalized = value.slice(1);
+    const hex = normalized.length === 3
+      ? normalized.split("").map((part) => `${part}${part}`).join("")
+      : normalized;
 
-      if (!firstPoint) {
-        return "";
-      }
+    const red = Number.parseInt(hex.slice(0, 2), 16) / 255;
+    const green = Number.parseInt(hex.slice(2, 4), 16) / 255;
+    const blue = Number.parseInt(hex.slice(4, 6), 16) / 255;
 
-      return `M ${firstPoint.x} ${firstPoint.y} ${remainingPoints.map((point) => `L ${point.x} ${point.y}`).join(" ")}`;
-    })
-    .filter((segment) => segment.length > 0)
-    .join(" ");
+    return [red, green, blue, 1];
+  }
 
-const projectRouteOverlay = (
-  map: maplibregl.Map,
-  route: RouteResult | null,
-  level: LevelId,
-): ProjectedRouteOverlay => {
-  const container = map.getContainer();
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+  const rgbaMatch = value.match(/^rgba?\(([^)]+)\)$/i);
 
-  if (!route || width <= 0 || height <= 0) {
+  if (!rgbaMatch) {
+    return [1, 1, 1, 1];
+  }
+
+  const [red = "255", green = "255", blue = "255", alpha = "1"] = rgbaMatch[1]?.split(",").map((part) => part.trim()) ?? [];
+  return [
+    Number.parseFloat(red) / 255,
+    Number.parseFloat(green) / 255,
+    Number.parseFloat(blue) / 255,
+    Number.parseFloat(alpha),
+  ];
+};
+
+const sampleRouteCoordinates = (coordinates: Coordinate[]) => {
+  const sampled: Coordinate[] = [];
+
+  for (let index = 0; index < coordinates.length - 1; index += 1) {
+    const start = coordinates[index];
+    const end = coordinates[index + 1];
+
+    if (!start || !end) {
+      continue;
+    }
+
+    if (sampled.length === 0) {
+      sampled.push(start);
+    }
+
+    const steps = Math.max(1, Math.ceil(Math.hypot(end[0] - start[0], end[1] - start[1]) / ROUTE_SAMPLE_STEP));
+
+    for (let step = 1; step <= steps; step += 1) {
+      const progress = step / steps;
+      sampled.push([
+        start[0] + (end[0] - start[0]) * progress,
+        start[1] + (end[1] - start[1]) * progress,
+      ]);
+    }
+  }
+
+  return sampled;
+};
+
+const mercatorVerticesFromCoordinates = (coordinates: Coordinate[]) => new Float32Array(
+  coordinates.flatMap((coordinate) => {
+    const mercator = maplibregl.MercatorCoordinate.fromLngLat({ lng: coordinate[0], lat: coordinate[1] });
+    return [mercator.x, mercator.y];
+  }),
+);
+
+const buildCustomRouteVertices = (route: RouteResult | null, level: LevelId) => {
+  if (!route) {
     return {
-      ...EMPTY_ROUTE_OVERLAY,
-      width,
-      height,
+      pathVertices: new Float32Array(),
+      terminalVertices: new Float32Array(),
     };
   }
 
   const routeCollection = buildRouteCollection(route);
   const routeMarkerCollection = buildRouteMarkerCollection(route);
   const activeSegments = routeCollection.features.filter((feature) => feature.properties.level === level);
-  const activeMarkers = routeMarkerCollection.features.filter((feature) => feature.properties.level === level);
-
-  if (activeSegments.length === 0) {
-    return {
-      ...EMPTY_ROUTE_OVERLAY,
-      width,
-      height,
-    };
-  }
-
-  const projectedSegments = activeSegments.map((feature) =>
-    feature.geometry.coordinates.map((coordinate) => {
-      const point = map.project(coordinate as Coordinate);
-
-      return {
-        x: Number(point.x.toFixed(2)),
-        y: Number(point.y.toFixed(2)),
-      };
-    }),
-  );
+  const terminalCoordinates = routeMarkerCollection.features
+    .filter((feature) => feature.properties.level === level && feature.properties.terminal)
+    .map((feature) => feature.geometry.coordinates as Coordinate);
 
   return {
-    width,
-    height,
-    pathData: buildSvgPathData(projectedSegments),
-    markers: activeMarkers.map((feature) => {
-      const point = map.project(feature.geometry.coordinates as Coordinate);
-
-      return {
-        id: String(feature.id ?? `${feature.properties.level}-${point.x}-${point.y}`),
-        x: Number(point.x.toFixed(2)),
-        y: Number(point.y.toFixed(2)),
-        terminal: feature.properties.terminal,
-      };
-    }),
+    pathVertices: mercatorVerticesFromCoordinates(
+      activeSegments.flatMap((feature) => sampleRouteCoordinates(feature.geometry.coordinates as Coordinate[])),
+    ),
+    terminalVertices: mercatorVerticesFromCoordinates(terminalCoordinates),
   };
 };
 
-const syncRouteOverlayElements = (
-  overlayRoot: SVGSVGElement | null,
-  casingPath: SVGPathElement | null,
-  linePath: SVGPathElement | null,
-  markerLayer: SVGGElement | null,
-  overlay: ProjectedRouteOverlay,
-  palette: MapPalette,
-) => {
-  if (!overlayRoot || !casingPath || !linePath || !markerLayer) {
-    return;
-  }
-
-  if (!overlay.pathData || overlay.width <= 0 || overlay.height <= 0) {
-    overlayRoot.style.display = "none";
-    casingPath.setAttribute("d", "");
-    linePath.setAttribute("d", "");
-    markerLayer.replaceChildren();
-    return;
-  }
-
-  overlayRoot.style.display = "block";
-  overlayRoot.setAttribute("width", String(overlay.width));
-  overlayRoot.setAttribute("height", String(overlay.height));
-  overlayRoot.setAttribute("viewBox", `0 0 ${overlay.width} ${overlay.height}`);
-
-  casingPath.setAttribute("d", overlay.pathData);
-  casingPath.setAttribute("stroke", palette.routeCasing);
-
-  linePath.setAttribute("d", overlay.pathData);
-  linePath.setAttribute("stroke", palette.routeLine);
-
-  const markerNodes = overlay.markers.map((marker) => {
-    const group = document.createElementNS(SVG_NAMESPACE, "g");
-    group.setAttribute("transform", `translate(${marker.x} ${marker.y})`);
-
-    const outerCircle = document.createElementNS(SVG_NAMESPACE, "circle");
-    outerCircle.setAttribute("fill", palette.routeCasing);
-    outerCircle.setAttribute("opacity", "0.95");
-    outerCircle.setAttribute("r", marker.terminal ? "7" : "4.5");
-
-    const innerCircle = document.createElementNS(SVG_NAMESPACE, "circle");
-    innerCircle.setAttribute("cx", "0");
-    innerCircle.setAttribute("cy", "0");
-    innerCircle.setAttribute("fill", palette.routeLine);
-    innerCircle.setAttribute("r", marker.terminal ? "4.5" : "2.75");
-    innerCircle.setAttribute("stroke", palette.routeCasing);
-    innerCircle.setAttribute("stroke-width", marker.terminal ? "2" : "1.2");
-
-    group.append(outerCircle, innerCircle);
-    return group;
-  });
-
-  markerLayer.replaceChildren(...markerNodes);
+const buildRouteBreadcrumbCollection = (route: RouteResult | null) => {
+  return buildRouteMarkerCollection(route);
 };
+
+const hasRouteOnLevel = (route: RouteResult | null, level: LevelId) =>
+  buildRouteCollection(route).features.some((feature) => feature.properties.level === level);
+
+const syncRouteBreadcrumbPresentation = (
+  map: maplibregl.Map,
+  palette: (typeof MAP_PALETTES)[MapThemeVariant],
+) => {
+  if (map.getLayer("route-breadcrumb-glow")) {
+    map.setPaintProperty("route-breadcrumb-glow", "circle-color", palette.routeCasing);
+    map.setPaintProperty("route-breadcrumb-glow", "circle-radius", 4.2);
+    map.setPaintProperty("route-breadcrumb-glow", "circle-opacity", 0.5);
+  }
+
+  if (map.getLayer("route-path-glow")) {
+    map.setPaintProperty("route-path-glow", "line-color", palette.routeCasing);
+    map.setPaintProperty("route-path-glow", "line-width", [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      16,
+      8,
+      20,
+      11,
+      22,
+      13,
+    ]);
+    map.setPaintProperty("route-path-glow", "line-opacity", 0.88);
+    map.setPaintProperty("route-path-glow", "line-blur", 0.7);
+  }
+
+  if (map.getLayer("route-path")) {
+    map.setPaintProperty("route-path", "line-color", palette.routeLine);
+    map.setPaintProperty("route-path", "line-width", [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      16,
+      3.2,
+      20,
+      4.6,
+      22,
+      5.8,
+    ]);
+    map.setPaintProperty("route-path", "line-opacity", 1);
+  }
+
+  if (map.getLayer("route-breadcrumb")) {
+    map.setPaintProperty("route-breadcrumb", "circle-color", palette.routeLine);
+    map.setPaintProperty("route-breadcrumb", "circle-radius", 1.45);
+    map.setPaintProperty("route-breadcrumb", "circle-opacity", 0.92);
+  }
+
+  if (map.getLayer("route-terminal-glow")) {
+    map.setPaintProperty("route-terminal-glow", "circle-color", palette.routeCasing);
+    map.setPaintProperty("route-terminal-glow", "circle-radius", 12.5);
+    map.setPaintProperty("route-terminal-glow", "circle-opacity", 0.96);
+  }
+
+  if (map.getLayer("route-terminal")) {
+    map.setPaintProperty("route-terminal", "circle-color", palette.routeLine);
+    map.setPaintProperty("route-terminal", "circle-stroke-color", palette.routeCasing);
+    map.setPaintProperty("route-terminal", "circle-radius", 5.4);
+    map.setPaintProperty("route-terminal", "circle-stroke-width", 2.6);
+    map.setPaintProperty("route-terminal", "circle-opacity", 1);
+  }
+};
+
+const createShader = (
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  type: number,
+  source: string,
+) => {
+  const shader = gl.createShader(type);
+
+  if (!shader) {
+    throw new Error("Failed to create route shader.");
+  }
+
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(shader) ?? "Unknown shader error.";
+    gl.deleteShader(shader);
+    throw new Error(`Route shader compilation failed: ${log}`);
+  }
+
+  return shader;
+};
+
+const createProgram = (
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  vertexSource: string,
+  fragmentSource: string,
+) => {
+  const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
+  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+  const program = gl.createProgram();
+
+  if (!program) {
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+    throw new Error("Failed to create route program.");
+  }
+
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  gl.deleteShader(vertexShader);
+  gl.deleteShader(fragmentShader);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const log = gl.getProgramInfoLog(program) ?? "Unknown program link error.";
+    gl.deleteProgram(program);
+    throw new Error(`Route program linking failed: ${log}`);
+  }
+
+  return program;
+};
+
+const createRouteCustomLayer = (palette: MapPalette): RouteCustomLayer => ({
+  id: ROUTE_CUSTOM_LAYER_ID,
+  type: "custom",
+  renderingMode: "2d",
+  pathVertexCount: 0,
+  terminalVertexCount: 0,
+  pathVertices: new Float32Array(),
+  terminalVertices: new Float32Array(),
+  colors: {
+    casing: parseColor(palette.routeCasing),
+    line: parseColor(palette.routeLine),
+  },
+  hasLoggedRender: false,
+  uploadBuffers() {
+    const gl = this.gl;
+
+    if (!gl || !this.pathBuffer || !this.terminalBuffer) {
+      return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.pathBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.pathVertices ?? new Float32Array(), gl.STATIC_DRAW);
+    this.pathVertexCount = (this.pathVertices?.length ?? 0) / 2;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.terminalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.terminalVertices ?? new Float32Array(), gl.STATIC_DRAW);
+    this.terminalVertexCount = (this.terminalVertices?.length ?? 0) / 2;
+  },
+  updateData(route, level) {
+    const { pathVertices, terminalVertices } = buildCustomRouteVertices(route, level);
+    this.pathVertices = pathVertices;
+    this.terminalVertices = terminalVertices;
+    this.hasLoggedRender = false;
+    this.uploadBuffers();
+    console.debug("[route:maplibre] uploaded route vertices", {
+      level,
+      hasRoute: Boolean(route),
+      pathVertexCount: pathVertices.length / 2,
+      terminalVertexCount: terminalVertices.length / 2,
+    });
+    this.map?.triggerRepaint();
+  },
+  updatePalette(nextPalette) {
+    this.colors = {
+      casing: parseColor(nextPalette.routeCasing),
+      line: parseColor(nextPalette.routeLine),
+    };
+    this.map?.triggerRepaint();
+  },
+  onAdd(map, gl) {
+    this.map = map;
+    this.gl = gl;
+
+    const vertexSource = `
+      precision mediump float;
+      attribute vec2 a_pos;
+      uniform mat4 u_matrix;
+      uniform float u_point_size;
+
+      void main() {
+        gl_Position = u_matrix * vec4(a_pos, 0.0, 1.0);
+        gl_PointSize = u_point_size;
+      }
+    `;
+
+    const fragmentSource = `
+      precision mediump float;
+      uniform vec4 u_color;
+
+      void main() {
+        vec2 centered = gl_PointCoord - vec2(0.5);
+
+        if (dot(centered, centered) > 0.25) {
+          discard;
+        }
+
+        gl_FragColor = u_color;
+      }
+    `;
+
+    this.program = createProgram(gl, vertexSource, fragmentSource);
+    this.pathBuffer = gl.createBuffer();
+    this.terminalBuffer = gl.createBuffer();
+    this.aPos = gl.getAttribLocation(this.program, "a_pos");
+    this.uMatrix = gl.getUniformLocation(this.program, "u_matrix");
+    this.uPointSize = gl.getUniformLocation(this.program, "u_point_size");
+    this.uColor = gl.getUniformLocation(this.program, "u_color");
+    this.uploadBuffers();
+  },
+  render(gl, renderInput: CustomRenderMethodInput) {
+    if (!this.program || this.aPos === undefined || !this.uMatrix || !this.uPointSize || !this.uColor) {
+      return;
+    }
+
+    const projectionMatrix = renderInput.defaultProjectionData.mainMatrix ?? renderInput.modelViewProjectionMatrix;
+
+    gl.useProgram(this.program);
+    gl.uniformMatrix4fv(this.uMatrix, false, projectionMatrix);
+    gl.enable(gl.BLEND);
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.disable(gl.DEPTH_TEST);
+
+    if (!this.hasLoggedRender && (this.pathVertexCount > 0 || this.terminalVertexCount > 0)) {
+      this.hasLoggedRender = true;
+      console.debug("[route:maplibre] rendering route layer", {
+        pathVertexCount: this.pathVertexCount,
+        terminalVertexCount: this.terminalVertexCount,
+        projectionVariant: renderInput.shaderData.variantName,
+      });
+    }
+
+    if (this.pathBuffer && this.pathVertexCount > 0) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.pathBuffer);
+      gl.enableVertexAttribArray(this.aPos);
+      gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.uniform1f(this.uPointSize, 11);
+      gl.uniform4f(this.uColor, ...this.colors.casing);
+      gl.drawArrays(gl.POINTS, 0, this.pathVertexCount);
+
+      gl.uniform1f(this.uPointSize, 5.5);
+      gl.uniform4f(this.uColor, ...this.colors.line);
+      gl.drawArrays(gl.POINTS, 0, this.pathVertexCount);
+    }
+
+    if (this.terminalBuffer && this.terminalVertexCount > 0) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.terminalBuffer);
+      gl.enableVertexAttribArray(this.aPos);
+      gl.vertexAttribPointer(this.aPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.uniform1f(this.uPointSize, 16);
+      gl.uniform4f(this.uColor, ...this.colors.casing);
+      gl.drawArrays(gl.POINTS, 0, this.terminalVertexCount);
+
+      gl.uniform1f(this.uPointSize, 9);
+      gl.uniform4f(this.uColor, ...this.colors.line);
+      gl.drawArrays(gl.POINTS, 0, this.terminalVertexCount);
+    }
+
+    gl.enable(gl.DEPTH_TEST);
+  },
+  onRemove(_map, gl) {
+    if (this.pathBuffer) {
+      gl.deleteBuffer(this.pathBuffer);
+      this.pathBuffer = null;
+    }
+
+    if (this.terminalBuffer) {
+      gl.deleteBuffer(this.terminalBuffer);
+      this.terminalBuffer = null;
+    }
+
+    if (this.program) {
+      gl.deleteProgram(this.program);
+      this.program = null;
+    }
+  },
+});
 
 const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   const hasLayer = (layerId: FilteredLayerId) => Boolean(map.getLayer(layerId));
@@ -735,20 +992,28 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
     map.setFilter("selection-core", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "role"], "marker"], ["==", ["get", "level"], level]]);
   }
 
-  if (hasLayer("route-line")) {
-    map.setFilter("route-line", ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]]);
+  if (hasLayer("route-path-glow")) {
+    map.setFilter("route-path-glow", ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]]);
   }
 
-  if (hasLayer("route-glow")) {
-    map.setFilter("route-glow", ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]]);
+  if (hasLayer("route-path")) {
+    map.setFilter("route-path", ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]]);
   }
 
-  if (hasLayer("route-node-glow")) {
-    map.setFilter("route-node-glow", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level]]);
+  if (hasLayer("route-breadcrumb-glow")) {
+    map.setFilter("route-breadcrumb-glow", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], false]]);
   }
 
-  if (hasLayer("route-node")) {
-    map.setFilter("route-node", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level]]);
+  if (hasLayer("route-breadcrumb")) {
+    map.setFilter("route-breadcrumb", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], false]]);
+  }
+
+  if (hasLayer("route-terminal-glow")) {
+    map.setFilter("route-terminal-glow", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], true]]);
+  }
+
+  if (hasLayer("route-terminal")) {
+    map.setFilter("route-terminal", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], true]]);
   }
 };
 
@@ -1005,10 +1270,7 @@ export function MapCanvas({
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const routeOverlayRef = useRef<SVGSVGElement | null>(null);
-  const routeOverlayCasingPathRef = useRef<SVGPathElement | null>(null);
-  const routeOverlayLinePathRef = useRef<SVGPathElement | null>(null);
-  const routeOverlayMarkersRef = useRef<SVGGElement | null>(null);
+  const routeCustomLayerRef = useRef<RouteCustomLayer | null>(null);
   const hoverRef = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(null);
   const activeLevelRef = useRef(activeLevel);
@@ -1091,61 +1353,6 @@ export function MapCanvas({
     pendingFocusRef.current = null;
   };
 
-  const syncRouteRendering = (map: maplibregl.Map) => {
-    const currentRoute = routeRef.current;
-    const currentLevel = activeLevelRef.current;
-    const routeSource = map.getSource(ROUTE_SOURCE);
-    const routeMarkerSource = map.getSource(ROUTE_MARKER_SOURCE);
-
-    if (!isGeoJsonSource(routeSource) || !isGeoJsonSource(routeMarkerSource)) {
-      console.debug("[route:map] route source unavailable", {
-        currentLevel,
-        hasRoute: Boolean(currentRoute),
-        hasRouteSource: isGeoJsonSource(routeSource),
-        hasRouteMarkerSource: isGeoJsonSource(routeMarkerSource),
-      });
-      return false;
-    }
-
-    const routeCollection = buildRouteCollection(currentRoute);
-    const routeMarkerCollection = buildRouteMarkerCollection(currentRoute);
-
-    routeSource.setData(routeCollection);
-    routeMarkerSource.setData(routeMarkerCollection);
-    updateFilters(map, currentLevel);
-
-    if (map.getLayer("route-glow")) {
-      map.moveLayer("route-glow");
-    }
-
-    if (map.getLayer("route-line")) {
-      map.moveLayer("route-line");
-    }
-
-    if (map.getLayer("route-node-glow")) {
-      map.moveLayer("route-node-glow");
-    }
-
-    if (map.getLayer("route-node")) {
-      map.moveLayer("route-node");
-    }
-
-    map.triggerRepaint();
-    const levels = [...new Set(routeCollection.features.map((feature) => feature.properties.level))];
-    const hasRouteOnActiveLevel = routeCollection.features.some((feature) => feature.properties.level === currentLevel);
-
-    console.debug("[route:map] synced route source", {
-      currentLevel,
-      hasRoute: Boolean(currentRoute),
-      featureCount: routeCollection.features.length,
-      markerCount: routeMarkerCollection.features.length,
-      levels,
-      hasRouteOnActiveLevel,
-    });
-
-    return hasRouteOnActiveLevel;
-  };
-
   const syncSelectionState = (map: maplibregl.Map) => {
     updateFilters(map, activeLevel);
 
@@ -1187,6 +1394,68 @@ export function MapCanvas({
     return false;
   };
 
+  const syncRouteBreadcrumbRendering = (map: maplibregl.Map) => {
+    const currentRoute = routeRef.current;
+    const currentLevel = activeLevelRef.current;
+    const routePathSource = map.getSource(ROUTE_PATH_SOURCE);
+    const routeBreadcrumbSource = map.getSource(ROUTE_BREADCRUMB_SOURCE);
+
+    if (!isGeoJsonSource(routePathSource) || !isGeoJsonSource(routeBreadcrumbSource)) {
+      console.debug("[route:maplibre-fallback] route sources unavailable", {
+        currentLevel,
+        hasRoute: Boolean(currentRoute),
+        hasRoutePathSource: isGeoJsonSource(routePathSource),
+        hasRouteMarkerSource: isGeoJsonSource(routeBreadcrumbSource),
+      });
+      return false;
+    }
+
+    const routeCollection = buildRouteCollection(currentRoute);
+    const breadcrumbCollection = buildRouteBreadcrumbCollection(currentRoute);
+    routePathSource.setData(routeCollection);
+    routeBreadcrumbSource.setData(breadcrumbCollection);
+    updateFilters(map, currentLevel);
+    syncRouteBreadcrumbPresentation(map, palette);
+
+    if (map.getLayer("route-path-glow")) {
+      map.moveLayer("route-path-glow");
+    }
+
+    if (map.getLayer("route-path")) {
+      map.moveLayer("route-path");
+    }
+
+    if (map.getLayer("route-breadcrumb-glow")) {
+      map.moveLayer("route-breadcrumb-glow");
+    }
+
+    if (map.getLayer("route-breadcrumb")) {
+      map.moveLayer("route-breadcrumb");
+    }
+
+    if (map.getLayer("route-terminal-glow")) {
+      map.moveLayer("route-terminal-glow");
+    }
+
+    if (map.getLayer("route-terminal")) {
+      map.moveLayer("route-terminal");
+    }
+
+    map.triggerRepaint();
+
+    const hasRouteOnActiveLevel = breadcrumbCollection.features.some((feature) => feature.properties.level === currentLevel);
+
+    console.debug("[route:maplibre-fallback] synced breadcrumb route", {
+      currentLevel,
+      hasRoute: Boolean(currentRoute),
+      segmentCount: routeCollection.features.length,
+      featureCount: breadcrumbCollection.features.length,
+      hasRouteOnActiveLevel,
+    });
+
+    return hasRouteOnActiveLevel;
+  };
+
   useEffect(() => {
     activeLevelRef.current = activeLevel;
   }, [activeLevel]);
@@ -1221,8 +1490,8 @@ export function MapCanvas({
       map.addSource(POI_SOURCE, { type: "geojson", data: collections.pois });
       map.addSource(ROOM_LABEL_SOURCE, { type: "geojson", data: collections.roomLabels });
       map.addSource(POI_LABEL_SOURCE, { type: "geojson", data: collections.poiLabels });
-      map.addSource(ROUTE_SOURCE, { type: "geojson", data: buildRouteCollection(routeRef.current) });
-      map.addSource(ROUTE_MARKER_SOURCE, { type: "geojson", data: buildRouteMarkerCollection(routeRef.current) });
+      map.addSource(ROUTE_PATH_SOURCE, { type: "geojson", data: buildRouteCollection(routeRef.current) });
+      map.addSource(ROUTE_BREADCRUMB_SOURCE, { type: "geojson", data: buildRouteBreadcrumbCollection(routeRef.current) });
       map.addSource(SELECTION_SOURCE, { type: "geojson", data: buildSelectionCollection(selectedFeature) });
 
       console.debug("[route:map] map loaded", {
@@ -1386,81 +1655,10 @@ export function MapCanvas({
         },
       });
 
-      map.addLayer({
-        id: "route-glow",
-        type: "line",
-        source: ROUTE_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
-        paint: {
-          "line-color": palette.routeCasing,
-          "line-width": 12,
-          "line-opacity": 0.82,
-          "line-blur": 1.4,
-        },
-      });
-
-      map.addLayer({
-        id: "route-line",
-        type: "line",
-        source: ROUTE_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
-        paint: {
-          "line-color": palette.routeLine,
-          "line-width": 5,
-          "line-blur": 0.12,
-          "line-opacity": 1,
-        },
-      });
-
-      map.addLayer({
-        id: "route-node-glow",
-        type: "circle",
-        source: ROUTE_MARKER_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel]],
-        paint: {
-          "circle-radius": [
-            "case",
-            ["boolean", ["get", "terminal"], false],
-            7,
-            4.5,
-          ],
-          "circle-color": palette.routeCasing,
-          "circle-opacity": 0.92,
-          "circle-blur": 0.2,
-        },
-      });
-
-      map.addLayer({
-        id: "route-node",
-        type: "circle",
-        source: ROUTE_MARKER_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel]],
-        paint: {
-          "circle-radius": [
-            "case",
-            ["boolean", ["get", "terminal"], false],
-            4.5,
-            2.75,
-          ],
-          "circle-color": palette.routeLine,
-          "circle-stroke-color": palette.routeCasing,
-          "circle-stroke-width": [
-            "case",
-            ["boolean", ["get", "terminal"], false],
-            2,
-            1.2,
-          ],
-          "circle-opacity": 1,
-        },
-      });
+      const routeCustomLayer = createRouteCustomLayer(palette);
+      routeCustomLayer.updateData(routeRef.current, activeLevelRef.current);
+      routeCustomLayerRef.current = routeCustomLayer;
+      map.addLayer(routeCustomLayer);
 
       map.addLayer({
         id: "poi-circle",
@@ -1528,6 +1726,111 @@ export function MapCanvas({
           "circle-color": palette.selectedFill,
           "circle-stroke-color": palette.labelHalo,
           "circle-stroke-width": 2,
+        },
+      });
+
+      map.addLayer({
+        id: "route-path-glow",
+        type: "line",
+        source: ROUTE_PATH_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": palette.routeCasing,
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            16,
+            8,
+            20,
+            11,
+            22,
+            13,
+          ],
+          "line-opacity": 0.88,
+          "line-blur": 0.7,
+        },
+      });
+
+      map.addLayer({
+        id: "route-path",
+        type: "line",
+        source: ROUTE_PATH_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": palette.routeLine,
+          "line-width": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            16,
+            3.2,
+            20,
+            4.6,
+            22,
+            5.8,
+          ],
+          "line-opacity": 1,
+        },
+      });
+
+      map.addLayer({
+        id: "route-breadcrumb-glow",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], false]],
+        paint: {
+          "circle-radius": 4.2,
+          "circle-color": palette.routeCasing,
+          "circle-opacity": 0.5,
+          "circle-blur": 0.2,
+        },
+      });
+
+      map.addLayer({
+        id: "route-breadcrumb",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], false]],
+        paint: {
+          "circle-radius": 1.45,
+          "circle-color": palette.routeLine,
+          "circle-opacity": 0.92,
+        },
+      });
+
+      map.addLayer({
+        id: "route-terminal-glow",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], true]],
+        paint: {
+          "circle-radius": 12.5,
+          "circle-color": palette.routeCasing,
+          "circle-opacity": 0.96,
+          "circle-blur": 0.25,
+        },
+      });
+
+      map.addLayer({
+        id: "route-terminal",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], true]],
+        paint: {
+          "circle-radius": 5.4,
+          "circle-color": palette.routeLine,
+          "circle-stroke-color": palette.routeCasing,
+          "circle-stroke-width": 2.6,
+          "circle-opacity": 1,
         },
       });
 
@@ -1609,6 +1912,8 @@ export function MapCanvas({
         },
       });
 
+      map.moveLayer(ROUTE_CUSTOM_LAYER_ID);
+
       map.on("mousemove", (event) => {
         const featureId = pickInteractiveFeatureId(
           featureById,
@@ -1648,7 +1953,7 @@ export function MapCanvas({
         onSelectFeatureRef.current(featureId);
       });
 
-      const hasRouteOnActiveLevel = syncRouteRendering(map);
+      const hasRouteOnActiveLevel = syncRouteBreadcrumbRendering(map);
       const didFocusSelection = syncSelectionState(map);
 
       if (!didFocusSelection) {
@@ -1664,6 +1969,7 @@ export function MapCanvas({
 
     return () => {
       clearFocusPulseTimer();
+      routeCustomLayerRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -1717,7 +2023,7 @@ export function MapCanvas({
       return;
     }
 
-    const hasRouteOnActiveLevel = syncRouteRendering(map);
+    const hasRouteOnActiveLevel = syncRouteBreadcrumbRendering(map);
 
     if (!route) {
       return;
@@ -1832,81 +2138,64 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current;
 
-    if (!map) {
-      syncRouteOverlayElements(
-        routeOverlayRef.current,
-        routeOverlayCasingPathRef.current,
-        routeOverlayLinePathRef.current,
-        routeOverlayMarkersRef.current,
-        EMPTY_ROUTE_OVERLAY,
-        palette,
-      );
+    if (!map || !map.isStyleLoaded()) {
       return;
     }
 
-    let frameId = 0;
+    const routePathSource = map.getSource(ROUTE_PATH_SOURCE);
+    const routeBreadcrumbSource = map.getSource(ROUTE_BREADCRUMB_SOURCE);
+    const routeCollection = buildRouteCollection(route);
+    const breadcrumbCollection = buildRouteBreadcrumbCollection(route);
 
-    const syncOverlay = () => {
-      frameId = 0;
-      syncRouteOverlayElements(
-        routeOverlayRef.current,
-        routeOverlayCasingPathRef.current,
-        routeOverlayLinePathRef.current,
-        routeOverlayMarkersRef.current,
-        projectRouteOverlay(map, route, activeLevel),
-        palette,
-      );
-    };
+    if (isGeoJsonSource(routePathSource)) {
+      routePathSource.setData(routeCollection);
+    }
 
-    const requestSync = () => {
-      if (frameId !== 0) {
-        return;
+    if (isGeoJsonSource(routeBreadcrumbSource)) {
+      routeBreadcrumbSource.setData(breadcrumbCollection);
+      updateFilters(map, activeLevel);
+      syncRouteBreadcrumbPresentation(map, palette);
+
+      if (map.getLayer("route-path-glow")) {
+        map.moveLayer("route-path-glow");
       }
 
-      frameId = window.requestAnimationFrame(syncOverlay);
-    };
-
-    syncOverlay();
-    map.on("move", requestSync);
-    map.on("resize", requestSync);
-    map.on("pitch", requestSync);
-    map.on("rotate", requestSync);
-    map.on("zoom", requestSync);
-
-    return () => {
-      if (frameId !== 0) {
-        window.cancelAnimationFrame(frameId);
+      if (map.getLayer("route-path")) {
+        map.moveLayer("route-path");
       }
 
-      map.off("move", requestSync);
-      map.off("resize", requestSync);
-      map.off("pitch", requestSync);
-      map.off("rotate", requestSync);
-      map.off("zoom", requestSync);
-    };
-  }, [activeLevel, palette, route, themeVariant]);
+      if (map.getLayer("route-breadcrumb-glow")) {
+        map.moveLayer("route-breadcrumb-glow");
+      }
+
+      if (map.getLayer("route-breadcrumb")) {
+        map.moveLayer("route-breadcrumb");
+      }
+
+      if (map.getLayer("route-terminal-glow")) {
+        map.moveLayer("route-terminal-glow");
+      }
+
+      if (map.getLayer("route-terminal")) {
+        map.moveLayer("route-terminal");
+      }
+
+      console.log("[route:maplibre-fallback] synced breadcrumb route", {
+        activeLevel,
+        hasRoute: Boolean(route),
+        segmentCount: routeCollection.features.length,
+        featureCount: breadcrumbCollection.features.length,
+        hasRouteOnActiveLevel: breadcrumbCollection.features.some((feature) => feature.properties.level === activeLevel),
+      });
+    }
+
+    routeCustomLayerRef.current?.updatePalette(palette);
+    routeCustomLayerRef.current?.updateData(route, activeLevel);
+  }, [activeLevel, palette, route]);
 
   return (
     <div className="map-frame">
       <div className="map-shell" ref={containerRef} />
-      <svg aria-hidden="true" className="map-route-overlay" ref={routeOverlayRef}>
-        <path
-          ref={routeOverlayCasingPathRef}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeOpacity="0.95"
-          strokeWidth="12"
-        />
-        <path
-          ref={routeOverlayLinePathRef}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="5"
-        />
-        <g ref={routeOverlayMarkersRef} />
-      </svg>
       {showControls ? <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
         <div className="map-toolbar-header">
           <div className="map-toolbar-copy">
