@@ -9,7 +9,27 @@ import {
   useRef,
   useState,
 } from "react";
-import type { CSSProperties } from "react";
+import {
+  Armchair,
+  ArrowUpDown,
+  Check,
+  Clapperboard,
+  Compass,
+  Flag,
+  LayoutGrid,
+  Layers2,
+  Map as MapIcon,
+  MapPinned,
+  Navigation2,
+  PanelLeftClose,
+  PencilLine,
+  Route as RouteIcon,
+  Search,
+  SquareX,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import type { MapSceneMode, MapThemeVariant } from "./components/MapCanvas";
 import { MockOccupancyProvider } from "./lib/occupancy";
 import { loadIndoorDataset, type IndoorRuntimeData } from "./lib/indoor-dataset";
@@ -279,108 +299,58 @@ const STATUS_ORDER: Record<RoomStatus, number> = {
   offline: 3,
 };
 
-const Ic = {
-  Search: ({ s = 15 }: { s?: number }) => (
-    <svg width={s} height={s} viewBox="0 0 16 16" fill="none">
-      <circle cx="6.8" cy="6.8" r="5" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M10.5 10.5L14.5 14.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  ),
-  X: ({ s = 13 }: { s?: number }) => (
-    <svg width={s} height={s} viewBox="0 0 14 14" fill="none">
-      <path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-  Nav: () => (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M2.5 6L12 2L8 11.5L6.5 7.5L2.5 6Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="currentColor" opacity="0.15" />
-    </svg>
-  ),
-  Route: () => (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-      <circle cx="4" cy="4" r="2.2" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="12" cy="12" r="2.2" stroke="currentColor" strokeWidth="1.4" fill="currentColor" opacity="0.15" />
-      <path d="M5.8 5.8L10.2 10.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="2.5 2.5" />
-    </svg>
-  ),
-  User: () => (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M2.5 12.5C2.5 10 4.5 8 7 8S11.5 10 11.5 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  ),
-  Floor: () => (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <rect x="2.25" y="3.25" width="11.5" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1.25" />
-      <path d="M8 3.5V12.5M2.5 8H13.5" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" />
-      <circle cx="5.25" cy="5.25" r="0.75" fill="currentColor" opacity="0.7" />
-    </svg>
-  ),
-  Check: () => (
-    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-      <path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  Swap: () => (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-      <path d="M10 3V11M10 11L8 9M10 11L12 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 11V3M4 3L2 5M4 3L6 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  Compass: () => (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.25" />
-      <path d="M10.9 5.1L8.9 9L5.1 10.9L7.1 7L10.9 5.1Z" fill="currentColor" opacity="0.18" stroke="currentColor" strokeWidth="1.15" strokeLinejoin="round" />
-      <circle cx="8" cy="8" r="1" fill="currentColor" />
-    </svg>
-  ),
-  Eye: () => (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <path d="M2 8C3.45 5.55 5.52 4.25 8 4.25C10.48 4.25 12.55 5.55 14 8C12.55 10.45 10.48 11.75 8 11.75C5.52 11.75 3.45 10.45 2 8Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
-      <circle cx="8" cy="8" r="2.15" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="8" cy="8" r="0.85" fill="currentColor" opacity="0.82" />
-    </svg>
-  ),
-  Grid: () => (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <rect x="2.25" y="2.25" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="9.75" y="2.25" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" opacity="0.75" />
-      <rect x="2.25" y="9.75" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" opacity="0.75" />
-      <rect x="9.75" y="9.75" width="4" height="4" rx="0.8" fill="currentColor" opacity="0.18" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  ),
-  Walk: () => (
-    <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
-      <circle cx="8" cy="2.5" r="1.5" fill="currentColor" opacity="0.7" />
-      <path d="M6 5.5L5 9L6.5 9L7.5 12.5M9 5.5L10.5 9L9 9L8 12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5.5 5.5H10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  ),
-  Elev: () => (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-      <rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M5 8L7 5L9 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  ArrowR: () => (
-    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-      <path d="M3 7H11M11 7L7.5 3.5M11 7L7.5 10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  Pulse: () => (
-    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-      <circle cx="6" cy="6" r="3" fill="currentColor" opacity="0.3" />
-      <circle cx="6" cy="6" r="1.5" fill="currentColor" />
-    </svg>
-  ),
-  Seats: () => (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <rect x="2" y="5" width="8" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.1" />
-      <path d="M4 5V3.5C4 2.7 4.7 2 5.5 2H6.5C7.3 2 8 2.7 8 3.5V5" stroke="currentColor" strokeWidth="1.1" />
-      <path d="M3 9V10.5M9 9V10.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-    </svg>
-  ),
+const ICON_PROPS = {
+  absoluteStrokeWidth: true,
+  strokeWidth: 1.85,
+} as const;
+
+type SizedIconProps = {
+  s?: number;
 };
+
+const sizedIcon = (Icon: LucideIcon, defaultSize: number) => ({ s = defaultSize }: SizedIconProps) => (
+  <Icon size={s} {...ICON_PROPS} />
+);
+
+const fixedIcon = (Icon: LucideIcon, size: number) => () => <Icon size={size} {...ICON_PROPS} />;
+
+const Ic = {
+  Brand: fixedIcon(MapIcon, 18),
+  Search: sizedIcon(Search, 15),
+  X: sizedIcon(SquareX, 13),
+  Nav: fixedIcon(Navigation2, 14),
+  ClosePanel: fixedIcon(PanelLeftClose, 14),
+  Route: fixedIcon(RouteIcon, 15),
+  RouteEdit: fixedIcon(PencilLine, 15),
+  RouteFrom: fixedIcon(MapPinned, 15),
+  RouteTo: fixedIcon(Flag, 15),
+  ClearRoute: fixedIcon(SquareX, 15),
+  User: fixedIcon(Users, 13),
+  Floor: fixedIcon(Layers2, 14),
+  Check: fixedIcon(Check, 11),
+  Swap: fixedIcon(ArrowUpDown, 13),
+  Compass: fixedIcon(Compass, 14),
+  Eye: fixedIcon(Clapperboard, 14),
+  Grid: fixedIcon(LayoutGrid, 14),
+  Seats: fixedIcon(Armchair, 12),
+};
+
+function BottomActionLabel({
+  accent = false,
+  icon,
+  label,
+}: {
+  accent?: boolean;
+  icon: ReactNode;
+  label: string;
+}) {
+  return (
+    <span style={S.bottomActionLabel}>
+      <span style={{ ...S.bottomActionGlyph, ...(accent ? S.bottomActionGlyphAccent : {}) }}>{icon}</span>
+      <span style={S.bottomActionText}>{label}</span>
+    </span>
+  );
+}
 
 type SpaceCardProps = {
   space: AtlasSpace;
@@ -834,7 +804,16 @@ export default function AtlasV4() {
     const fromNodeIds = routeTargets.find((target) => target.id === routeFromId)?.routeNodeIds ?? [];
     const toNodeIds = routeTargets.find((target) => target.id === routeToId)?.routeNodeIds ?? [];
 
+    console.debug("[route:build] requested", {
+      routeFromId,
+      routeToId,
+      fromNodeIds,
+      toNodeIds,
+      accessibleOnly,
+    });
+
     if (fromNodeIds.length === 0 || toNodeIds.length === 0) {
+      console.debug("[route:build] aborted: missing endpoints");
       setRoute(null);
       setRouteError("Выберите обе точки маршрута.");
       return;
@@ -843,10 +822,21 @@ export default function AtlasV4() {
     const result = computeShortestRoute(routingGraph, fromNodeIds, toNodeIds, { accessibleOnly });
 
     if (!result) {
+      console.debug("[route:build] no route found", {
+        accessibleOnly,
+      });
       setRoute(null);
       setRouteError(accessibleOnly ? "Доступный маршрут не найден." : "Маршрут не найден.");
       return;
     }
+
+    console.debug("[route:build] route ready", {
+      distance: result.summary.distance,
+      levels: result.summary.levels,
+      connectorTypes: result.summary.connectorTypes,
+      legCount: result.legs.length,
+      segmentCount: result.segments.length,
+    });
 
     setRoute(result);
     setRouteError(null);
@@ -972,12 +962,9 @@ export default function AtlasV4() {
           <div style={S.topSectionLabel}>Пространство</div>
           <div style={S.topBrandRow}>
             <div style={S.logo}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <rect x="1" y="1" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.9" />
-                <rect x="10" y="1" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.45" />
-                <rect x="1" y="10" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.25" />
-                <rect x="10" y="10" width="7" height="7" rx="2" fill="#38bdf8" opacity="0.65" />
-              </svg>
+              <span style={{ color: "#38bdf8", display: "inline-flex" }}>
+                <Ic.Brand />
+              </span>
               <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.02em" }}>Atlas</span>
             </div>
             <div style={S.searchField} className="hud-input-shell">
@@ -1186,7 +1173,7 @@ export default function AtlasV4() {
               onClick={swapRouteEndpoints}
               type="button"
             >
-              <Ic.Swap /> Поменять местами
+              <BottomActionLabel icon={<Ic.Swap />} label="Поменять местами" />
             </button>
             <button
               style={{ ...S.ghostBtn, opacity: routeFrom || routeTo ? 1 : 0.45, pointerEvents: routeFrom || routeTo ? "auto" : "none" }}
@@ -1201,10 +1188,10 @@ export default function AtlasV4() {
               }}
               type="button"
             >
-              Очистить
+              <BottomActionLabel icon={<Ic.ClearRoute />} label="Очистить" />
             </button>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              Закрыть
+              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть" />
             </button>
             <button
               style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
@@ -1212,16 +1199,16 @@ export default function AtlasV4() {
               onClick={buildRoute}
               type="button"
             >
-              <Ic.Nav /> Построить маршрут
+              <BottomActionLabel accent icon={<Ic.Nav />} label="Построить маршрут" />
             </button>
           </div>
         ) : drawerOpen && drawerMode === "route-result" && route ? (
           <div style={S.bottomRouteActions}>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              Закрыть
+              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть" />
             </button>
             <button style={S.ghostBtn} className="hud-btn" onClick={() => openRouteBuilder()} type="button">
-              <Ic.Route /> Изменить маршрут
+              <BottomActionLabel icon={<Ic.RouteEdit />} label="Изменить маршрут" />
             </button>
             <button
               style={S.accentBtn}
@@ -1233,13 +1220,13 @@ export default function AtlasV4() {
               }}
               type="button"
             >
-              Очистить
+              <BottomActionLabel accent icon={<Ic.ClearRoute />} label="Очистить" />
             </button>
           </div>
         ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
           <div style={S.bottomRouteActions}>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              Закрыть
+              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть" />
             </button>
             <button
               style={{ ...S.ghostBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
@@ -1247,7 +1234,7 @@ export default function AtlasV4() {
               onClick={() => openRouteBuilder(selectedRouteTarget?.id ?? null, routeToId)}
               type="button"
             >
-              <Ic.Route /> Маршрут отсюда
+              <BottomActionLabel icon={<Ic.RouteFrom />} label="Маршрут отсюда" />
             </button>
             <button
               style={{ ...S.accentBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
@@ -1255,19 +1242,19 @@ export default function AtlasV4() {
               onClick={() => openRouteBuilder(routeTargets.find((target) => target.featureId === "room-l1-lobby")?.id ?? null, selectedRouteTarget?.id ?? null)}
               type="button"
             >
-              <Ic.Nav /> Построить сюда
+              <BottomActionLabel accent icon={<Ic.RouteTo />} label="Построить сюда" />
             </button>
           </div>
         ) : drawerOpen && drawerMode === "search" ? (
           <div style={S.bottomRouteActions}>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              Закрыть поиск
+              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть поиск" />
             </button>
           </div>
         ) : drawerOpen && drawerMode === "ops" ? (
           <div style={S.bottomRouteActions}>
             <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              Закрыть панель
+              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть панель" />
             </button>
           </div>
         ) : (
@@ -1285,7 +1272,7 @@ export default function AtlasV4() {
               }}
               type="button"
             >
-              <Ic.Route /> <span>{route ? "Изменить маршрут" : "Построить маршрут"}</span>
+              <BottomActionLabel accent icon={route ? <Ic.RouteEdit /> : <Ic.Route />} label={route ? "Изменить маршрут" : "Построить маршрут"} />
             </button>
           </div>
         )}
@@ -1647,7 +1634,7 @@ export default function AtlasV4() {
                   </div>
                   {hasEquipment ? (
                     <div style={S.detailEquipmentRow}>
-                      {equipment.map((equipment) => (
+                      {equipment.map((equipment: string) => (
                         <span key={equipment} style={S.infoChip}>
                           {equipment}
                         </span>
@@ -1828,20 +1815,20 @@ const ATLAS_THEME_VARS = {
     "--atlas-hover-surface": "rgba(255,255,255,.06)",
     "--atlas-focus-surface": "rgba(56,189,248,.08)",
     "--atlas-btn-surface": "rgba(255,255,255,.045)",
-    "--atlas-btn-surface-hover": "rgba(255,255,255,.075)",
-    "--atlas-btn-surface-active": "rgba(56,189,248,.08)",
+    "--atlas-btn-surface-hover": "rgba(255,255,255,.072)",
+    "--atlas-btn-surface-active": "rgba(56,189,248,.09)",
     "--atlas-btn-surface-border": "rgba(255,255,255,.14)",
-    "--atlas-btn-primary-bg": "linear-gradient(180deg,#46c7ff,#27a8e4)",
-    "--atlas-btn-primary-bg-hover": "linear-gradient(180deg,#59d1ff,#2eb2ee)",
-    "--atlas-btn-primary-text": "#081018",
+    "--atlas-btn-primary-bg": "rgba(56,189,248,.12)",
+    "--atlas-btn-primary-bg-hover": "rgba(56,189,248,.18)",
+    "--atlas-btn-primary-text": "#7fd8ff",
     "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.028)",
     "--atlas-elev-top": "0 10px 34px rgba(0,0,0,.22)",
     "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.18)",
     "--atlas-elev-drawer": "0 8px 34px rgba(0,0,0,.24)",
     "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.18)",
     "--atlas-elev-floating": "0 6px 18px rgba(0,0,0,.18)",
-    "--atlas-elev-accent": "0 10px 26px rgba(56,189,248,.16)",
-    "--atlas-elev-accent-active": "0 10px 28px rgba(56,189,248,.22)",
+    "--atlas-elev-accent": "inset 0 0 0 1px rgba(56,189,248,.10)",
+    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(56,189,248,.18)",
     "--atlas-overlay": "rgba(0,0,0,.08)",
   },
   light: {
@@ -1866,19 +1853,19 @@ const ATLAS_THEME_VARS = {
     "--atlas-focus-surface": "rgba(15,132,201,.11)",
     "--atlas-btn-surface": "rgba(255,255,255,.86)",
     "--atlas-btn-surface-hover": "rgba(239,246,250,.98)",
-    "--atlas-btn-surface-active": "rgba(15,132,201,.12)",
+    "--atlas-btn-surface-active": "rgba(15,132,201,.10)",
     "--atlas-btn-surface-border": "rgba(39,63,81,.18)",
-    "--atlas-btn-primary-bg": "linear-gradient(180deg,#1498df,#0f84c9)",
-    "--atlas-btn-primary-bg-hover": "linear-gradient(180deg,#1ca5ee,#1290d7)",
-    "--atlas-btn-primary-text": "#f7fbfe",
+    "--atlas-btn-primary-bg": "rgba(15,132,201,.12)",
+    "--atlas-btn-primary-bg-hover": "rgba(15,132,201,.18)",
+    "--atlas-btn-primary-text": "#0f84c9",
     "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.34)",
     "--atlas-elev-top": "0 8px 18px rgba(26,42,55,.10)",
     "--atlas-elev-bottom": "0 -1px 16px rgba(26,42,55,.08)",
     "--atlas-elev-drawer": "0 8px 18px rgba(26,42,55,.10)",
     "--atlas-elev-side": "-4px 0 16px rgba(26,42,55,.08)",
     "--atlas-elev-floating": "0 4px 12px rgba(26,42,55,.08)",
-    "--atlas-elev-accent": "0 6px 16px rgba(15,132,201,.12)",
-    "--atlas-elev-accent-active": "0 8px 18px rgba(15,132,201,.18)",
+    "--atlas-elev-accent": "inset 0 0 0 1px rgba(15,132,201,.10)",
+    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(15,132,201,.18)",
     "--atlas-overlay": "rgba(26,42,55,.04)",
   },
 } as const;
@@ -1913,6 +1900,8 @@ const T = {
 };
 
 const CONTROL_HEIGHT = 42;
+const ACTION_HEIGHT = 42;
+const ACTION_RADIUS = 0;
 const CONTROL_INNER_HEIGHT = 34;
 const CHROME_SURFACE = "var(--atlas-chrome-surface)";
 const CHROME_SURFACE_SOFT = "var(--atlas-chrome-surface-soft)";
@@ -1970,13 +1959,13 @@ const secondaryActionBase: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  gap: 7,
-  minHeight: CONTROL_HEIGHT,
-  padding: "0 15px",
+  gap: 8,
+  minHeight: ACTION_HEIGHT,
+  padding: "0 14px",
   background: T.btnSurface,
   color: T.text,
   border: `1px solid ${T.btnSurfaceBorder}`,
-  borderRadius: 0,
+  borderRadius: ACTION_RADIUS,
   fontSize: 12,
   fontWeight: 650,
   fontFamily: FONT,
@@ -1988,17 +1977,17 @@ const primaryActionBase: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
-  minHeight: CONTROL_HEIGHT,
-  padding: "0 18px",
+  minHeight: ACTION_HEIGHT,
+  padding: "0 16px",
   background: T.btnPrimaryBg,
   color: T.btnPrimaryText,
-  border: `1px solid ${T.accent}`,
-  borderRadius: 0,
-  fontSize: 13,
+  border: `1px solid ${T.accentBorder}`,
+  borderRadius: ACTION_RADIUS,
+  fontSize: 12,
   fontWeight: 700,
   fontFamily: FONT,
   letterSpacing: ".01em",
-  boxShadow: T.elevAccent,
+  boxShadow: `${CONTROL_SHADOW}, ${T.elevAccent}`,
 };
 const chromeSectionBase: CSSProperties = {
   background: PANEL_SURFACE,
@@ -2040,11 +2029,12 @@ const CSS = `
   .hud-btn::-moz-focus-inner,.hud-accent::-moz-focus-inner{border:0;padding:0}
   .hud-segment-btn:focus,.hud-segment-btn:active{outline:none!important;box-shadow:none!important}
   .hud-segment-btn:focus:not(:focus-visible):not([data-active="true"]){background:rgba(255,255,255,.012)!important;border-color:transparent!important;box-shadow:none!important;color:${T.muted}!important}
-  .hud-btn{cursor:pointer}.hud-btn:hover{background:${T.btnSurfaceHover}!important;border-color:${T.btnSurfaceBorder}!important;color:${T.text}!important}
-  .hud-btn:focus-visible{outline:none;background:${T.btnSurfaceActive}!important;border-color:${T.accentBorder}!important;box-shadow:none!important;color:${T.text}!important}
+  .hud-btn{cursor:pointer}.hud-btn:hover{background:${T.btnSurfaceHover}!important;border-color:${T.btnSurfaceBorder}!important;box-shadow:${CONTROL_SHADOW}!important;color:${T.text}!important}
+  .hud-btn:focus-visible{outline:none;background:${T.btnSurfaceActive}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1c!important;color:${T.text}!important}
   .hud-btn[data-active="true"],.hud-btn[data-active="true"]:hover,.hud-btn[data-active="true"]:focus-visible,.hud-btn[data-active="true"]:active{outline:none;background:${T.accentBg}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1f!important;color:${T.accent}!important}
-  .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.btnPrimaryBgHover}!important;border-color:${T.accent}!important;box-shadow:${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:focus-visible{outline:none;background:${T.btnPrimaryBgHover}!important;border-color:${T.accent}!important;box-shadow:${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:active{transform:scale(.97)}
-  .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.btnPrimaryBgHover}!important;border-color:${T.accent}!important;color:${T.btnPrimaryText}!important}
+  .hud-btn:active{background:${T.btnSurfaceActive}!important}
+  .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;box-shadow:${CONTROL_SHADOW},${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:focus-visible{outline:none;background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}22,${CONTROL_SHADOW}!important;color:${T.btnPrimaryText}!important}.hud-accent:active{background:${T.btnPrimaryBgHover}!important}
+  .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;color:${T.btnPrimaryText}!important}
   .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
   .hud-input-shell:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important}
   .hud-input-shell:focus-within{background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
@@ -2144,7 +2134,7 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 10,
+    gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
     background: "transparent",
@@ -2163,6 +2153,36 @@ const S: Record<string, CSSProperties> = {
   bottomMetaRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
   bottomMeta: { fontSize: 11, color: T.sec, fontWeight: 500 },
   bottomChip: { ...microChipBase, padding: "0 8px", fontSize: 10, fontWeight: 700, fontFamily: MONO, textTransform: "uppercase" },
+  bottomActionLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    whiteSpace: "nowrap",
+  },
+  bottomActionText: {
+    fontWeight: 650,
+    letterSpacing: ".01em",
+    lineHeight: 1,
+  },
+  bottomActionGlyph: {
+    width: 16,
+    height: 16,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    borderRadius: ACTION_RADIUS,
+    color: T.accent,
+    background: "none",
+    border: "none",
+    boxShadow: "none",
+  },
+  bottomActionGlyphAccent: {
+    color: T.btnPrimaryText,
+    background: "none",
+    border: "none",
+    boxShadow: "none",
+  },
   floorPicker: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4 },
   zoomStack: { ...utilityControlBase, padding: 0, overflow: "hidden" },
   zoomBtn: {
@@ -2179,8 +2199,8 @@ const S: Record<string, CSSProperties> = {
     color: T.sec,
   },
   zoomDivider: { width: 1, height: 22, background: T.border },
-  fab: { ...primaryActionBase, whiteSpace: "nowrap", boxShadow: T.elevAccent },
-  fabActive: { background: "#0ea5e9", border: "1px solid #0ea5e9", boxShadow: T.elevAccentActive },
+  fab: { ...primaryActionBase, whiteSpace: "nowrap" },
+  fabActive: { background: T.btnPrimaryBgHover, border: `1px solid ${T.accentBorder}`, boxShadow: `${CONTROL_SHADOW}, ${T.elevAccentActive}` },
   searchDrawerLayer: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE,

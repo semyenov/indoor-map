@@ -1,4 +1,4 @@
-import type { FeatureCollection, LineString } from "geojson";
+import type { FeatureCollection, LineString, Point } from "geojson";
 import type { Coordinate, LevelId, RouteResult, RouteSummary, RoutingEdge, RoutingGraph, RoutingOptions } from "./types";
 
 interface QueueItem {
@@ -424,6 +424,54 @@ export const buildRouteCollection = (
           level: segment.level,
         },
       })),
+  };
+};
+
+export const buildRouteMarkerCollection = (
+  route: RouteResult | null,
+): FeatureCollection<Point, { level: LevelId; terminal: boolean }> => {
+  if (!route) {
+    return { type: "FeatureCollection", features: [] };
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: route.segments.flatMap((segment, segmentIndex) => {
+      const sampledIndexes = new Set<number>();
+
+      for (let index = 0; index < segment.coordinates.length; index += 4) {
+        sampledIndexes.add(index);
+      }
+
+      if (segment.coordinates.length > 0) {
+        sampledIndexes.add(0);
+        sampledIndexes.add(segment.coordinates.length - 1);
+      }
+
+      return [...sampledIndexes]
+        .sort((left, right) => left - right)
+        .map((index) => {
+          const coordinate = segment.coordinates[index];
+
+          if (!coordinate) {
+            return null;
+          }
+
+          return {
+            id: `route-marker-${segment.level}-${segmentIndex}-${index}`,
+            type: "Feature" as const,
+            geometry: {
+              type: "Point" as const,
+              coordinates: coordinate,
+            },
+            properties: {
+              level: segment.level,
+              terminal: index === 0 || index === segment.coordinates.length - 1,
+            },
+          };
+        })
+        .filter((feature): feature is NonNullable<typeof feature> => feature !== null);
+    }),
   };
 };
 

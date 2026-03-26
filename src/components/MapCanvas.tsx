@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  Clapperboard,
+  Compass,
+  Crosshair,
+  LayoutGrid,
+  Orbit,
+  RotateCcw,
+  RotateCw,
+  type LucideIcon,
+} from "lucide-react";
 import maplibregl, { type ExpressionSpecification, type FilterSpecification, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { buildRouteCollection } from "../lib/routing";
+import { buildRouteCollection, buildRouteMarkerCollection } from "../lib/routing";
 import type {
   Coordinate,
   FeatureKind,
@@ -158,6 +168,7 @@ const POI_SOURCE = "pois";
 const ROOM_LABEL_SOURCE = "room-label-points";
 const POI_LABEL_SOURCE = "poi-label-points";
 const ROUTE_SOURCE = "route";
+const ROUTE_MARKER_SOURCE = "route-markers";
 const SELECTION_SOURCE = "selection";
 type FilteredLayerId =
   | "zone-fill"
@@ -177,7 +188,9 @@ type FilteredLayerId =
   | "selection-halo"
   | "selection-core"
   | "route-line"
-  | "route-glow";
+  | "route-glow"
+  | "route-node"
+  | "route-node-glow";
 
 const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "zone-fill",
@@ -198,6 +211,8 @@ const FILTERED_LAYER_IDS: FilteredLayerId[] = [
   "selection-core",
   "route-line",
   "route-glow",
+  "route-node",
+  "route-node-glow",
 ];
 
 export type MapSceneMode = "plan" | "explore" | "theatre";
@@ -206,6 +221,29 @@ type ScenePreset = {
   bearing: number;
   zoomOffset: number;
 };
+
+type ProjectedRouteMarker = {
+  id: string;
+  x: number;
+  y: number;
+  terminal: boolean;
+};
+
+type ProjectedRouteOverlay = {
+  width: number;
+  height: number;
+  pathData: string;
+  markers: ProjectedRouteMarker[];
+};
+
+const EMPTY_ROUTE_OVERLAY: ProjectedRouteOverlay = {
+  width: 0,
+  height: 0,
+  pathData: "",
+  markers: [],
+};
+
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 const SCENE_PRESETS: Record<MapSceneMode, ScenePreset> = {
   plan: { pitch: 18, bearing: 0, zoomOffset: -0.15 },
@@ -240,51 +278,21 @@ const TOOLBAR_COLLAPSED_MAP_PADDING: maplibregl.PaddingOptions = {
   left: 160,
 };
 
+const TOOLBAR_ICON_PROPS = {
+  absoluteStrokeWidth: true,
+  strokeWidth: 1.85,
+} as const;
+
+const toolbarIcon = (Icon: LucideIcon, size: number) => () => <Icon size={size} {...TOOLBAR_ICON_PROPS} />;
+
 const ToolbarIcons = {
-  plan: () => (
-    <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
-      <rect height="10" rx="1" stroke="currentColor" strokeWidth="1.3" width="12" x="2" y="3" />
-      <line stroke="currentColor" strokeWidth="1" x1="2" x2="14" y1="7" y2="7" />
-      <line stroke="currentColor" strokeWidth="1" x1="7" x2="7" y1="7" y2="13" />
-    </svg>
-  ),
-  explore: () => (
-    <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
-      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M5.5 5.5L7 9L10.5 10.5L9 7L5.5 5.5Z" fill="currentColor" opacity="0.6" />
-    </svg>
-  ),
-  theatre: () => (
-    <svg fill="none" height="16" viewBox="0 0 16 16" width="16">
-      <path d="M2 6C2 6 5 2 8 2C11 2 14 6 14 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-      <path d="M2 6C2 6 5 10 8 10C11 10 14 6 14 6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-      <circle cx="8" cy="6" fill="currentColor" opacity="0.6" r="2" />
-    </svg>
-  ),
-  rotateLeft: () => (
-    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
-      <path d="M4 2L2 4L4 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3" />
-      <path d="M2 4H8C10.2 4 12 5.8 12 8C12 10.2 10.2 12 8 12H6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-    </svg>
-  ),
-  rotateRight: () => (
-    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
-      <path d="M10 2L12 4L10 6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.3" />
-      <path d="M12 4H6C3.8 4 2 5.8 2 8C2 10.2 3.8 12 6 12H8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-    </svg>
-  ),
-  orbit: () => (
-    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
-      <ellipse cx="7" cy="7" rx="6" ry="3" stroke="currentColor" strokeWidth="1.2" transform="rotate(-30 7 7)" />
-      <circle cx="7" cy="7" fill="currentColor" r="1.5" />
-    </svg>
-  ),
-  focus: () => (
-    <svg fill="none" height="14" viewBox="0 0 14 14" width="14">
-      <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M7 1V3M7 11V13M1 7H3M11 7H13" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-    </svg>
-  ),
+  plan: toolbarIcon(LayoutGrid, 16),
+  explore: toolbarIcon(Compass, 16),
+  theatre: toolbarIcon(Clapperboard, 16),
+  rotateLeft: toolbarIcon(RotateCcw, 14),
+  rotateRight: toolbarIcon(RotateCw, 14),
+  orbit: toolbarIcon(Orbit, 14),
+  focus: toolbarIcon(Crosshair, 14),
 };
 
 const floorFilter = (
@@ -532,6 +540,134 @@ const fitRouteBounds = (
   return true;
 };
 
+const buildSvgPathData = (segments: Array<Array<{ x: number; y: number }>>) =>
+  segments
+    .filter((segment) => segment.length > 1)
+    .map((segment) => {
+      const [firstPoint, ...remainingPoints] = segment;
+
+      if (!firstPoint) {
+        return "";
+      }
+
+      return `M ${firstPoint.x} ${firstPoint.y} ${remainingPoints.map((point) => `L ${point.x} ${point.y}`).join(" ")}`;
+    })
+    .filter((segment) => segment.length > 0)
+    .join(" ");
+
+const projectRouteOverlay = (
+  map: maplibregl.Map,
+  route: RouteResult | null,
+  level: LevelId,
+): ProjectedRouteOverlay => {
+  const container = map.getContainer();
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  if (!route || width <= 0 || height <= 0) {
+    return {
+      ...EMPTY_ROUTE_OVERLAY,
+      width,
+      height,
+    };
+  }
+
+  const routeCollection = buildRouteCollection(route);
+  const routeMarkerCollection = buildRouteMarkerCollection(route);
+  const activeSegments = routeCollection.features.filter((feature) => feature.properties.level === level);
+  const activeMarkers = routeMarkerCollection.features.filter((feature) => feature.properties.level === level);
+
+  if (activeSegments.length === 0) {
+    return {
+      ...EMPTY_ROUTE_OVERLAY,
+      width,
+      height,
+    };
+  }
+
+  const projectedSegments = activeSegments.map((feature) =>
+    feature.geometry.coordinates.map((coordinate) => {
+      const point = map.project(coordinate as Coordinate);
+
+      return {
+        x: Number(point.x.toFixed(2)),
+        y: Number(point.y.toFixed(2)),
+      };
+    }),
+  );
+
+  return {
+    width,
+    height,
+    pathData: buildSvgPathData(projectedSegments),
+    markers: activeMarkers.map((feature) => {
+      const point = map.project(feature.geometry.coordinates as Coordinate);
+
+      return {
+        id: String(feature.id ?? `${feature.properties.level}-${point.x}-${point.y}`),
+        x: Number(point.x.toFixed(2)),
+        y: Number(point.y.toFixed(2)),
+        terminal: feature.properties.terminal,
+      };
+    }),
+  };
+};
+
+const syncRouteOverlayElements = (
+  overlayRoot: SVGSVGElement | null,
+  casingPath: SVGPathElement | null,
+  linePath: SVGPathElement | null,
+  markerLayer: SVGGElement | null,
+  overlay: ProjectedRouteOverlay,
+  palette: MapPalette,
+) => {
+  if (!overlayRoot || !casingPath || !linePath || !markerLayer) {
+    return;
+  }
+
+  if (!overlay.pathData || overlay.width <= 0 || overlay.height <= 0) {
+    overlayRoot.style.display = "none";
+    casingPath.setAttribute("d", "");
+    linePath.setAttribute("d", "");
+    markerLayer.replaceChildren();
+    return;
+  }
+
+  overlayRoot.style.display = "block";
+  overlayRoot.setAttribute("width", String(overlay.width));
+  overlayRoot.setAttribute("height", String(overlay.height));
+  overlayRoot.setAttribute("viewBox", `0 0 ${overlay.width} ${overlay.height}`);
+
+  casingPath.setAttribute("d", overlay.pathData);
+  casingPath.setAttribute("stroke", palette.routeCasing);
+
+  linePath.setAttribute("d", overlay.pathData);
+  linePath.setAttribute("stroke", palette.routeLine);
+
+  const markerNodes = overlay.markers.map((marker) => {
+    const group = document.createElementNS(SVG_NAMESPACE, "g");
+    group.setAttribute("transform", `translate(${marker.x} ${marker.y})`);
+
+    const outerCircle = document.createElementNS(SVG_NAMESPACE, "circle");
+    outerCircle.setAttribute("fill", palette.routeCasing);
+    outerCircle.setAttribute("opacity", "0.95");
+    outerCircle.setAttribute("r", marker.terminal ? "7" : "4.5");
+
+    const innerCircle = document.createElementNS(SVG_NAMESPACE, "circle");
+    innerCircle.setAttribute("cx", "0");
+    innerCircle.setAttribute("cy", "0");
+    innerCircle.setAttribute("fill", palette.routeLine);
+    innerCircle.setAttribute("r", marker.terminal ? "4.5" : "2.75");
+    innerCircle.setAttribute("stroke", palette.routeCasing);
+    innerCircle.setAttribute("stroke-width", marker.terminal ? "2" : "1.2");
+
+    group.append(outerCircle, innerCircle);
+    return group;
+  });
+
+  markerLayer.replaceChildren(...markerNodes);
+};
+
 const updateFilters = (map: maplibregl.Map, level: LevelId) => {
   const hasLayer = (layerId: FilteredLayerId) => Boolean(map.getLayer(layerId));
 
@@ -605,6 +741,14 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
 
   if (hasLayer("route-glow")) {
     map.setFilter("route-glow", ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]]);
+  }
+
+  if (hasLayer("route-node-glow")) {
+    map.setFilter("route-node-glow", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level]]);
+  }
+
+  if (hasLayer("route-node")) {
+    map.setFilter("route-node", ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level]]);
   }
 };
 
@@ -861,12 +1005,18 @@ export function MapCanvas({
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const routeOverlayRef = useRef<SVGSVGElement | null>(null);
+  const routeOverlayCasingPathRef = useRef<SVGPathElement | null>(null);
+  const routeOverlayLinePathRef = useRef<SVGPathElement | null>(null);
+  const routeOverlayMarkersRef = useRef<SVGGElement | null>(null);
   const hoverRef = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(null);
   const activeLevelRef = useRef(activeLevel);
+  const routeRef = useRef(route);
   const onSelectFeatureRef = useRef(onSelectFeature);
   const pendingFocusRef = useRef<PendingFocusRequest | null>(null);
   const focusPulseTimerRef = useRef<number | null>(null);
+  const handledFocusRequestIdRef = useRef(focusRequestId);
   const processedZoomCommandIdRef = useRef(0);
   const [sceneMode, setSceneMode] = useState<MapSceneMode>(externalSceneMode ?? DEFAULT_SCENE_MODE);
   const [pitch, setPitch] = useState<number>(SCENE_PRESETS[externalSceneMode ?? DEFAULT_SCENE_MODE].pitch);
@@ -941,7 +1091,62 @@ export function MapCanvas({
     pendingFocusRef.current = null;
   };
 
-  const syncSelectionAndView = (map: maplibregl.Map) => {
+  const syncRouteRendering = (map: maplibregl.Map) => {
+    const currentRoute = routeRef.current;
+    const currentLevel = activeLevelRef.current;
+    const routeSource = map.getSource(ROUTE_SOURCE);
+    const routeMarkerSource = map.getSource(ROUTE_MARKER_SOURCE);
+
+    if (!isGeoJsonSource(routeSource) || !isGeoJsonSource(routeMarkerSource)) {
+      console.debug("[route:map] route source unavailable", {
+        currentLevel,
+        hasRoute: Boolean(currentRoute),
+        hasRouteSource: isGeoJsonSource(routeSource),
+        hasRouteMarkerSource: isGeoJsonSource(routeMarkerSource),
+      });
+      return false;
+    }
+
+    const routeCollection = buildRouteCollection(currentRoute);
+    const routeMarkerCollection = buildRouteMarkerCollection(currentRoute);
+
+    routeSource.setData(routeCollection);
+    routeMarkerSource.setData(routeMarkerCollection);
+    updateFilters(map, currentLevel);
+
+    if (map.getLayer("route-glow")) {
+      map.moveLayer("route-glow");
+    }
+
+    if (map.getLayer("route-line")) {
+      map.moveLayer("route-line");
+    }
+
+    if (map.getLayer("route-node-glow")) {
+      map.moveLayer("route-node-glow");
+    }
+
+    if (map.getLayer("route-node")) {
+      map.moveLayer("route-node");
+    }
+
+    map.triggerRepaint();
+    const levels = [...new Set(routeCollection.features.map((feature) => feature.properties.level))];
+    const hasRouteOnActiveLevel = routeCollection.features.some((feature) => feature.properties.level === currentLevel);
+
+    console.debug("[route:map] synced route source", {
+      currentLevel,
+      hasRoute: Boolean(currentRoute),
+      featureCount: routeCollection.features.length,
+      markerCount: routeMarkerCollection.features.length,
+      levels,
+      hasRouteOnActiveLevel,
+    });
+
+    return hasRouteOnActiveLevel;
+  };
+
+  const syncSelectionState = (map: maplibregl.Map) => {
     updateFilters(map, activeLevel);
 
     const selectionSource = map.getSource(SELECTION_SOURCE);
@@ -955,11 +1160,15 @@ export function MapCanvas({
     setFeatureState(featureSourceById, featureLabelSourceById, map, selectedRef.current, "selected", true);
     map.triggerRepaint();
 
-    if (selectedFeature) {
-      if (selectedFeature.properties.level !== activeLevel) {
-        pendingFocusRef.current = null;
-        clearFocusPulseTimer();
-      } else {
+    const hasFreshSelectionFocus =
+      selectedFeature !== null &&
+      selectedFeature.properties.level === activeLevel &&
+      focusRequestId > handledFocusRequestIdRef.current;
+
+    if (hasFreshSelectionFocus && selectedFeature) {
+      handledFocusRequestIdRef.current = focusRequestId;
+
+      if (selectedFeature.properties.level === activeLevel) {
         const request: PendingFocusRequest = {
           requestId: focusRequestId,
           featureId: selectedFeature.id,
@@ -969,23 +1178,22 @@ export function MapCanvas({
 
         pendingFocusRef.current = request;
         runFocusRequest(map, request);
-        return;
+        return true;
       }
     }
 
     pendingFocusRef.current = null;
     clearFocusPulseTimer();
-
-    if (route && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 720)) {
-      return;
-    }
-
-    fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+    return false;
   };
 
   useEffect(() => {
     activeLevelRef.current = activeLevel;
   }, [activeLevel]);
+
+  useEffect(() => {
+    routeRef.current = route;
+  }, [route]);
 
   useEffect(() => {
     onSelectFeatureRef.current = onSelectFeature;
@@ -1013,8 +1221,14 @@ export function MapCanvas({
       map.addSource(POI_SOURCE, { type: "geojson", data: collections.pois });
       map.addSource(ROOM_LABEL_SOURCE, { type: "geojson", data: collections.roomLabels });
       map.addSource(POI_LABEL_SOURCE, { type: "geojson", data: collections.poiLabels });
-      map.addSource(ROUTE_SOURCE, { type: "geojson", data: buildRouteCollection(route) });
+      map.addSource(ROUTE_SOURCE, { type: "geojson", data: buildRouteCollection(routeRef.current) });
+      map.addSource(ROUTE_MARKER_SOURCE, { type: "geojson", data: buildRouteMarkerCollection(routeRef.current) });
       map.addSource(SELECTION_SOURCE, { type: "geojson", data: buildSelectionCollection(selectedFeature) });
+
+      console.debug("[route:map] map loaded", {
+        activeLevel: activeLevelRef.current,
+        hasRoute: Boolean(routeRef.current),
+      });
 
       map.addLayer({
         id: "zone-fill",
@@ -1183,8 +1397,8 @@ export function MapCanvas({
         },
         paint: {
           "line-color": palette.routeCasing,
-          "line-width": 9,
-          "line-opacity": 0.74,
+          "line-width": 12,
+          "line-opacity": 0.82,
           "line-blur": 1.4,
         },
       });
@@ -1200,9 +1414,51 @@ export function MapCanvas({
         },
         paint: {
           "line-color": palette.routeLine,
-          "line-width": 3.5,
-          "line-blur": 0.22,
-          "line-opacity": 0.96,
+          "line-width": 5,
+          "line-blur": 0.12,
+          "line-opacity": 1,
+        },
+      });
+
+      map.addLayer({
+        id: "route-node-glow",
+        type: "circle",
+        source: ROUTE_MARKER_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel]],
+        paint: {
+          "circle-radius": [
+            "case",
+            ["boolean", ["get", "terminal"], false],
+            7,
+            4.5,
+          ],
+          "circle-color": palette.routeCasing,
+          "circle-opacity": 0.92,
+          "circle-blur": 0.2,
+        },
+      });
+
+      map.addLayer({
+        id: "route-node",
+        type: "circle",
+        source: ROUTE_MARKER_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel]],
+        paint: {
+          "circle-radius": [
+            "case",
+            ["boolean", ["get", "terminal"], false],
+            4.5,
+            2.75,
+          ],
+          "circle-color": palette.routeLine,
+          "circle-stroke-color": palette.routeCasing,
+          "circle-stroke-width": [
+            "case",
+            ["boolean", ["get", "terminal"], false],
+            2,
+            1.2,
+          ],
+          "circle-opacity": 1,
         },
       });
 
@@ -1392,7 +1648,16 @@ export function MapCanvas({
         onSelectFeatureRef.current(featureId);
       });
 
-      syncSelectionAndView(map);
+      const hasRouteOnActiveLevel = syncRouteRendering(map);
+      const didFocusSelection = syncSelectionState(map);
+
+      if (!didFocusSelection) {
+        if (route && hasRouteOnActiveLevel && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 0)) {
+          return;
+        }
+
+        fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 0);
+      }
     });
 
     mapRef.current = map;
@@ -1411,17 +1676,19 @@ export function MapCanvas({
       return;
     }
 
-    syncSelectionAndView(map);
+    const didFocusSelection = syncSelectionState(map);
+
+    if (!didFocusSelection && !route) {
+      fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+    }
   }, [
     activeFramePadding,
     activeLevel,
-    bearing,
     collections,
     featureLabelSourceById,
     featureSourceById,
     focusRequestId,
     levels,
-    pitch,
     route,
     sceneMode,
     selectedFeature,
@@ -1450,14 +1717,18 @@ export function MapCanvas({
       return;
     }
 
-    const routeSource = map.getSource(ROUTE_SOURCE);
+    const hasRouteOnActiveLevel = syncRouteRendering(map);
 
-    if (!isGeoJsonSource(routeSource)) {
+    if (!route) {
       return;
     }
 
-    routeSource.setData(buildRouteCollection(route));
-  }, [route]);
+    if (hasRouteOnActiveLevel && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 720)) {
+      return;
+    }
+
+    fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+  }, [activeFramePadding, activeLevel, bearing, collections, levels, pitch, route, sceneMode]);
 
   useEffect(() => {
     if (!orbitEnabled) {
@@ -1558,9 +1829,84 @@ export function MapCanvas({
     zoomBy(zoomCommand.delta);
   }, [zoomCommand]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map) {
+      syncRouteOverlayElements(
+        routeOverlayRef.current,
+        routeOverlayCasingPathRef.current,
+        routeOverlayLinePathRef.current,
+        routeOverlayMarkersRef.current,
+        EMPTY_ROUTE_OVERLAY,
+        palette,
+      );
+      return;
+    }
+
+    let frameId = 0;
+
+    const syncOverlay = () => {
+      frameId = 0;
+      syncRouteOverlayElements(
+        routeOverlayRef.current,
+        routeOverlayCasingPathRef.current,
+        routeOverlayLinePathRef.current,
+        routeOverlayMarkersRef.current,
+        projectRouteOverlay(map, route, activeLevel),
+        palette,
+      );
+    };
+
+    const requestSync = () => {
+      if (frameId !== 0) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(syncOverlay);
+    };
+
+    syncOverlay();
+    map.on("move", requestSync);
+    map.on("resize", requestSync);
+    map.on("pitch", requestSync);
+    map.on("rotate", requestSync);
+    map.on("zoom", requestSync);
+
+    return () => {
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      map.off("move", requestSync);
+      map.off("resize", requestSync);
+      map.off("pitch", requestSync);
+      map.off("rotate", requestSync);
+      map.off("zoom", requestSync);
+    };
+  }, [activeLevel, palette, route, themeVariant]);
+
   return (
     <div className="map-frame">
       <div className="map-shell" ref={containerRef} />
+      <svg aria-hidden="true" className="map-route-overlay" ref={routeOverlayRef}>
+        <path
+          ref={routeOverlayCasingPathRef}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeOpacity="0.95"
+          strokeWidth="12"
+        />
+        <path
+          ref={routeOverlayLinePathRef}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="5"
+        />
+        <g ref={routeOverlayMarkersRef} />
+      </svg>
       {showControls ? <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
         <div className="map-toolbar-header">
           <div className="map-toolbar-copy">
