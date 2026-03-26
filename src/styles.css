@@ -1134,7 +1134,6 @@ select:focus-visible {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--line-subtle);
   border-radius: 30px;
   box-shadow: var(--shadow-map);
 }
@@ -2941,6 +2940,11 @@ body {
   box-shadow: none;
 }
 
+.atlas-map-area .map-shell,
+.atlas-map-area .maplibregl-map {
+  border: 0;
+}
+
 .atlas-map-area .map-loading {
   background:
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 36%),
@@ -3450,4 +3454,12 @@ body {
     top: 12px;
     right: 12px;
   }
+}
+
+.atlas-map-area .map-shell,
+.atlas-map-area .map-loading,
+.atlas-map-area .maplibregl-map {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
