@@ -1024,6 +1024,14 @@ const updateFilters = (map: maplibregl.Map, level: LevelId) => {
 };
 
 const interactiveLayerOrder: string[] = ["poi-circle", "poi-labels", "room-labels", "room-fill", "zone-fill", "room-hit-area"];
+const routeInteractiveLayerOrder: string[] = [
+  "route-terminal",
+  "route-terminal-glow",
+  "route-breadcrumb",
+  "route-breadcrumb-glow",
+  "route-path",
+  "route-path-glow",
+];
 const selectableFeatureKinds: FeatureKind[] = ["room", "meeting_room", "amenity"];
 const preferredInteractiveKinds: FeatureKind[] = ["workstation", "connector", "meeting_room", "room", "amenity"];
 
@@ -1255,6 +1263,7 @@ export interface MapCanvasProps {
   selectableSpaceFeatures: OfficePolygonFeature[];
   zoomCommand?: { id: number; delta: 1 | -1 } | null;
   onSelectFeature: (featureId: string) => void;
+  onSelectRoute: () => void;
 }
 
 export function MapCanvas({
@@ -1273,6 +1282,7 @@ export function MapCanvas({
   selectableSpaceFeatures,
   zoomCommand,
   onSelectFeature,
+  onSelectRoute,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -1282,6 +1292,7 @@ export function MapCanvas({
   const activeLevelRef = useRef(activeLevel);
   const routeRef = useRef(route);
   const onSelectFeatureRef = useRef(onSelectFeature);
+  const onSelectRouteRef = useRef(onSelectRoute);
   const pendingFocusRef = useRef<PendingFocusRequest | null>(null);
   const focusPulseTimerRef = useRef<number | null>(null);
   const handledFocusRequestIdRef = useRef(focusRequestId);
@@ -1473,6 +1484,10 @@ export function MapCanvas({
   useEffect(() => {
     onSelectFeatureRef.current = onSelectFeature;
   }, [onSelectFeature]);
+
+  useEffect(() => {
+    onSelectRouteRef.current = onSelectRoute;
+  }, [onSelectRoute]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -1925,19 +1940,23 @@ export function MapCanvas({
       }
 
       map.on("mousemove", (event) => {
+        const hasRouteHit =
+          routeRef.current !== null &&
+          map.queryRenderedFeatures(event.point, { layers: [...routeInteractiveLayerOrder] }).length > 0;
         const featureId = pickInteractiveFeatureId(
           featureById,
           map.queryRenderedFeatures(event.point, { layers: [...interactiveLayerOrder] }),
         );
+        const nextCursor = featureId || hasRouteHit ? "pointer" : "";
 
-        if (featureId === hoverRef.current) {
+        if (featureId === hoverRef.current && map.getCanvas().style.cursor === nextCursor) {
           return;
         }
 
         setFeatureState(featureSourceById, featureLabelSourceById, map, hoverRef.current, "hover", false);
         hoverRef.current = featureId;
         setFeatureState(featureSourceById, featureLabelSourceById, map, hoverRef.current, "hover", true);
-        map.getCanvas().style.cursor = featureId ? "pointer" : "";
+        map.getCanvas().style.cursor = nextCursor;
       });
 
       map.on("mouseleave", () => {
@@ -1947,6 +1966,14 @@ export function MapCanvas({
       });
 
       map.on("click", (event) => {
+        if (
+          routeRef.current !== null &&
+          map.queryRenderedFeatures(event.point, { layers: [...routeInteractiveLayerOrder] }).length > 0
+        ) {
+          onSelectRouteRef.current();
+          return;
+        }
+
         let featureId = pickInteractiveFeatureId(
           featureById,
           map.queryRenderedFeatures(event.point, { layers: [...interactiveLayerOrder] }),

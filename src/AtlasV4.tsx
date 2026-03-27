@@ -731,10 +731,10 @@ export default function AtlasV4() {
   const activeRouteGroup = isEditingFrom ? routeFromGroup : routeToGroup;
   const activeRouteSelectedFeatureId = isEditingFrom ? routeFrom?.featureId ?? null : routeTo?.featureId ?? null;
   const activeRouteQuery = isEditingFrom ? routeFromQ : routeToQ;
-  const activeRouteTitle = isEditingFrom ? "Шаг 1. Выберите стартовую точку" : "Шаг 2. Выберите точку назначения";
+  const activeRouteTitle = isEditingFrom ? "Выберите стартовую точку" : "Выберите точку назначения";
   const activeRouteSubtitle = isEditingFrom
-    ? "Выберите, откуда начинается маршрут. После выбора акцент автоматически перейдёт к точке назначения."
-    : "Уточните, куда должен привести маршрут. Когда обе точки заданы, маршрут можно сразу построить.";
+    ? "Выберите старт, затем система переключит вас к назначению."
+    : "Укажите назначение. Когда обе точки заданы, маршрут можно сразу построить.";
   const activeRouteEmpty = isEditingFrom ? "Стартовая точка не выбрана" : "Точка назначения не выбрана";
 
   const selectedFeature = selectedFeatureId ? featureById.get(selectedFeatureId) ?? null : null;
@@ -756,8 +756,8 @@ export default function AtlasV4() {
   const routeStepColumns = Array.from({ length: routeStepColumnCount }, (_, columnIndex) =>
     routeStepsList.filter((_, index) => Math.floor(index / routeStepRows) === columnIndex),
   );
-  const isWorkspaceDrawerMode = drawerMode === "search" || drawerMode === "route";
-  const isInfoDrawerMode = drawerMode === "detail" || drawerMode === "route-result" || drawerMode === "ops";
+  const isWorkspaceDrawerMode = drawerMode === "search" || drawerMode === "route" || drawerMode === "ops";
+  const isInfoDrawerMode = drawerMode === "detail" || drawerMode === "route-result";
   const activeViewModeLabel = VIEW_MODES.find((mode) => mode.id === viewMode)?.label ?? viewMode;
   const bottomHeadline = route
     ? `${routeFrom?.name ?? "Старт"} → ${routeTo?.name ?? "Точка назначения"}`
@@ -782,20 +782,50 @@ export default function AtlasV4() {
     { available: 0, occupied: 0, focus: 0, offline: 0 },
   );
 
-  const levelRooms = atlasSpaces.filter((space) => space.level === activeLevel && space.cap > 0);
-  const opsRooms = [...levelRooms].sort((left, right) => STATUS_ORDER[left.status] - STATUS_ORDER[right.status] || left.name.localeCompare(right.name));
-  const levelStatusCounts = levelRooms.reduce<Record<RoomStatus, number>>(
+  const levelRank = new Map(levels.map((level, index) => [level.id, index]));
+  const opsRooms = [...atlasSpaces.filter((space) => space.cap > 0)].sort(
+    (left, right) =>
+      (levelRank.get(left.level) ?? Number.MAX_SAFE_INTEGER) - (levelRank.get(right.level) ?? Number.MAX_SAFE_INTEGER) ||
+      STATUS_ORDER[left.status] - STATUS_ORDER[right.status] ||
+      left.name.localeCompare(right.name),
+  );
+  const opsStatusCounts = opsRooms.reduce<Record<RoomStatus, number>>(
     (counts, space) => {
       counts[space.status] += 1;
       return counts;
     },
     { available: 0, occupied: 0, focus: 0, offline: 0 },
   );
-  const levelRoomCount = levelRooms.length;
-  const occupiedNow = levelStatusCounts.occupied + levelStatusCounts.focus;
-  const levelAvailabilityRate = levelRoomCount > 0 ? Math.round((levelStatusCounts.available / levelRoomCount) * 100) : 0;
-  const levelLoadRate = levelRoomCount > 0 ? Math.round((occupiedNow / levelRoomCount) * 100) : 0;
-  const totalTrackedRooms = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
+  const opsRoomCount = opsRooms.length;
+  const opsOccupiedNow = opsStatusCounts.occupied + opsStatusCounts.focus;
+  const opsAvailabilityRate = opsRoomCount > 0 ? Math.round((opsStatusCounts.available / opsRoomCount) * 100) : 0;
+  const opsLoadRate = opsRoomCount > 0 ? Math.round((opsOccupiedNow / opsRoomCount) * 100) : 0;
+  const availableStatusConfig = ST?.available ?? { c: "#34d399", bg: "rgba(52,211,153,.12)", label: "Свободно" };
+  const opsLevelSummaries = levels
+    .map((level) => {
+      const rooms = opsRooms.filter((space) => space.level === level.id);
+      const counts = rooms.reduce<Record<RoomStatus, number>>(
+        (acc, space) => {
+          acc[space.status] += 1;
+          return acc;
+        },
+        { available: 0, occupied: 0, focus: 0, offline: 0 },
+      );
+      const occupied = counts.occupied + counts.focus;
+      const availabilityRate = rooms.length > 0 ? Math.round((counts.available / rooms.length) * 100) : 0;
+      const loadRate = rooms.length > 0 ? Math.round((occupied / rooms.length) * 100) : 0;
+
+      return {
+        level: level.id,
+        rooms,
+        counts,
+        occupied,
+        availabilityRate,
+        loadRate,
+      };
+    })
+    .filter((summary) => summary.rooms.length > 0);
+  const opsUpdatedLabel = (occupancyUpdatedAt ?? time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   useEffect(() => {
     if (routeFromId || routeTargets.length === 0) {
@@ -825,13 +855,26 @@ export default function AtlasV4() {
     });
   };
 
+  const onSelectRoute = useCallback(() => {
+    if (!route) {
+      return;
+    }
+
+    setDrawerMode("route-result");
+    setDrawerOpen(true);
+  }, [route]);
+
   const openBrowse = () => {
     setDrawerMode("search");
     setDrawerOpen(true);
     window.setTimeout(() => topSearchRef.current?.focus(), 80);
   };
 
-  const openRouteBuilder = (fromTargetId: string | null = null, toTargetId: string | null = null) => {
+  const openRouteBuilder = (
+    fromTargetId: string | null = null,
+    toTargetId: string | null = null,
+    activeStep: RouteBuilderStep | null = null,
+  ) => {
     const nextFromId = fromTargetId ?? routeFromId;
     const nextToId = toTargetId ?? routeToId;
     setDrawerMode("route");
@@ -840,8 +883,24 @@ export default function AtlasV4() {
     setRouteToId(nextToId);
     setRouteFromQ("");
     setRouteToQ("");
-    setRouteBuilderStep(nextFromId ? "to" : "from");
+    setRouteBuilderStep(activeStep ?? (nextFromId ? "to" : "from"));
     setRouteError(null);
+  };
+
+  const openRouteFromSelected = () => {
+    if (!selectedRouteTarget) {
+      return;
+    }
+
+    openRouteBuilder(selectedRouteTarget.id, routeToId === selectedRouteTarget.id ? null : routeToId, "to");
+  };
+
+  const openRouteToSelected = () => {
+    if (!selectedRouteTarget) {
+      return;
+    }
+
+    openRouteBuilder(routeFromId === selectedRouteTarget.id ? null : routeFromId, selectedRouteTarget.id, "from");
   };
 
   const closeDrawer = useCallback(() => {
@@ -1036,6 +1095,7 @@ export default function AtlasV4() {
             focusRequestId={focusRequestId}
             levels={dataset.levels}
             onSelectFeature={onSelectFeature}
+            onSelectRoute={onSelectRoute}
             route={route}
             selectableSpaceFeatures={indexes.selectableSpaceFeatures}
             selectedFeatureId={selectedFeatureId}
@@ -1235,7 +1295,7 @@ export default function AtlasV4() {
               ) : drawerOpen && drawerMode === "ops" ? (
                 <>
                   <span style={S.bottomMeta}>{statusCounts.available} свободно · {statusCounts.occupied} занято</span>
-                  <span style={S.bottomChip}>{activeLevel}</span>
+                  <span style={S.bottomChip}>Все уровни</span>
                 </>
               ) : (
                 <>
@@ -1249,18 +1309,6 @@ export default function AtlasV4() {
 
         {drawerOpen && drawerMode === "route" ? (
           <div style={S.bottomRouteActions}>
-            <label style={S.checkRow}>
-              <div
-                style={{ ...S.checkBox, ...(accessibleOnly ? S.checkBoxOn : {}) }}
-                onClick={(event) => {
-                  event.preventDefault();
-                  setAccessibleOnly((current) => !current);
-                }}
-              >
-                {accessibleOnly ? <Ic.Check /> : null}
-              </div>
-              <span>Только доступные маршруты</span>
-            </label>
             <button
               style={{ ...S.ghostBtn, opacity: routeFrom && routeTo ? 1 : 0.45, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
               className="hud-btn"
@@ -1326,7 +1374,7 @@ export default function AtlasV4() {
             <button
               style={{ ...S.ghostBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
               className="hud-btn"
-              onClick={() => openRouteBuilder(selectedRouteTarget?.id ?? null, routeToId)}
+              onClick={openRouteFromSelected}
               type="button"
             >
               <BottomActionLabel icon={<Ic.RouteFrom />} label="Маршрут отсюда" />
@@ -1334,7 +1382,7 @@ export default function AtlasV4() {
             <button
               style={{ ...S.accentBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
               className="hud-accent"
-              onClick={() => openRouteBuilder(routeTargets.find((target) => target.featureId === "room-l1-lobby")?.id ?? null, selectedRouteTarget?.id ?? null)}
+              onClick={openRouteToSelected}
               type="button"
             >
               <BottomActionLabel accent icon={<Ic.RouteTo />} label="Построить сюда" />
@@ -1470,50 +1518,31 @@ export default function AtlasV4() {
                   <div style={S.rpTopToolbar}>
                     <div style={S.rpTopFlow}>
                       <div style={S.rpTopFlowText}>
-                        <span style={S.bpGroupLabel}>Активный шаг</span>
-                        <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
+                        <div style={S.rpTopHeadlineRow}>
+                          <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
+                        </div>
                         <div style={S.rpTopFlowSubline}>{activeRouteSubtitle}</div>
                       </div>
-                      <div style={S.rpProgressTrack}>
-                        {([
-                          { step: "from" as const, n: 1, label: "Старт", done: !!routeFrom },
-                          { step: "to" as const, n: 2, label: "Назначение", done: !!routeTo },
-                        ] as const).map(({ step, n, label, done }, i) => {
-                          const active = activeRouteStep === step;
-                          return (
-                            <Fragment key={step}>
-                              {i > 0 && (
-                                <div style={{ ...S.rpProgressLine, ...(routeFrom ? S.rpProgressLineDone : {}) }} />
-                              )}
-                              <div style={{ ...S.rpProgressItem, ...(active ? S.rpProgressItemActive : done ? S.rpProgressItemDone : {}) }}>
-                                <span style={S.rpProgressDot}>{done ? <Ic.Check /> : n}</span>
-                                <span style={S.rpProgressLabel}>{label}</span>
-                              </div>
-                            </Fragment>
-                          );
-                        })}
-                      </div>
+
                     </div>
-                    <div style={S.bpToolbarMeta}>
-                      <button
-                        type="button"
-                        title="Маршрут без барьеров"
-                        style={{ ...S.iconBtn, ...(accessibleOnly ? { color: "var(--atlas-accent)", borderColor: "var(--atlas-accent-border)", background: "var(--atlas-accent-bg)" } : {}) }}
-                        className="hud-btn"
-                        onClick={() => setAccessibleOnly((v) => !v)}
-                      >
-                        <Ic.Accessible />
-                      </button>
-                      <span style={S.bpCount}>
-                        {routeError
-                          ? routeError
-                          : routeFrom && routeTo
-                            ? "Маршрут готов к построению"
-                            : `${activeRouteChoiceList.length} вариантов`}
-                      </span>
-                      <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                        <Ic.X />
-                      </button>
+                    <div style={S.rpTopAside}>
+                      
+                      <div style={S.rpTopActions}>
+                        <button
+                          type="button"
+                          title="Маршрут без барьеров"
+                          style={{ ...S.rpTopToggle, ...(accessibleOnly ? S.rpTopToggleActive : {}) }}
+                          className="hud-btn"
+                          data-active={accessibleOnly ? "true" : undefined}
+                          onClick={() => setAccessibleOnly((v) => !v)}
+                        >
+                          <Ic.Accessible />
+                          <span>{accessibleOnly ? "Без барьеров" : "Любой путь"}</span>
+                        </button>
+                        <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                          <Ic.X />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1698,10 +1727,15 @@ export default function AtlasV4() {
                         <div key={`col-${columnIndex}`} style={S.rrStepsColumn}>
                           {column.map((step, rowIndex) => {
                             const index = columnIndex * routeStepRows + rowIndex;
+                            const isLast = index === routeStepsList.length - 1;
+                            const isLastInColumn = rowIndex === column.length - 1;
                             return (
-                              <div key={`${index}-${step}`} style={S.rrStep}>
-                                <div style={{ ...S.rrStepN, ...(index === routeStepsList.length - 1 ? { background: T.accent, color: "#0c1018", border: `1px solid ${T.accent}` } : {}) }}>
-                                  {index === routeStepsList.length - 1 ? <Ic.Check /> : index + 1}
+                              <div key={`${index}-${step}`} style={{ ...S.rrStep, position: "relative" }}>
+                                {!isLastInColumn && (
+                                  <div style={{ position: "absolute", left: 10, top: 28, width: 1, bottom: -10, background: T.border }} />
+                                )}
+                                <div style={{ ...S.rrStepN, position: "relative", zIndex: 1, ...(isLast ? { background: T.accent, color: "#0c1018", border: `1px solid ${T.accent}` } : {}) }}>
+                                  {isLast ? <Ic.Check /> : index + 1}
                                 </div>
                                 <span style={S.rrStepT}>{step}</span>
                               </div>
@@ -1775,12 +1809,12 @@ export default function AtlasV4() {
                     {[
                       ["Отдел", selectedFeature.properties.department ?? "Общие"],
                       ["Этаж", selectedFeature.properties.level],
-                      ["ID", selectedFeature.id],
-                      ["Маршрут", selectedRouteTarget?.routeNodeId ?? "Н/Д"],
+                      ["Тип", selectedSpace?.kindLabel ?? "–"],
+                      ["Вместимость", (selectedSpace?.cap ?? 0) > 0 ? `${selectedSpace?.cap} мест` : "–"],
                     ].map(([label, value]) => (
                       <div key={label} style={S.detailMetaCell}>
                         <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, ...(label === "ID" || label === "Маршрут" ? { fontFamily: MONO, fontSize: 10 } : {}) }}>{value}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>{value}</span>
                       </div>
                     ))}
                   </div>
@@ -1801,47 +1835,69 @@ export default function AtlasV4() {
             ) : null}
 
             {drawerMode === "ops" ? (
-              <div style={S.drawerInfoPanel}>
-                <div style={S.infoDrawerHeader}>
-                  <div style={S.infoDrawerHeaderMain}>
-                    <span style={S.panelSectionLabel}>Операции</span>
-                    <div style={S.infoDrawerHeaderTitle}>Оперативная сводка</div>
+              <div style={S.opsWorkspacePanel}>
+                <div style={S.bpHeader}>
+                  <div style={S.opsWorkspaceToolbar}>
+                    <div style={S.opsWorkspaceToolbarMain}>
+                      <div style={S.rpTopFlowTitle}>Оперативная сводка</div>
+                      <div style={S.rpTopFlowSubline}>Сводка по этажу, общему статусу и живым помещениям в одном рабочем shell.</div>
+                    </div>
+                    <div style={S.opsWorkspaceToolbarMeta}>
+                      <span style={S.opsShellLiveTag}>Обновлено {opsUpdatedLabel}</span>
+                      <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
+                        <Ic.X />
+                      </button>
+                    </div>
                   </div>
-                  <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                    <Ic.X />
-                  </button>
                 </div>
-                <div style={S.sidePanelBody}>
-                  <div style={S.opsOverviewGrid}>
-                    <div style={S.opsHeroCard}>
-                      <div style={S.sidePanelSectionHeader}>
-                        <span style={S.panelSectionLabel}>Этаж</span>
-                        <div style={S.panelChipRow}>
-                          <span style={S.infoChip}>{activeLevel}</span>
-                          <span style={S.infoChip}>{levelRoomCount} помещений</span>
+                <div style={S.opsWorkspaceBody}>
+                  <div style={S.opsShell}>
+                    <div style={S.opsShellHero}>
+                      <div style={S.opsShellHeroTop}>
+                        <div style={S.opsShellLeadCard}>
+                          <span style={S.panelSectionLabel}>Все уровни</span>
+                          <div style={S.opsShellLeadValueRow}>
+                            <span style={{ ...S.opsHeroMetric, color: availableStatusConfig.c }}>{opsStatusCounts.available}</span>
+                            <div style={S.opsShellLeadMeta}>
+                              <span style={S.opsHeroMetricLabel}>свободно сейчас</span>
+                              <div style={S.panelChipRow}>
+                                <span style={S.infoChip}>{opsLevelSummaries.length} уровня</span>
+                                <span style={S.infoChip}>{opsRoomCount} помещений</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div style={S.opsHeroMain}>
-                        <div style={S.opsHeroMetricBlock}>
-                          <span style={{ ...S.opsHeroMetric, color: ST.available.c }}>{levelStatusCounts.available}</span>
-                          <span style={S.opsHeroMetricLabel}>свободно сейчас</span>
-                        </div>
-                        <div style={S.opsHeroCopy}>
-                          <div style={S.opsHeroTitle}>Оперативная загрузка этажа</div>
-                          <div style={S.sidePanelSubline}>
-                            Доступно {levelAvailabilityRate}% помещений. В использовании сейчас {occupiedNow} из {levelRoomCount}.
+                        <div style={S.opsShellHeroSummary}>
+                          <div style={S.opsHeroCopy}>
+                            <div style={S.opsHeroTitle}>Оперативная загрузка пространства</div>
+                            <div style={S.sidePanelSubline}>
+                              Доступно {opsAvailabilityRate}% помещений. В использовании сейчас {opsOccupiedNow} из {opsRoomCount}.
+                            </div>
+                          </div>
+                          <div style={S.opsShellHeroFacts}>
+                            <div style={S.opsShellFact}>
+                              <span style={S.opsShellFactLabel}>В работе</span>
+                              <span style={S.opsShellFactValue}>{opsOccupiedNow}</span>
+                            </div>
+                            <div style={S.opsShellFact}>
+                              <span style={S.opsShellFactLabel}>Вне сети</span>
+                              <span style={S.opsShellFactValue}>{opsStatusCounts.offline}</span>
+                            </div>
+                            <div style={S.opsShellFact}>
+                              <span style={S.opsShellFactLabel}>Покрытие</span>
+                              <span style={S.opsShellFactValue}>{opsAvailabilityRate}%</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                       <div style={S.opsBreakdownBar}>
                         {Object.entries(ST).map(([statusKey, config]) => {
-                          const count = levelStatusCounts[statusKey as RoomStatus];
+                          const count = opsStatusCounts[statusKey as RoomStatus];
                           return (
                             <div
                               key={statusKey}
                               style={{
                                 ...S.opsBreakdownSegment,
-                                flex: Math.max(count, 1),
                                 background: count > 0 ? config.bg : "rgba(255,255,255,.02)",
                                 border: count > 0 ? `1px solid ${config.c}22` : CONTROL_BORDER,
                                 color: count > 0 ? config.c : T.muted,
@@ -1853,81 +1909,113 @@ export default function AtlasV4() {
                           );
                         })}
                       </div>
-                      <div style={S.opsMetaRow}>
+                      <div style={S.opsShellMetricRail}>
                         <div style={S.opsMetaCard}>
                           <span style={S.opsMetaLabel}>ДОСТУПНОСТЬ</span>
-                          <span style={S.opsMetaValue}>{levelAvailabilityRate}%</span>
+                          <span style={S.opsMetaValue}>{opsAvailabilityRate}%</span>
                         </div>
                         <div style={S.opsMetaCard}>
                           <span style={S.opsMetaLabel}>ЗАГРУЗКА</span>
-                          <span style={S.opsMetaValue}>{levelLoadRate}%</span>
+                          <span style={S.opsMetaValue}>{opsLoadRate}%</span>
                         </div>
                         <div style={S.opsMetaCard}>
                           <span style={S.opsMetaLabel}>ВНЕ СЕТИ</span>
-                          <span style={S.opsMetaValue}>{levelStatusCounts.offline}</span>
+                          <span style={S.opsMetaValue}>{opsStatusCounts.offline}</span>
                         </div>
                       </div>
                     </div>
-                    <div style={S.sidePanelSection}>
+
+                    <div style={S.opsLevelRail}>
+                      {opsLevelSummaries.map((summary) => (
+                        <button
+                          key={summary.level}
+                          style={{ ...S.opsLevelCard, ...(activeLevel === summary.level ? S.opsLevelCardActive : {}) }}
+                          className="hud-card"
+                          onClick={() => setActiveLevel(summary.level)}
+                          type="button"
+                        >
+                          <div style={S.opsLevelCardTop}>
+                            <span style={S.panelSectionLabel}>{summary.level}</span>
+                            <span style={S.infoChip}>{summary.rooms.length} помещений</span>
+                          </div>
+                          <div style={S.opsLevelCardBody}>
+                            <span style={{ ...S.opsLevelCardValue, color: availableStatusConfig.c }}>{summary.counts.available}</span>
+                            <span style={S.opsLevelCardMeta}>свободно · {summary.loadRate}% загрузка</span>
+                          </div>
+                          <div style={S.opsLevelCardStats}>
+                            <span style={S.opsLevelCardStat}>Занято {summary.counts.occupied}</span>
+                            <span style={S.opsLevelCardStat}>Фокус {summary.counts.focus}</span>
+                            <span style={S.opsLevelCardStat}>Вне сети {summary.counts.offline}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={S.opsShellSection}>
                       <div style={S.sidePanelSectionHeader}>
-                        <span style={S.panelSectionLabel}>Общий статус</span>
-                        <span style={S.infoChip}>{totalTrackedRooms} помещений</span>
+                        <span style={S.panelSectionLabel}>Живые помещения</span>
+                        <div style={S.panelChipRow}>
+                          <span style={S.infoChip}>{opsRooms.length} позиций</span>
+                          <span style={S.infoChip}>{opsStatusCounts.available} свободно</span>
+                        </div>
                       </div>
-                      <div style={S.opsStatusGrid}>
-                        {Object.entries(ST).map(([statusKey, config]) => (
-                          <div key={statusKey} style={S.opsStatusCard}>
-                            <span style={{ ...S.opsStatusValue, color: config.c }}>{statusCounts[statusKey as RoomStatus]}</span>
-                            <span style={S.opsStatusLabel}>{config.label}</span>
+                      <div style={S.opsShellSectionIntro}>
+                        <span style={S.sidePanelSubline}>Все уровни в одном списке. Выбор карточки переключит карту на нужный этаж.</span>
+                      </div>
+                      <div style={S.opsLevelGroupStack}>
+                        {opsLevelSummaries.map((summary) => (
+                          <div key={summary.level} style={S.opsLevelGroup}>
+                            <div style={S.opsLevelGroupHeader}>
+                              <div style={S.opsLevelGroupTitleRow}>
+                                <span style={S.opsLevelBadge}>{summary.level}</span>
+                                <span style={S.opsLevelGroupTitle}>{summary.rooms.length} помещений</span>
+                              </div>
+                              <div style={S.panelChipRow}>
+                                <span style={S.infoChip}>{summary.counts.available} свободно</span>
+                                <span style={S.infoChip}>{summary.counts.occupied} занято</span>
+                              </div>
+                            </div>
+                            <div style={S.opsRoomGrid}>
+                              {summary.rooms.map((space) => {
+                                const config = ST[space.status];
+                                return (
+                                  <button
+                                    key={space.id}
+                                    style={{
+                                      ...S.opsRoomCard,
+                                      ...(selectedFeatureId === space.featureId ? S.opsRoomCardSelected : {}),
+                                    }}
+                                    className="hud-card"
+                                    onClick={() => {
+                                      onSelectFeature(space.featureId);
+                                    }}
+                                    type="button"
+                                  >
+                                    <div style={S.opsRoomHeader}>
+                                      <div style={S.opsRoomTitleRow}>
+                                        <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
+                                        <span style={S.opsRoomName}>{space.name}</span>
+                                      </div>
+                                      <span style={{ ...S.statusPill, ...S.opsStatusPill, color: config.c, background: config.bg }}>{config.label}</span>
+                                    </div>
+                                    <div style={S.opsRoomMeta}>
+                                      <span style={S.opsRoomMetaItem}>{space.level}</span>
+                                      <span style={S.opsRoomMetaItem}>{space.cap} мест</span>
+                                      <span style={S.opsRoomMetaItem}>{space.kindLabel}</span>
+                                    </div>
+                                    <div style={S.opsRoomFooter}>
+                                      <span style={S.opsRoomDept}>{space.dept}</span>
+                                      {space.status === "occupied" || space.status === "focus" ? (
+                                        <span style={S.opsRoomSignal}>Требует внимания</span>
+                                      ) : null}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  </div>
-                  <div style={S.sidePanelSection}>
-                    <div style={S.sidePanelSectionHeader}>
-                      <span style={S.panelSectionLabel}>Живые помещения</span>
-                      <div style={S.panelChipRow}>
-                        <span style={S.infoChip}>{opsRooms.length} позиций</span>
-                        <span style={S.infoChip}>{levelStatusCounts.available} свободно</span>
-                      </div>
-                    </div>
-                    <div style={S.opsRoomGrid}>
-                      {opsRooms.map((space) => {
-                        const config = ST[space.status];
-                        return (
-                          <button
-                            key={space.id}
-                            style={{
-                              ...S.opsRoomCard,
-                              ...(selectedFeatureId === space.featureId ? S.opsRoomCardSelected : {}),
-                            }}
-                            className="hud-card"
-                            onClick={() => {
-                              onSelectFeature(space.featureId);
-                            }}
-                            type="button"
-                          >
-                            <div style={S.opsRoomHeader}>
-                              <div style={S.opsRoomTitleRow}>
-                                <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
-                                <span style={S.opsRoomName}>{space.name}</span>
-                              </div>
-                              <span style={{ ...S.statusPill, ...S.opsStatusPill, color: config.c, background: config.bg }}>{config.label}</span>
-                            </div>
-                            <div style={S.opsRoomMeta}>
-                              <span style={S.opsRoomMetaItem}>{space.level}</span>
-                              <span style={S.opsRoomMetaItem}>{space.cap} мест</span>
-                              <span style={S.opsRoomMetaItem}>{space.kindLabel}</span>
-                            </div>
-                            <div style={S.opsRoomFooter}>
-                              <span style={S.opsRoomDept}>{space.dept}</span>
-                              {space.status === "occupied" || space.status === "focus" ? (
-                                <span style={S.opsRoomSignal}>Требует внимания</span>
-                              ) : null}
-                            </div>
-                          </button>
-                        );
-                      })}
                     </div>
                   </div>
                 </div>
@@ -2119,7 +2207,7 @@ const secondaryActionBase: CSSProperties = {
   border: `1px solid ${T.btnSurfaceBorder}`,
   borderRadius: ACTION_RADIUS,
   fontSize: 12,
-  fontWeight: 650,
+  fontWeight: 700,
   fontFamily: FONT,
   letterSpacing: ".01em",
   boxShadow: CONTROL_SHADOW,
@@ -2152,7 +2240,7 @@ const microChipBase: CSSProperties = {
   minHeight: 28,
   padding: "0 10px",
   fontSize: 11,
-  fontWeight: 650,
+  fontWeight: 700,
   color: T.sec,
   background: CHROME_SURFACE,
   border: CONTROL_BORDER,
@@ -2304,7 +2392,7 @@ const S: Record<string, CSSProperties> = {
   bottomContext: { display: "grid", gap: 4, minWidth: 0, maxWidth: 560 },
   bottomHeadline: {
     fontSize: 15,
-    fontWeight: 750,
+    fontWeight: 800,
     letterSpacing: "-.02em",
     color: T.text,
     whiteSpace: "nowrap",
@@ -2321,7 +2409,7 @@ const S: Record<string, CSSProperties> = {
     whiteSpace: "nowrap",
   },
   bottomActionText: {
-    fontWeight: 650,
+    fontWeight: 700,
     letterSpacing: ".01em",
     lineHeight: 1,
   },
@@ -2434,36 +2522,36 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
-  bpHeader: { padding: "10px 14px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
+  bpHeader: { padding: "12px 16px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
   bpToolbarMeta: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
   bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
   bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
   bpDivider: { width: 1, height: 20, background: T.border },
-  bpToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-  bpGroupRow: { display: "flex", alignItems: "center", gap: 5 },
+  bpToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  bpGroupRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
   bpGroupLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginRight: 4 },
   bpCount: { fontSize: 11, color: T.muted, fontWeight: 500 },
-  bpBody: { flex: 1, overflowY: "auto", padding: "14px 16px" },
-  bpPeopleSection: { marginBottom: 18 },
-  bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 },
-  bpPeopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 4 },
+  bpBody: { flex: 1, overflowY: "auto", padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 12 },
+  bpPeopleSection: { display: "grid", gap: 8 },
+  bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em" },
+  bpPeopleGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 8 },
   pill: { ...microChipBase, padding: "0 12px", minHeight: 30, fontSize: 11, fontWeight: 600, color: T.sec, fontFamily: FONT },
   pillActive: { ...segmentedButtonActive },
   pillSm: { ...microChipBase, padding: "0 10px", minHeight: 26, fontSize: 10, fontWeight: 600, color: T.muted, fontFamily: FONT },
   pillSmActive: { ...segmentedButtonActive },
-  groupedGrid: { display: "flex", flexDirection: "column", gap: 18 },
-  group: {},
-  groupHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 },
+  groupedGrid: { display: "flex", flexDirection: "column", gap: 12 },
+  group: { display: "flex", flexDirection: "column", gap: 8 },
+  groupHeader: { display: "flex", alignItems: "center", gap: 8 },
   groupLabel: { fontSize: 12, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".04em" },
   groupCount: { fontSize: 10, fontWeight: 600, color: T.muted, background: "rgba(255,255,255,.04)", padding: "1px 7px", borderRadius: 10 },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 6 },
-  gridCompact: { gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 4 },
-  card: { display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 },
+  gridCompact: { gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 8 },
+  card: { display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
   cardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   cardNameRow: { display: "flex", alignItems: "center", gap: 7 },
   statusDot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
-  cardName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3 },
+  cardName: { fontSize: 13, fontWeight: 700, lineHeight: 1.3 },
   cardLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, background: T.accentBg, padding: "2px 6px", borderRadius: 0, flexShrink: 0 },
   cardBottom: { display: "flex", alignItems: "center", gap: 8 },
   cardKind: { fontSize: 11, color: T.muted, fontWeight: 500 },
@@ -2474,7 +2562,7 @@ const S: Record<string, CSSProperties> = {
   routeChoiceCardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   routeChoiceTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
   routeChoiceNameRow: { display: "flex", alignItems: "center", gap: 7, minWidth: 0 },
-  routeChoiceName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3, minWidth: 0 },
+  routeChoiceName: { fontSize: 13, fontWeight: 700, lineHeight: 1.3, minWidth: 0 },
   routeChoiceMeta: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" },
   routeChoiceMetaText: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: T.sec, fontWeight: 500 },
   routeChoiceFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: "auto" },
@@ -2494,11 +2582,50 @@ const S: Record<string, CSSProperties> = {
     padding: 0,
     background: PANEL_SURFACE_SOFT,
   },
-  rpTopToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  rpTopFlow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 },
-  rpTopFlowText: { display: "grid", gap: 3, minWidth: 0 },
-  rpTopFlowTitle: { fontSize: 15, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15, minWidth: 0 },
-  rpTopFlowSubline: { fontSize: 12, color: T.muted, lineHeight: 1.35, minWidth: 0 },
+  rpTopToolbar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center", gap: 14 },
+  rpTopFlow: { display: "grid", gap: 3, minWidth: 0 },
+  rpTopFlowText: { display: "grid", gap: 4, minWidth: 0 },
+  rpTopHeadlineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" },
+  rpTopFlowTitle: { fontSize: 15, fontWeight: 800, letterSpacing: "-.025em", lineHeight: 1.1, minWidth: 0 },
+  rpTopFlowSubline: { fontSize: 11, color: T.muted, lineHeight: 1.35, minWidth: 0, maxWidth: 560 },
+  rpTopStatusChip: {
+    ...microChipBase,
+    minHeight: 24,
+    padding: "0 9px",
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: MONO,
+    color: T.sec,
+    letterSpacing: ".04em",
+    textTransform: "uppercase",
+  },
+  rpTopStatusChipReady: {
+    color: ST.available.c,
+    background: ST.available.bg,
+    border: `1px solid ${ST.available.c}2b`,
+  },
+  rpTopStatusChipError: {
+    color: ST.occupied.c,
+    background: ST.occupied.bg,
+    border: `1px solid ${ST.occupied.c}2b`,
+  },
+  rpTopAside: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, minWidth: 0, flexWrap: "wrap" },
+  rpTopActions: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
+  rpTopToggle: {
+    ...secondaryActionBase,
+    minHeight: 28,
+    padding: "0 10px",
+    gap: 6,
+    fontSize: 10,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
+  rpTopToggleActive: {
+    color: T.accent,
+    background: T.accentBg,
+    border: `1px solid ${T.accentBorder}`,
+    boxShadow: `inset 0 0 0 1px ${T.accent}1f`,
+  },
   rpFlowStep: { ...microChipBase, padding: "0 12px", minHeight: 30, gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, fontFamily: FONT },
   rpFlowStepActive: { ...segmentedButtonActive },
   rpFlowStepReady: { color: ST.available.c, fontSize: 12, lineHeight: 1, marginTop: -1 },
@@ -2509,7 +2636,7 @@ const S: Record<string, CSSProperties> = {
   rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
   rpSwapDock: { display: "flex", alignItems: "center", justifyContent: "center" },
   rpStage: { display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
-  rpStageTitle: { fontSize: 15, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.2, marginTop: 0 },
+  rpStageTitle: { fontSize: 15, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.2, marginTop: 0 },
   rpStageStat: { ...microChipBase, padding: "0 9px", minHeight: 26, fontSize: 10, fontWeight: 700, color: T.sec, fontFamily: MONO, letterSpacing: ".04em", flexShrink: 0 },
   rpStageControls: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: CONTROL_BORDER, flexShrink: 0, background: PANEL_SURFACE },
   rpStageBody: { flex: 1, overflowY: "auto", padding: "12px 14px 14px", minHeight: 0, scrollPaddingBottom: 18 },
@@ -2574,14 +2701,14 @@ const S: Record<string, CSSProperties> = {
   },
   rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
   rpEmptyState: { display: "grid", gap: 6, padding: "16px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER },
-  rpEmptyTitle: { fontSize: 13, fontWeight: 650, color: T.text },
+  rpEmptyTitle: { fontSize: 13, fontWeight: 700, color: T.text },
   rpStepCard: { display: "flex", flexDirection: "column", gap: 10, color: T.text, textAlign: "left" },
   rpStepCardActive: { background: "transparent" },
   rpStepCardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
   rpActiveStateChip: { ...microChipBase, minWidth: 72, padding: "0 10px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, justifyContent: "center", fontFamily: FONT },
   rpActiveStateChipHidden: { visibility: "hidden" },
   rpStepCardBody: { display: "grid", gap: 8 },
-  rpStepCardName: { fontSize: 13, fontWeight: 650, lineHeight: 1.3 },
+  rpStepCardName: { fontSize: 13, fontWeight: 700, lineHeight: 1.3 },
   rpStepCardPlaceholder: { fontSize: 11, color: T.muted, lineHeight: 1.4 },
   rpStepCardMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 1 },
   rpStepCardActions: { display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 8, flexWrap: "wrap", paddingTop: 2 },
@@ -2639,15 +2766,12 @@ const S: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   infoDrawerHeaderTitle: {
-    fontSize: 18,
-    fontWeight: 750,
+    fontSize: 17,
+    fontWeight: 800,
     letterSpacing: "-.02em",
-    lineHeight: 1.15,
+    lineHeight: 1.2,
     color: T.text,
     minWidth: 0,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
   },
   drawerSectionGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 },
   drawerSectionGridSingle: { display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 12 },
@@ -2665,7 +2789,7 @@ const S: Record<string, CSSProperties> = {
   rpFooterSummary: { display: "grid", gap: 3, minWidth: 0 },
   rpFooterHeadline: {
     fontSize: 15,
-    fontWeight: 750,
+    fontWeight: 800,
     letterSpacing: "-.02em",
     color: T.text,
     whiteSpace: "nowrap",
@@ -2751,6 +2875,268 @@ const S: Record<string, CSSProperties> = {
   checkBoxOn: { background: T.accent, border: `1.5px solid ${T.accent}` },
   rrStatsPanel: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
   rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  opsShellBody: {
+    padding: "14px 16px 16px",
+  },
+  opsWorkspacePanel: {
+    width: "100%",
+    height: "100%",
+    maxWidth: "none",
+    borderRadius: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    background: PANEL_SURFACE_SOFT,
+  },
+  opsWorkspaceToolbar: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0,1fr) auto",
+    alignItems: "center",
+    gap: 14,
+  },
+  opsWorkspaceToolbarMain: {
+    display: "grid",
+    gap: 4,
+    minWidth: 0,
+  },
+  opsWorkspaceToolbarMeta: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  opsWorkspaceBody: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    padding: "10px 14px 14px",
+  },
+  opsShell: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    background: "transparent",
+    border: "none",
+    boxShadow: "none",
+    overflow: "visible",
+    minHeight: "100%",
+  },
+  opsShellHero: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    padding: "12px 14px",
+    background: PANEL_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+  },
+  opsShellHeroTop: {
+    display: "grid",
+    gridTemplateColumns: "minmax(240px, .8fr) minmax(0, 1.5fr)",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  opsShellLeadCard: {
+    display: "grid",
+    gap: 8,
+    padding: "12px 14px",
+    background: PANEL_SURFACE_STRONG,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+    minWidth: 0,
+  },
+  opsShellLeadValueRow: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: 14,
+    minWidth: 0,
+  },
+  opsShellLeadMeta: {
+    display: "grid",
+    gap: 6,
+    paddingBottom: 2,
+    minWidth: 0,
+  },
+  opsShellHeroSummary: {
+    display: "grid",
+    gap: 10,
+    padding: "12px 14px",
+    background: PANEL_SURFACE_STRONG,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+    minWidth: 0,
+  },
+  opsShellHeroFacts: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 8,
+  },
+  opsShellFact: {
+    display: "grid",
+    gap: 4,
+    padding: "10px 12px",
+    background: PANEL_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+    minWidth: 0,
+  },
+  opsShellFactLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: T.muted,
+    textTransform: "uppercase",
+    letterSpacing: ".08em",
+  },
+  opsShellFactValue: {
+    fontSize: 18,
+    fontWeight: 800,
+    fontFamily: MONO,
+    lineHeight: 1,
+    color: T.text,
+  },
+  opsShellHeroBar: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  opsShellHeroMeta: {
+    display: "grid",
+    gap: 6,
+    minWidth: 0,
+  },
+  opsShellLiveTag: {
+    ...microChipBase,
+    minHeight: 26,
+    padding: "0 10px",
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: MONO,
+    color: T.sec,
+    letterSpacing: ".04em",
+    whiteSpace: "nowrap",
+  },
+  opsShellMetricRail: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 8,
+  },
+  opsLevelRail: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+    gap: 10,
+  },
+  opsLevelCard: {
+    display: "grid",
+    gap: 10,
+    padding: "12px 14px",
+    background: PANEL_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+    textAlign: "left",
+    color: T.text,
+    fontFamily: FONT,
+  },
+  opsLevelCardActive: {
+    border: `1px solid ${T.accentBorder}`,
+    background: T.accentBg,
+    boxShadow: `0 0 0 1px ${T.accent}24`,
+  },
+  opsLevelCardTop: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  opsLevelCardBody: {
+    display: "grid",
+    gap: 4,
+  },
+  opsLevelCardValue: {
+    fontSize: 26,
+    fontWeight: 800,
+    fontFamily: MONO,
+    lineHeight: 1,
+  },
+  opsLevelCardMeta: {
+    fontSize: 11,
+    color: T.sec,
+    fontWeight: 500,
+  },
+  opsLevelCardStats: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  opsLevelCardStat: {
+    ...microChipBase,
+    padding: "0 8px",
+    minHeight: 22,
+    fontSize: 10,
+    fontWeight: 700,
+    color: T.sec,
+    fontFamily: MONO,
+  },
+  opsShellSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    padding: "12px 14px",
+    background: PANEL_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+    minWidth: 0,
+  },
+  opsShellSectionWide: {
+    background: PANEL_SURFACE,
+  },
+  opsShellSectionIntro: {
+    display: "flex",
+    alignItems: "center",
+    minHeight: 18,
+  },
+  opsLevelGroupStack: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+  opsLevelGroup: {
+    display: "grid",
+    gap: 10,
+  },
+  opsLevelGroupHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  opsLevelGroupTitleRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 0,
+  },
+  opsLevelBadge: {
+    ...microChipBase,
+    padding: "0 9px",
+    minHeight: 24,
+    fontSize: 10,
+    fontWeight: 700,
+    color: T.accent,
+    fontFamily: MONO,
+    background: T.accentBg,
+    border: `1px solid ${T.accentBorder}`,
+  },
+  opsLevelGroupTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: T.sec,
+    letterSpacing: ".01em",
+  },
   opsOverviewGrid: { display: "grid", gridTemplateColumns: "minmax(0,1.7fr) minmax(320px,.95fr)", gap: 12, alignItems: "stretch" },
   opsHeroCard: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 0 },
   opsHeroMain: { display: "flex", alignItems: "flex-start", gap: 16 },
@@ -2758,9 +3144,9 @@ const S: Record<string, CSSProperties> = {
   opsHeroMetric: { fontSize: 42, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.04em", lineHeight: 0.95 },
   opsHeroMetricLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
   opsHeroCopy: { display: "grid", gap: 4, minWidth: 0, paddingTop: 2 },
-  opsHeroTitle: { fontSize: 16, fontWeight: 750, letterSpacing: "-.02em", color: T.text },
+  opsHeroTitle: { fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", color: T.text },
   opsBreakdownBar: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 },
-  opsBreakdownSegment: { display: "grid", gap: 4, padding: "10px 12px", minWidth: 0 },
+  opsBreakdownSegment: { display: "grid", gap: 4, padding: "10px 12px", minWidth: 0, minHeight: 72, alignContent: "space-between", boxShadow: CONTROL_SHADOW },
   opsBreakdownValue: { fontSize: 16, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
   opsBreakdownLabel: { fontSize: 10, fontWeight: 600, color: "currentColor", textTransform: "uppercase", letterSpacing: ".05em", opacity: 0.9 },
   opsMetaRow: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 },
@@ -2768,15 +3154,15 @@ const S: Record<string, CSSProperties> = {
   opsMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
   opsMetaValue: { fontSize: 18, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.03em", lineHeight: 1 },
   opsStatusGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
-  opsStatusCard: { display: "grid", gap: 4, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  opsStatusCard: { display: "grid", gap: 6, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 92, alignContent: "space-between" },
   opsStatusValue: { fontSize: 26, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
   opsStatusLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
-  opsRoomGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 10 },
-  opsRoomCard: { width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", minHeight: 132 },
+  opsRoomGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10 },
+  opsRoomCard: { width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", minHeight: 128 },
   opsRoomCardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   opsRoomHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   opsRoomTitleRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
-  opsRoomName: { fontSize: 14, fontWeight: 650, lineHeight: 1.3, minWidth: 0 },
+  opsRoomName: { fontSize: 14, fontWeight: 700, lineHeight: 1.3, minWidth: 0 },
   opsStatusPill: { marginLeft: "auto", flexShrink: 0, fontSize: 10, padding: "3px 9px" },
   opsRoomMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
   opsRoomMetaItem: { ...microChipBase, padding: "0 8px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, fontFamily: MONO, letterSpacing: ".03em" },
@@ -2830,7 +3216,7 @@ const S: Record<string, CSSProperties> = {
     background: PANEL_SURFACE_STRONG,
     flexShrink: 0,
   },
-  sidePanelTitle: { margin: 0, fontSize: 16, fontWeight: 750, letterSpacing: "-.02em", lineHeight: 1.15 },
+  sidePanelTitle: { margin: 0, fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.15 },
   sidePanelSubline: { fontSize: 11, color: T.sec },
   sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
   sidePanelSectionCompact: { display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
@@ -2858,7 +3244,7 @@ const S: Record<string, CSSProperties> = {
   detailEquipmentRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 2 },
 
   // Search empty state
-  emptySearchBlock: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", gap: 10, textAlign: "center" },
+  emptySearchBlock: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", gap: 8, textAlign: "center" },
   emptySearchIcon: { opacity: 0.45, marginBottom: 2 },
   emptySearchTitle: { fontSize: 15, fontWeight: 700, color: T.sec },
   emptySearchSub: { fontSize: 12, color: T.muted, maxWidth: 260, lineHeight: 1.6 },
@@ -2869,14 +3255,4 @@ const S: Record<string, CSSProperties> = {
   rrSummaryDist: { fontSize: 22, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.02em", color: T.text },
   rrSummaryTime: { fontSize: 12, color: T.sec, fontWeight: 500 },
   rrSummaryMeta: { display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" },
-
-  // Route builder 2-step progress indicator
-  rpProgressTrack: { display: "flex", alignItems: "center", marginTop: 8 },
-  rpProgressItem: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: T.muted },
-  rpProgressItemActive: { color: T.accent },
-  rpProgressItemDone: { color: T.sec },
-  rpProgressDot: { width: 18, height: 18, borderRadius: "50%", border: "1.5px solid currentColor", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 },
-  rpProgressLabel: { whiteSpace: "nowrap" },
-  rpProgressLine: { flex: 1, height: 1, background: T.border, margin: "0 8px", minWidth: 16 },
-  rpProgressLineDone: { background: T.accent },
 };
