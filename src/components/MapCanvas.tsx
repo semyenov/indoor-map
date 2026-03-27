@@ -175,6 +175,7 @@ const POI_LABEL_SOURCE = "poi-label-points";
 const ROUTE_PATH_SOURCE = "route-path";
 const ROUTE_BREADCRUMB_SOURCE = "route-breadcrumbs";
 const ROUTE_CUSTOM_LAYER_ID = "route-custom";
+const ENABLE_ROUTE_CUSTOM_LAYER = false;
 const SELECTION_SOURCE = "selection";
 type FilteredLayerId =
   | "zone-fill"
@@ -1660,10 +1661,12 @@ export function MapCanvas({
         },
       });
 
-      const routeCustomLayer = createRouteCustomLayer(palette);
-      routeCustomLayer.updateData(routeRef.current, activeLevelRef.current);
-      routeCustomLayerRef.current = routeCustomLayer;
-      map.addLayer(routeCustomLayer);
+      if (ENABLE_ROUTE_CUSTOM_LAYER) {
+        const routeCustomLayer = createRouteCustomLayer(palette);
+        routeCustomLayer.updateData(routeRef.current, activeLevelRef.current);
+        routeCustomLayerRef.current = routeCustomLayer;
+        map.addLayer(routeCustomLayer);
+      }
 
       map.addLayer({
         id: "poi-circle",
@@ -1917,7 +1920,9 @@ export function MapCanvas({
         },
       });
 
-      map.moveLayer(ROUTE_CUSTOM_LAYER_ID);
+      if (ENABLE_ROUTE_CUSTOM_LAYER && map.getLayer(ROUTE_CUSTOM_LAYER_ID)) {
+        map.moveLayer(ROUTE_CUSTOM_LAYER_ID);
+      }
 
       map.on("mousemove", (event) => {
         const featureId = pickInteractiveFeatureId(
@@ -2194,8 +2199,10 @@ export function MapCanvas({
       });
     }
 
-    routeCustomLayerRef.current?.updatePalette(palette);
-    routeCustomLayerRef.current?.updateData(route, activeLevel);
+    if (ENABLE_ROUTE_CUSTOM_LAYER) {
+      routeCustomLayerRef.current?.updatePalette(palette);
+      routeCustomLayerRef.current?.updateData(route, activeLevel);
+    }
   }, [activeLevel, palette, route]);
 
   return (

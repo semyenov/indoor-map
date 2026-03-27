@@ -14,10 +14,12 @@ interface EdgeTraversalMeta {
 
 const edgeKey = (from: string, to: string) => `${from}::${to}`;
 const EPSILON = 0.000001;
+const SMOOTHING_EPSILON = 0.00000005;
 // Push corridor turns toward a more guided spline-like shape without drifting off the route graph.
 const MAX_CORNER_RADIUS = 1.5;
 const CORNER_RADIUS_FACTOR = 0.5;
-const CURVE_STEPS = 18;
+const MIN_CURVE_STEPS = 18;
+const MAX_CURVE_STEPS = 36;
 
 const coordinatesEqual = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
 
@@ -27,13 +29,16 @@ const coordinateKey = (coordinate: Coordinate) => `${coordinate[0].toFixed(9)}:$
 const coordinateDistance = (left: Coordinate, right: Coordinate) =>
   Math.hypot(right[0] - left[0], right[1] - left[1]);
 
-const isZeroLength = (left: Coordinate, right: Coordinate) => coordinateDistance(left, right) <= EPSILON;
+const isZeroLength = (left: Coordinate, right: Coordinate, epsilon = EPSILON) =>
+  coordinateDistance(left, right) <= epsilon;
 
-const nearlyEqual = (left: number, right: number) => Math.abs(left - right) <= EPSILON;
+const nearlyEqual = (left: number, right: number, epsilon = EPSILON) => Math.abs(left - right) <= epsilon;
 
-const isCollinear = (left: Coordinate, pivot: Coordinate, right: Coordinate) =>
-  (nearlyEqual(left[0], pivot[0]) && nearlyEqual(pivot[0], right[0])) ||
-  (nearlyEqual(left[1], pivot[1]) && nearlyEqual(pivot[1], right[1]));
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const isCollinear = (left: Coordinate, pivot: Coordinate, right: Coordinate, epsilon = EPSILON) =>
+  (nearlyEqual(left[0], pivot[0], epsilon) && nearlyEqual(pivot[0], right[0], epsilon)) ||
+  (nearlyEqual(left[1], pivot[1], epsilon) && nearlyEqual(pivot[1], right[1], epsilon));
 
 const pointTowards = (from: Coordinate, to: Coordinate, distance: number): Coordinate => {
   const fullDistance = coordinateDistance(from, to);
@@ -55,21 +60,48 @@ const quadraticPoint = (start: Coordinate, control: Coordinate, end: Coordinate,
   return [x, y];
 };
 
-const appendUniqueCoordinate = (target: Coordinate[], coordinate: Coordinate) => {
+const cornerCurveSteps = (previous: Coordinate, current: Coordinate, next: Coordinate) => {
+  const incomingX = previous[0] - current[0];
+  const incomingY = previous[1] - current[1];
+  const outgoingX = next[0] - current[0];
+  const outgoingY = next[1] - current[1];
+  const incomingLength = Math.hypot(incomingX, incomingY);
+  const outgoingLength = Math.hypot(outgoingX, outgoingY);
+
+  if (incomingLength <= EPSILON || outgoingLength <= EPSILON) {
+    return MIN_CURVE_STEPS;
+  }
+
+  const normalizedDot = clamp(
+    (incomingX * outgoingX + incomingY * outgoingY) / (incomingLength * outgoingLength),
+    -1,
+    1,
+  );
+  const turnAngle = Math.acos(normalizedDot);
+  const extraSteps = Math.ceil((turnAngle / Math.PI) * MIN_CURVE_STEPS);
+
+  return clamp(MIN_CURVE_STEPS + extraSteps, MIN_CURVE_STEPS, MAX_CURVE_STEPS);
+};
+
+const appendUniqueCoordinate = (target: Coordinate[], coordinate: Coordinate, epsilon = EPSILON) => {
   const lastCoordinate = target.at(-1);
 
-  if (lastCoordinate && isZeroLength(lastCoordinate, coordinate)) {
+  if (lastCoordinate && isZeroLength(lastCoordinate, coordinate, epsilon)) {
     return;
   }
 
   target.push(coordinate);
 };
 
-const normalizeCoordinates = (coordinates: Coordinate[], protectedCoordinates: ReadonlySet<string> = new Set()): Coordinate[] => {
+const normalizeCoordinates = (
+  coordinates: Coordinate[],
+  protectedCoordinates: ReadonlySet<string> = new Set(),
+  epsilon = EPSILON,
+): Coordinate[] => {
   const deduped: Coordinate[] = [];
 
   for (const coordinate of coordinates) {
-    appendUniqueCoordinate(deduped, coordinate);
+    appendUniqueCoordinate(deduped, coordinate, epsilon);
   }
 
   if (deduped.length <= 2) {
@@ -79,14 +111,14 @@ const normalizeCoordinates = (coordinates: Coordinate[], protectedCoordinates: R
   const normalized: Coordinate[] = [];
 
   for (const coordinate of deduped) {
-    appendUniqueCoordinate(normalized, coordinate);
+    appendUniqueCoordinate(normalized, coordinate, epsilon);
 
     while (normalized.length >= 3) {
       const right = normalized.at(-1);
       const pivot = normalized.at(-2);
       const left = normalized.at(-3);
 
-      if (!left || !pivot || !right || !isCollinear(left, pivot, right) || protectedCoordinates.has(coordinateKey(pivot))) {
+      if (!left || !pivot || !right || !isCollinear(left, pivot, right, epsilon) || protectedCoordinates.has(coordinateKey(pivot))) {
         break;
       }
 
@@ -122,12 +154,12 @@ const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: Read
     }
 
     if (protectedCoordinates.has(coordinateKey(current))) {
-      appendUniqueCoordinate(smoothed, current);
+      appendUniqueCoordinate(smoothed, current, SMOOTHING_EPSILON);
       continue;
     }
 
     if (isCollinear(previous, current, next)) {
-      appendUniqueCoordinate(smoothed, current);
+      appendUniqueCoordinate(smoothed, current, SMOOTHING_EPSILON);
       continue;
     }
 
@@ -136,30 +168,31 @@ const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: Read
     const radius = Math.min(MAX_CORNER_RADIUS, incomingLength * CORNER_RADIUS_FACTOR, outgoingLength * CORNER_RADIUS_FACTOR);
 
     if (radius <= EPSILON) {
-      appendUniqueCoordinate(smoothed, current);
+      appendUniqueCoordinate(smoothed, current, SMOOTHING_EPSILON);
       continue;
     }
 
     const cornerStart = pointTowards(current, previous, radius);
     const cornerEnd = pointTowards(current, next, radius);
+    const curveSteps = cornerCurveSteps(previous, current, next);
 
-    appendUniqueCoordinate(smoothed, cornerStart);
+    appendUniqueCoordinate(smoothed, cornerStart, SMOOTHING_EPSILON);
 
-    for (let step = 1; step < CURVE_STEPS; step += 1) {
-      const progress = step / CURVE_STEPS;
-      appendUniqueCoordinate(smoothed, quadraticPoint(cornerStart, current, cornerEnd, progress));
+    for (let step = 1; step < curveSteps; step += 1) {
+      const progress = step / curveSteps;
+      appendUniqueCoordinate(smoothed, quadraticPoint(cornerStart, current, cornerEnd, progress), SMOOTHING_EPSILON);
     }
 
-    appendUniqueCoordinate(smoothed, cornerEnd);
+    appendUniqueCoordinate(smoothed, cornerEnd, SMOOTHING_EPSILON);
   }
 
   const lastCoordinate = normalized.at(-1);
 
   if (lastCoordinate) {
-    appendUniqueCoordinate(smoothed, lastCoordinate);
+    appendUniqueCoordinate(smoothed, lastCoordinate, SMOOTHING_EPSILON);
   }
 
-  return normalizeCoordinates(smoothed, protectedCoordinates);
+  return normalizeCoordinates(smoothed, protectedCoordinates, SMOOTHING_EPSILON);
 };
 
 const directedEdgePath = (edge: RoutingEdge, fromNodeId: string, toNodeId: string): Coordinate[] => {
@@ -400,7 +433,7 @@ export const buildRouteCollection = (
     appendCoordinates(activeSegment.coordinates, leg.path);
 
     if (leg.id.startsWith("edge-portal-")) {
-      for (const coordinate of leg.path) {
+      for (const coordinate of leg.path.slice(1, -1)) {
         activeSegment.protectedCoordinates.add(coordinateKey(coordinate));
       }
     }
