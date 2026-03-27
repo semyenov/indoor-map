@@ -1366,7 +1366,7 @@ export default function AtlasV4() {
                   </>
                 ) : bottomPanelMode === "detail" && selectedFeature ? (
                   <>
-                    <span style={S.bottomMeta}>{selectedFeature.properties.department ?? "Общие"} · {selectedFeature.properties.level}</span>
+                    <span style={S.bottomMeta}>{selectedFeature.properties.department ?? "Общие"} · {selectedFeature.properties.level} · {selectedStatusLabel}</span>
                   </>
                 ) : bottomPanelMode === "search" ? (
                   <>
@@ -1561,63 +1561,6 @@ export default function AtlasV4() {
             {drawerMode === "route" ? (
               <div style={S.routePanel} className="oa-fade">
                 <div style={S.rpFlowShell}>
-                  <div style={S.rpStage}>
-                    <div style={{ ...S.rpStageControls, ...S.rpStageControlsRoute }} className="hud-focus-shell">
-                      <div style={S.rpStageSearchRow}>
-                        <div style={S.rpColSearch}>
-                          <Ic.Search s={13} />
-                          <input
-                            style={S.rpColInput}
-                            placeholder={isEditingFrom ? "Найдите стартовую точку…" : "Найдите точку назначения…"}
-                            value={activeRouteQuery}
-                            onChange={(event) => setActiveRouteQuery(event.target.value)}
-                          />
-                          {activeRouteQuery ? (
-                            <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={clearActiveRouteQuery} type="button">
-                              <Ic.X s={10} />
-                            </button>
-                          ) : null}
-                        </div>
-                        <div style={S.rpStageMetaRow}>
-                          <div style={S.rpColToolbar}>
-                            <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
-                            {GROUP_OPTIONS.slice(0, 3).map((group) => (
-                              <button
-                                key={group.key}
-                                style={{ ...S.pillSm, ...(activeRouteGroup === group.key ? S.pillSmActive : {}) }}
-                                className="hud-btn"
-                                data-active={activeRouteGroup === group.key ? "true" : undefined}
-                                onClick={() => setActiveRouteGrouping(group.key)}
-                                type="button"
-                              >
-                                {group.label}
-                              </button>
-                            ))}
-                          </div>
-                          <span style={S.rpStageStat}>
-                            {activeRouteQuery.trim() ? `${activeRouteChoiceList.length} совп` : `${activeRouteChoiceList.length} точек`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={S.rpStageBody}>
-                      {activeRouteChoiceList.length > 0 ? (
-                        <RouteCandidateGrid
-                          spaces={activeRouteChoiceList}
-                          groupKey={activeRouteGroup}
-                          onSelect={(space) => selectRoutePoint(activeRouteStep, space.routeTargetId ?? "")}
-                          selectedFeatureId={activeRouteSelectedFeatureId}
-                        />
-                      ) : (
-                        <div style={S.rpEmptyState}>
-                          <div style={S.rpEmptyTitle}>{activeRouteEmpty}</div>
-                          <div style={S.sidePanelSubline}>
-                            {activeRouteQuery.trim() ? "По текущему фильтру ничего не найдено. Попробуйте изменить запрос или группу." : "Начните с выбора точки или используйте поиск, чтобы быстро сузить список."}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                   <div style={S.rpPlannerBar}>
                     {[
                       { step: "from" as const, point: routeFrom, placeholder: "Откуда", helper: "Выберите начальную точку", label: "СТАРТ" },
@@ -1679,6 +1622,63 @@ export default function AtlasV4() {
                       );
                     })}
                   </div>
+                  <div style={S.rpStage}>
+                    <div style={{ ...S.rpStageControls, ...S.rpStageControlsRoute }} className="hud-focus-shell">
+                      <div style={S.rpStageSearchRow}>
+                        <div style={S.rpColSearch}>
+                          <Ic.Search s={13} />
+                          <input
+                            style={S.rpColInput}
+                            placeholder={isEditingFrom ? "Найдите стартовую точку…" : "Найдите точку назначения…"}
+                            value={activeRouteQuery}
+                            onChange={(event) => setActiveRouteQuery(event.target.value)}
+                          />
+                          {activeRouteQuery ? (
+                            <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={clearActiveRouteQuery} type="button">
+                              <Ic.X s={10} />
+                            </button>
+                          ) : null}
+                        </div>
+                        <div style={S.rpStageMetaRow}>
+                          <div style={S.rpColToolbar}>
+                            <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                            {GROUP_OPTIONS.slice(0, 3).map((group) => (
+                              <button
+                                key={group.key}
+                                style={{ ...S.pillSm, ...(activeRouteGroup === group.key ? S.pillSmActive : {}) }}
+                                className="hud-btn"
+                                data-active={activeRouteGroup === group.key ? "true" : undefined}
+                                onClick={() => setActiveRouteGrouping(group.key)}
+                                type="button"
+                              >
+                                {group.label}
+                              </button>
+                            ))}
+                          </div>
+                          <span style={S.rpStageStat}>
+                            {activeRouteQuery.trim() ? `${activeRouteChoiceList.length} совп` : `${activeRouteChoiceList.length} точек`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={S.rpStageBody}>
+                      {activeRouteChoiceList.length > 0 ? (
+                        <RouteCandidateGrid
+                          spaces={activeRouteChoiceList}
+                          groupKey={activeRouteGroup}
+                          onSelect={(space) => selectRoutePoint(activeRouteStep, space.routeTargetId ?? "")}
+                          selectedFeatureId={activeRouteSelectedFeatureId}
+                        />
+                      ) : (
+                        <div style={S.rpEmptyState}>
+                          <div style={S.rpEmptyTitle}>{activeRouteEmpty}</div>
+                          <div style={S.sidePanelSubline}>
+                            {activeRouteQuery.trim() ? "По текущему фильтру ничего не найдено. Попробуйте изменить запрос или группу." : "Начните с выбора точки или используйте поиск, чтобы быстро сузить список."}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1686,56 +1686,45 @@ export default function AtlasV4() {
             {drawerMode === "route-result" && route ? (
               <div style={S.drawerInfoPanel} className="oa-fade">
                 <div style={S.sidePanelBody}>
-                  <div style={S.rrSummaryCard}>
-                    <div style={S.rrSummaryMain}>
-                      <span style={S.rrSummaryDist}>{routeSummaryDistance} м</span>
-                      <span style={S.rrSummaryTime}>{routeDurationLabel(route.summary.distance)}</span>
-                    </div>
-                    <div style={S.rrSummaryMeta}>
-                      {route.summary.levels.map((l) => <span key={l} style={S.infoChip}>{l}</span>)}
-                      <span style={S.infoChip}>{routeStepsList.length} шагов</span>
-                    </div>
+                  <div style={S.rrStepsHeader}>
+                    <span style={S.panelSectionLabel}>Шаги</span>
+                    <span style={S.rrStepsMeta}>
+                      {routeSummaryDistance} м · {routeDurationLabel(route.summary.distance)} · {route.summary.levels.join(" · ")}
+                    </span>
                   </div>
-                  <div style={{ ...S.sidePanelSectionCompact, minHeight: 0 }}>
-                    <div style={S.sidePanelSectionHeader}>
-                      <span style={S.panelSectionLabel}>Шаги</span>
-                    </div>
-                    <div
-                      style={{
-                        ...S.panelInsetScroll,
-                        ...S.infoPanelScrollArea,
-                        ...S.rrStepsGrid,
-                        gridTemplateColumns: `repeat(${routeStepColumnCount}, minmax(0, 1fr))`,
-                      }}
-                    >
-                      {routeStepColumns.map((column, columnIndex) => (
-                        <div key={`col-${columnIndex}`} style={S.rrStepsColumn}>
-                          {column.map((step, rowIndex) => {
-                            const index = columnIndex * routeStepRows + rowIndex;
-                            const isLast = index === routeStepsList.length - 1;
-                            const isLastInColumn = rowIndex === column.length - 1;
-                            const isHovered = hoveredStepIdx === index;
-                            return (
-                              <div
-                                key={`${index}-${step}`}
-                                style={{ ...S.rrStep, position: "relative", ...(isHovered ? { background: T.accentBg, borderRadius: 0 } : {}) }}
-                                onMouseEnter={() => setHoveredStepIdx(index)}
-                                onMouseLeave={() => setHoveredStepIdx(null)}
-                                onClick={() => setHoveredStepIdx(index)}
-                              >
-                                {!isLastInColumn && (
-                                  <div style={{ position: "absolute", left: 10, top: 28, width: 1, bottom: -10, background: T.border }} />
-                                )}
-                                <div style={{ ...S.rrStepN, position: "relative", zIndex: 1, ...(isLast ? { background: T.accent, color: T.bg, border: `1px solid ${T.accent}` } : isHovered ? { background: T.accentBg, border: `1px solid ${T.accentBorder}`, color: T.accent } : {}) }}>
-                                  {isLast ? <Ic.Check /> : index + 1}
-                                </div>
-                                <span style={{ ...S.rrStepT, ...(isHovered ? { color: T.text } : {}) }}>{step}</span>
+                  <div
+                    style={{
+                      ...S.panelInsetScroll,
+                      ...S.infoPanelScrollArea,
+                      ...S.rrStepsGrid,
+                      gridTemplateColumns: `repeat(${routeStepColumnCount}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    {routeStepColumns.map((column, columnIndex) => (
+                      <div key={`col-${columnIndex}`} style={S.rrStepsColumn}>
+                        {column.map((step, rowIndex) => {
+                          const index = columnIndex * routeStepRows + rowIndex;
+                          const isLast = index === routeStepsList.length - 1;
+                          const isHovered = hoveredStepIdx === index;
+                          return (
+                            <div
+                              key={`${index}-${step}`}
+                              style={{ ...S.rrStepCard, ...(isLast ? S.rrStepCardLast : {}), ...(isHovered ? S.rrStepCardHovered : {}) }}
+                              onMouseEnter={() => setHoveredStepIdx(index)}
+                              onMouseLeave={() => setHoveredStepIdx(null)}
+                              onClick={() => setHoveredStepIdx(index)}
+                            >
+                              <div style={{ ...S.rrStepN, ...(isLast ? S.rrStepNLast : isHovered ? S.rrStepNHovered : {}) }}>
+                                {isLast ? <Ic.Check /> : index + 1}
                               </div>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </div>
+                              <div style={S.rrStepBody}>
+                                <span style={{ ...S.rrStepT, ...(isHovered ? S.rrStepTHovered : {}) }}>{step}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1750,57 +1739,48 @@ export default function AtlasV4() {
                   const hasCapacity = (selectedSpace?.cap ?? 0) > 0;
                   const spaceStatus = selectedSpace?.status ?? null;
                   const stCfg = spaceStatus ? ST[spaceStatus] : null;
+                  const isEmployeeCard = Boolean(selectedFeature.properties.employee);
 
                   return (
-                    <>
-                      {stCfg ? (
-                        <div style={{ ...S.detailStatusBand, background: stCfg.band, borderLeft: `3px solid ${stCfg.c}`, borderBottom: `1px solid ${stCfg.border}` }}>
-                          <div style={{ ...S.detailStatusDot, background: stCfg.c, boxShadow: `0 0 8px ${stCfg.c}` }} />
-                          <span style={{ ...S.detailStatusLbl, color: stCfg.c }}>{stCfg.label}</span>
+                    <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
+                      <div style={S.detailMetaGrid}>
+                        {([
+                          ["Отдел", selectedFeature.properties.department ?? "Общие", false],
+                          ["Этаж", selectedFeature.properties.level, false],
+                          ["Тип", selectedSpace?.kindLabel ?? "–", false],
+                          ["Вместимость", hasCapacity ? `${selectedSpace?.cap} мест` : "–", hasCapacity],
+                        ] as [string, string, boolean][]).map(([label, value, accent]) => (
+                          <div key={label} style={accent ? S.detailMetaCellAccent : S.detailMetaCell}>
+                            <span style={S.detailMetaLabel}>{label}</span>
+                            <span style={S.detailMetaValue}>{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {hasSubtitle && !isEmployeeCard ? (
+                        <div style={S.detailSectionCard}>
+                          <span style={S.detailSectionLabel}>Описание</span>
+                          <span style={S.detailDescText}>{selectedFeature.properties.subtitle}</span>
                         </div>
                       ) : null}
 
-                      <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
-                        {hasSubtitle && !selectedFeature.properties.employee ? (
-                          <div style={S.detailDescBlock}>
-                            <span style={S.detailSectionLabel}>Описание</span>
-                            <span style={S.detailDescText}>{selectedFeature.properties.subtitle}</span>
+                      {hasEquipment ? (
+                        <div style={S.detailSectionCard}>
+                          <span style={S.detailSectionLabel}>Оснащение</span>
+                          <div style={S.detailEquipmentRow}>
+                            {equipment.map((e: string) => (
+                              <span key={e} style={S.infoChip}>{e}</span>
+                            ))}
                           </div>
-                        ) : null}
-
-                        <div style={S.detailMetaGrid}>
-                          {([
-                            ["Отдел", selectedFeature.properties.department ?? "Общие", false],
-                            ["Этаж", selectedFeature.properties.level, false],
-                            ["Тип", selectedSpace?.kindLabel ?? "–", false],
-                            ["Вместимость", hasCapacity ? `${selectedSpace?.cap} мест` : "–", hasCapacity],
-                          ] as [string, string, boolean][]).map(([label, value, accent]) => (
-                            <div key={label} style={accent ? S.detailMetaCellAccent : S.detailMetaCell}>
-                              <span style={S.detailMetaLabel}>{label}</span>
-                              <span style={S.detailMetaValue}>{value}</span>
-                            </div>
-                          ))}
                         </div>
+                      ) : null}
 
-                        {hasEquipment ? (
-                          <div style={S.detailDescBlock}>
-                            <span style={S.detailSectionLabel}>Оснащение</span>
-                            <div style={S.detailEquipmentRow}>
-                              {equipment.map((e: string) => (
-                                <span key={e} style={S.infoChip}>{e}</span>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {selectedFeature.properties.employee ? (
-                          <div style={S.detailDescBlock}>
-                            <span style={S.detailSectionLabel}>Рабочее место</span>
-                            <span style={S.detailDescText}>{selectedFeature.properties.name}</span>
-                          </div>
-                        ) : null}
-                      </div>
-                    </>
+                      {isEmployeeCard ? (
+                        <div style={S.detailSectionCard}>
+                          <span style={S.detailSectionLabel}>Рабочее место</span>
+                          <span style={S.detailDescText}>{selectedFeature.properties.name}</span>
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })()}
               </div>
