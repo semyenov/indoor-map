@@ -12,7 +12,6 @@ import {
 } from "react";
 import {
   Accessibility,
-  Armchair,
   ArrowUpDown,
   Check,
   ChevronDown,
@@ -332,7 +331,6 @@ const Ic = {
   Compass: fixedIcon(Compass, 14),
   Eye: fixedIcon(Clapperboard, 14),
   Grid: fixedIcon(LayoutGrid, 14),
-  Seats: fixedIcon(Armchair, 12),
   Accessible: fixedIcon(Accessibility, 14),
   ChevronUp: fixedIcon(ChevronUp, 11),
   ChevronDown: fixedIcon(ChevronDown, 11),
@@ -355,106 +353,23 @@ function BottomActionLabel({
   );
 }
 
-type SpaceCardProps = {
-  space: AtlasSpace;
-  onClick: (space: AtlasSpace) => void;
-  selectedFeatureId: string | null;
-  compact?: boolean;
-  index?: number;
-};
-
-function SpaceCard({ space, onClick, selectedFeatureId, compact = false, index = 0 }: SpaceCardProps) {
-  const st = ST[space.status];
-  const isSelected = selectedFeatureId === space.featureId;
-
-  return (
-    <button
-      onClick={() => onClick(space)}
-      className="hud-card card-anim"
-      style={{
-        ...S.card,
-        ...(isSelected ? S.cardSelected : {}),
-        ...(compact ? { padding: "10px 12px" } : {}),
-        "--ci": index,
-      } as CSSProperties}
-      type="button"
-    >
-      <div style={S.cardTop}>
-        <div style={S.cardNameRow}>
-          <span style={{ ...S.statusDot, background: st.c }} />
-          <span style={{ ...S.cardName, ...(compact ? { fontSize: 12 } : {}) }}>{space.name}</span>
-        </div>
-        <span style={S.cardLevel}>{space.level}</span>
-      </div>
-      <div style={S.cardBottom}>
-        <span style={S.cardKind}>{space.kindLabel}</span>
-        {space.cap > 0 ? (
-          <span style={S.cardCap}>
-            <Ic.Seats /> {space.cap}
-          </span>
-        ) : null}
-      </div>
-      {!compact && space.dept !== "Общие" ? <span style={S.cardDept}>{space.dept}</span> : null}
-    </button>
-  );
-}
-
 function PersonRow({ person, onClick }: { person: AtlasPerson; onClick: (person: AtlasPerson) => void }) {
   return (
-    <button style={S.personRow} className="hud-card" onClick={() => onClick(person)} type="button">
-      <div style={S.personAv}>{person.name[0]}</div>
-      <div style={S.personInfo}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>{person.name}</span>
-        <span style={{ fontSize: 11, color: T.sec }}>{person.desk} · {person.dept}</span>
+    <button style={S.personCard} className="hud-card card-anim" onClick={() => onClick(person)} type="button">
+      <div style={S.routeChoiceTop}>
+        <div style={S.personTitleRow}>
+          <div style={S.personAv}>{person.name[0]}</div>
+          <span style={S.personName}>{person.name}</span>
+        </div>
+        <span style={S.cardLevel}>{person.level}</span>
       </div>
-      <span style={S.cardLevel}>{person.level}</span>
+      <div style={S.routeChoiceMeta}>
+        <span style={S.routeChoiceMetaText}>{person.desk}</span>
+      </div>
+      <div style={S.routeChoiceFooter}>
+        <span style={S.routeChoiceDept}>{person.dept}</span>
+      </div>
     </button>
-  );
-}
-
-function GroupedGrid({
-  spaces,
-  groupKey,
-  onSelect,
-  selectedFeatureId,
-  compact = false,
-}: {
-  spaces: AtlasSpace[];
-  groupKey: GroupKey;
-  onSelect: (space: AtlasSpace) => void;
-  selectedFeatureId: string | null;
-  compact?: boolean;
-}) {
-  const groups = groupBy(spaces, groupKey);
-  let offset = 0;
-
-  return (
-    <div style={S.groupedGrid}>
-      {groups.map(([label, items]) => {
-        const groupOffset = offset;
-        offset += items.length;
-        return (
-          <div key={label} style={S.group}>
-            <div style={S.groupHeader}>
-              <span style={S.groupLabel}>{label}</span>
-              <span style={S.groupCount}>{items.length}</span>
-            </div>
-            <div style={{ ...S.grid, ...(compact ? S.gridCompact : {}) }}>
-              {items.map((space, i) => (
-                <SpaceCard
-                  key={space.id}
-                  space={space}
-                  onClick={onSelect}
-                  selectedFeatureId={selectedFeatureId}
-                  compact={compact}
-                  index={groupOffset + i}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -497,19 +412,12 @@ function RouteCandidateGrid({
                     type="button"
                   >
                     <div style={S.routeChoiceTop}>
-                      <div style={S.routeChoiceNameRow}>
-                        <span style={{ ...S.statusDot, background: status.c }} />
-                        <span style={S.routeChoiceName}>{space.name}</span>
-                      </div>
+                      <span style={S.routeChoiceName}>{space.name}</span>
                       <span style={S.cardLevel}>{space.level}</span>
                     </div>
                     <div style={S.routeChoiceMeta}>
                       <span style={S.routeChoiceMetaText}>{space.kindLabel}</span>
-                      {space.cap > 0 ? (
-                        <span style={S.routeChoiceMetaText}>
-                          <Ic.Seats /> {space.cap}
-                        </span>
-                      ) : null}
+                      {space.cap > 0 ? <span style={S.routeChoiceMetaText}>{space.cap}</span> : null}
                     </div>
                     <div style={S.routeChoiceFooter}>
                       <span style={S.routeChoiceDept}>{space.dept}</span>
@@ -1179,7 +1087,7 @@ export default function AtlasV4() {
               <span style={{ color: T.accent, display: "inline-flex" }}>
                 <Ic.Brand />
               </span>
-              <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.02em" }}>Atlas</span>
+              <span style={S.topBrandText}>Atlas</span>
             </div>
             <div style={S.searchField} className="hud-input-shell">
               <Ic.Search s={14} />
@@ -1500,7 +1408,7 @@ export default function AtlasV4() {
                     <div style={{ ...S.rpStageControls, ...S.browseStageControls }}>
                       <div style={S.browseStageComment}>{browseStageComment}</div>
                       <div style={S.rpColToolbar}>
-                        <span style={{ fontSize: 10, color: T.muted, fontWeight: 700, letterSpacing: ".06em", fontFamily: MONO }}>ГРУППА</span>
+                        <span style={S.sectionGroupLabel}>ГРУППА</span>
                         {GROUP_OPTIONS.map((group) => (
                           <button
                             key={group.key}
@@ -1542,7 +1450,7 @@ export default function AtlasV4() {
                           <div style={S.emptySearchSub}>Нет совпадений для «{browseQ}»</div>
                         </div>
                       ) : (
-                        <GroupedGrid
+                        <RouteCandidateGrid
                           spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
                           groupKey={browseGroup}
                           onSelect={(space) => {
@@ -1641,7 +1549,7 @@ export default function AtlasV4() {
                         </div>
                         <div style={S.rpStageMetaRow}>
                           <div style={S.rpColToolbar}>
-                            <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                            <span style={S.sectionGroupLabel}>ГРУППА</span>
                             {GROUP_OPTIONS.slice(0, 3).map((group) => (
                               <button
                                 key={group.key}
@@ -1686,12 +1594,6 @@ export default function AtlasV4() {
             {drawerMode === "route-result" && route ? (
               <div style={S.drawerInfoPanel} className="oa-fade">
                 <div style={S.sidePanelBody}>
-                  <div style={S.rrStepsHeader}>
-                    <span style={S.panelSectionLabel}>Шаги</span>
-                    <span style={S.rrStepsMeta}>
-                      {routeSummaryDistance} м · {routeDurationLabel(route.summary.distance)} · {route.summary.levels.join(" · ")}
-                    </span>
-                  </div>
                   <div
                     style={{
                       ...S.panelInsetScroll,
@@ -1853,7 +1755,7 @@ export default function AtlasV4() {
                           ) : null}
                         </div>
                         <div style={S.rpColToolbar}>
-                          <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                          <span style={S.sectionGroupLabel}>ГРУППА</span>
                           {GROUP_OPTIONS.slice(0, 3).map((group) => (
                             <button
                               key={group.key}
