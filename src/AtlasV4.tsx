@@ -3,6 +3,7 @@ import {
   lazy,
   Suspense,
   startTransition,
+  useCallback,
   useDeferredValue,
   useEffect,
   useMemo,
@@ -10,6 +11,7 @@ import {
   useState,
 } from "react";
 import {
+  Accessibility,
   Armchair,
   ArrowUpDown,
   Check,
@@ -334,6 +336,7 @@ const Ic = {
   Eye: fixedIcon(Clapperboard, 14),
   Grid: fixedIcon(LayoutGrid, 14),
   Seats: fixedIcon(Armchair, 12),
+  Accessible: fixedIcon(Accessibility, 14),
 };
 
 function BottomActionLabel({
@@ -358,21 +361,23 @@ type SpaceCardProps = {
   onClick: (space: AtlasSpace) => void;
   selectedFeatureId: string | null;
   compact?: boolean;
+  index?: number;
 };
 
-function SpaceCard({ space, onClick, selectedFeatureId, compact = false }: SpaceCardProps) {
+function SpaceCard({ space, onClick, selectedFeatureId, compact = false, index = 0 }: SpaceCardProps) {
   const st = ST[space.status];
   const isSelected = selectedFeatureId === space.featureId;
 
   return (
     <button
       onClick={() => onClick(space)}
-      className="hud-card"
+      className="hud-card card-anim"
       style={{
         ...S.card,
         ...(isSelected ? S.cardSelected : {}),
         ...(compact ? { padding: "10px 12px" } : {}),
-      }}
+        "--ci": index,
+      } as CSSProperties}
       type="button"
     >
       <div style={S.cardTop}>
@@ -422,28 +427,34 @@ function GroupedGrid({
   compact?: boolean;
 }) {
   const groups = groupBy(spaces, groupKey);
+  let offset = 0;
 
   return (
     <div style={S.groupedGrid}>
-      {groups.map(([label, items]) => (
-        <div key={label} style={S.group}>
-          <div style={S.groupHeader}>
-            <span style={S.groupLabel}>{label}</span>
-            <span style={S.groupCount}>{items.length}</span>
+      {groups.map(([label, items]) => {
+        const groupOffset = offset;
+        offset += items.length;
+        return (
+          <div key={label} style={S.group}>
+            <div style={S.groupHeader}>
+              <span style={S.groupLabel}>{label}</span>
+              <span style={S.groupCount}>{items.length}</span>
+            </div>
+            <div style={{ ...S.grid, ...(compact ? S.gridCompact : {}) }}>
+              {items.map((space, i) => (
+                <SpaceCard
+                  key={space.id}
+                  space={space}
+                  onClick={onSelect}
+                  selectedFeatureId={selectedFeatureId}
+                  compact={compact}
+                  index={groupOffset + i}
+                />
+              ))}
+            </div>
           </div>
-          <div style={{ ...S.grid, ...(compact ? S.gridCompact : {}) }}>
-            {items.map((space) => (
-              <SpaceCard
-                key={space.id}
-                space={space}
-                onClick={onSelect}
-                selectedFeatureId={selectedFeatureId}
-                compact={compact}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -460,25 +471,29 @@ function RouteCandidateGrid({
   selectedFeatureId: string | null;
 }) {
   const groups = groupBy(spaces, groupKey);
+  let offset = 0;
 
   return (
     <div style={S.groupedGrid}>
-      {groups.map(([label, items]) => (
+      {groups.map(([label, items]) => {
+        const groupOffset = offset;
+        offset += items.length;
+        return (
         <div key={label} style={S.group}>
           <div style={S.groupHeader}>
             <span style={S.groupLabel}>{label}</span>
             <span style={S.groupCount}>{items.length}</span>
           </div>
           <div style={S.routeChoiceGrid}>
-            {items.map((space) => {
+            {items.map((space, i) => {
               const status = ST[space.status];
               const isSelected = selectedFeatureId === space.featureId;
 
               return (
                 <button
                   key={space.id}
-                  style={{ ...S.routeChoiceCard, ...(isSelected ? S.routeChoiceCardSelected : {}) }}
-                  className="hud-card"
+                  style={{ ...S.routeChoiceCard, ...(isSelected ? S.routeChoiceCardSelected : {}), "--ci": groupOffset + i } as CSSProperties}
+                  className="hud-card card-anim"
                   onClick={() => onSelect(space)}
                   type="button"
                 >
@@ -506,7 +521,8 @@ function RouteCandidateGrid({
             })}
           </div>
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 }
@@ -515,10 +531,15 @@ export default function AtlasV4() {
   const [indoorData, setIndoorData] = useState<IndoorRuntimeData | null>(null);
   const [datasetError, setDatasetError] = useState<string | null>(null);
   const [activeLevel, setActiveLevel] = useState<LevelId>("L1");
-  const [viewMode, setViewMode] = useState<MapSceneMode>("plan");
-  const [themeVariant, setThemeVariant] = useState<MapThemeVariant>("dark");
+  const [viewMode, setViewMode] = useState<MapSceneMode>(
+    () => (localStorage.getItem("atlas.viewMode") as MapSceneMode | null) ?? "plan",
+  );
+  const [themeVariant, setThemeVariant] = useState<MapThemeVariant>(
+    () => (localStorage.getItem("atlas.theme") as MapThemeVariant | null) ?? "dark",
+  );
   const [time, setTime] = useState(new Date());
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMounted, setDrawerMounted] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("search");
   const [browseQ, setBrowseQ] = useState("");
   const [browseGroup, setBrowseGroup] = useState<GroupKey>("level");
@@ -593,6 +614,37 @@ export default function AtlasV4() {
     };
   }, []);
 
+  useEffect(() => {
+    const handle = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDrawerOpen(false);
+        return;
+      }
+      if (e.key === "/" && !drawerOpen) {
+        const a = document.activeElement;
+        if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return;
+        e.preventDefault();
+        setDrawerMode("search");
+        setDrawerOpen(true);
+        setTimeout(() => topSearchRef.current?.focus(), 40);
+      }
+    };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    localStorage.setItem("atlas.viewMode", viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem("atlas.theme", themeVariant);
+  }, [themeVariant]);
+
+  useEffect(() => {
+    if (drawerOpen) setDrawerMounted(true);
+  }, [drawerOpen]);
+
   const dataset = indoorData?.dataset ?? null;
   const indexes = indoorData?.indexes ?? null;
   const featureById = indexes?.featureById ?? new Map<string, IndoorFeature>();
@@ -647,8 +699,8 @@ export default function AtlasV4() {
   );
 
   const browsePeople = useMemo(
-    () => people.filter((person) => matchesPersonQuery(person, browseQ)),
-    [people, browseQ],
+    () => people.filter((person) => matchesPersonQuery(person, deferredBrowseQuery)),
+    [people, deferredBrowseQuery],
   );
 
   const routeChoices = useMemo(
@@ -792,14 +844,45 @@ export default function AtlasV4() {
     setRouteError(null);
   };
 
-  const closeDrawer = () => {
+  const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
-  };
+  }, []);
 
   const closeSearch = () => {
     if (drawerMode === "search") {
-      setDrawerOpen(false);
+      closeDrawer();
     }
+  };
+
+  const openBottomContextDrawer = () => {
+    if (drawerOpen) {
+      if (drawerMode === "detail" || drawerMode === "route-result" || drawerMode === "ops") {
+        setDrawerOpen(false);
+        return;
+      }
+
+      if (drawerMode === "search") {
+        openBrowse();
+        return;
+      }
+
+      setDrawerOpen(true);
+      return;
+    }
+
+    if (route) {
+      setDrawerMode("route-result");
+      setDrawerOpen(true);
+      return;
+    }
+
+    if (selectedFeature) {
+      setDrawerMode("detail");
+      setDrawerOpen(true);
+      return;
+    }
+
+    openBrowse();
   };
 
   const buildRoute = () => {
@@ -1091,7 +1174,12 @@ export default function AtlasV4() {
       </header>
 
       <div style={S.bottomBar}>
-        <div style={{ ...S.bottomContextBlock, ...(drawerOpen && drawerMode === "route" ? S.bottomContextBlockRoute : {}) }}>
+        <button
+          style={{ ...S.bottomContextBlock, ...(drawerOpen && drawerMode === "route" ? S.bottomContextBlockRoute : {}) }}
+          className="hud-btn"
+          onClick={openBottomContextDrawer}
+          type="button"
+        >
           <div style={S.bottomContext}>
             <div style={S.bottomModuleLabel}>
               {drawerOpen && drawerMode === "route"
@@ -1157,7 +1245,7 @@ export default function AtlasV4() {
               )}
             </div>
           </div>
-        </div>
+        </button>
 
         {drawerOpen && drawerMode === "route" ? (
           <div style={S.bottomRouteActions}>
@@ -1272,7 +1360,7 @@ export default function AtlasV4() {
               data-active={drawerOpen && drawerMode === "route" ? "true" : undefined}
               onClick={() => {
                 if (drawerOpen && drawerMode === "route") {
-                  setDrawerOpen(false);
+                  closeDrawer();
                   return;
                 }
                 openRouteBuilder();
@@ -1285,7 +1373,7 @@ export default function AtlasV4() {
         )}
       </div>
 
-      {drawerOpen ? (
+      {drawerMounted ? (
         <div
           style={{
             ...S.drawerLayer,
@@ -1299,8 +1387,11 @@ export default function AtlasV4() {
               ...S.drawerSheet,
               ...(isWorkspaceDrawerMode ? S.drawerSheetWorkspace : S.drawerSheetInfo),
             }}
-            className="hud-glass oa-slide-up"
+            className={`hud-glass ${drawerMounted && !drawerOpen ? "oa-slide-out" : "oa-slide-up"}`}
             onClick={(event) => event.stopPropagation()}
+            onAnimationEnd={() => {
+              if (!drawerOpen) setDrawerMounted(false);
+            }}
           >
             {drawerMode === "search" ? (
               <div style={S.browsePanel}>
@@ -1352,15 +1443,23 @@ export default function AtlasV4() {
                       </div>
                     </div>
                   ) : null}
-                  <GroupedGrid
-                    spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
-                    groupKey={browseGroup}
-                    onSelect={(space) => {
-                      setBrowseQ("");
-                      onSelectFeature(space.featureId);
-                    }}
-                    selectedFeatureId={selectedFeatureId}
-                  />
+                  {browseQ.trim() && matchedSearchResults.length === 0 && browsePeople.length === 0 ? (
+                    <div style={S.emptySearchBlock}>
+                      <div style={S.emptySearchIcon}><Ic.Search s={22} /></div>
+                      <div style={S.emptySearchTitle}>Ничего не найдено</div>
+                      <div style={S.emptySearchSub}>Нет совпадений для «{browseQ}»</div>
+                    </div>
+                  ) : (
+                    <GroupedGrid
+                      spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
+                      groupKey={browseGroup}
+                      onSelect={(space) => {
+                        setBrowseQ("");
+                        onSelectFeature(space.featureId);
+                      }}
+                      selectedFeatureId={selectedFeatureId}
+                    />
+                  )}
                 </div>
               </div>
             ) : null}
@@ -1375,8 +1474,36 @@ export default function AtlasV4() {
                         <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
                         <div style={S.rpTopFlowSubline}>{activeRouteSubtitle}</div>
                       </div>
+                      <div style={S.rpProgressTrack}>
+                        {([
+                          { step: "from" as const, n: 1, label: "Старт", done: !!routeFrom },
+                          { step: "to" as const, n: 2, label: "Назначение", done: !!routeTo },
+                        ] as const).map(({ step, n, label, done }, i) => {
+                          const active = activeRouteStep === step;
+                          return (
+                            <Fragment key={step}>
+                              {i > 0 && (
+                                <div style={{ ...S.rpProgressLine, ...(routeFrom ? S.rpProgressLineDone : {}) }} />
+                              )}
+                              <div style={{ ...S.rpProgressItem, ...(active ? S.rpProgressItemActive : done ? S.rpProgressItemDone : {}) }}>
+                                <span style={S.rpProgressDot}>{done ? <Ic.Check /> : n}</span>
+                                <span style={S.rpProgressLabel}>{label}</span>
+                              </div>
+                            </Fragment>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div style={S.bpToolbarMeta}>
+                      <button
+                        type="button"
+                        title="Маршрут без барьеров"
+                        style={{ ...S.iconBtn, ...(accessibleOnly ? { color: "var(--atlas-accent)", borderColor: "var(--atlas-accent-border)", background: "var(--atlas-accent-bg)" } : {}) }}
+                        className="hud-btn"
+                        onClick={() => setAccessibleOnly((v) => !v)}
+                      >
+                        <Ic.Accessible />
+                      </button>
                       <span style={S.bpCount}>
                         {routeError
                           ? routeError
@@ -1545,6 +1672,16 @@ export default function AtlasV4() {
                   </button>
                 </div>
                 <div style={S.sidePanelBody}>
+                  <div style={S.rrSummaryCard}>
+                    <div style={S.rrSummaryMain}>
+                      <span style={S.rrSummaryDist}>{routeSummaryDistance} м</span>
+                      <span style={S.rrSummaryTime}>{routeDurationLabel(route.summary.distance)}</span>
+                    </div>
+                    <div style={S.rrSummaryMeta}>
+                      {route.summary.levels.map((l) => <span key={l} style={S.infoChip}>{l}</span>)}
+                      <span style={S.infoChip}>{routeStepsList.length} шагов</span>
+                    </div>
+                  </div>
                   <div style={{ ...S.sidePanelSectionCompact, minHeight: 0 }}>
                     <div style={S.sidePanelSectionHeader}>
                       <span style={S.panelSectionLabel}>Шаги</span>
@@ -1592,6 +1729,14 @@ export default function AtlasV4() {
                   <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
                     <Ic.X />
                   </button>
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "0 16px 10px", flexWrap: "wrap" as const }}>
+                  <span style={{ ...S.statusPill, color: ST[selectedStatus].c, background: ST[selectedStatus].bg }}>
+                    {selectedStatusLabel}
+                  </span>
+                  {selectedSpace && selectedSpace.cap > 0 ? (
+                    <span style={S.infoChip}>{selectedSpace.cap} мест</span>
+                  ) : null}
                 </div>
                 <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
                   {(() => {
@@ -2023,10 +2168,14 @@ const CSS = `
   ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:5px}
   @keyframes oa-fade{from{opacity:0}to{opacity:1}}
   @keyframes oa-slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes oa-slide-out{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(10px)}}
   @keyframes oa-slide-left{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
   @keyframes oa-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes card-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+  .card-anim{animation:card-in 200ms ease-out both;animation-delay:calc(var(--ci,0)*14ms)}
   .oa-fade{animation:oa-fade .18s ease-out}
   .oa-slide-up{animation:oa-slide-up .22s ease-out}
+  .oa-slide-out{animation:oa-slide-out .2s ease-in both}
   .oa-slide-left{animation:oa-slide-left .2s ease-out}
   .hud-glass{background:${T.glass};backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%);border:1px solid ${T.border}}
   .hud-glass-heavy{background:${T.glassH};backdrop-filter:blur(40px) saturate(145%);-webkit-backdrop-filter:blur(40px) saturate(145%);border:1px solid ${T.borderH}}
@@ -2120,11 +2269,14 @@ const S: Record<string, CSSProperties> = {
   bottomContextBlock: {
     display: "flex",
     alignItems: "center",
+    width: "100%",
     minWidth: 0,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: "12px 16px",
     background: "linear-gradient(90deg, rgba(255,255,255,.055), rgba(255,255,255,.024))",
+    border: "none",
     borderRight: CONTROL_BORDER_STRONG,
+    textAlign: "left",
   },
   bottomContextBlockRoute: {
     padding: "14px 16px",
@@ -2704,4 +2856,27 @@ const S: Record<string, CSSProperties> = {
   detailMetaGrid: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 6 },
   detailMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "9px 10px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
   detailEquipmentRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 2 },
+
+  // Search empty state
+  emptySearchBlock: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", gap: 10, textAlign: "center" },
+  emptySearchIcon: { opacity: 0.45, marginBottom: 2 },
+  emptySearchTitle: { fontSize: 15, fontWeight: 700, color: T.sec },
+  emptySearchSub: { fontSize: 12, color: T.muted, maxWidth: 260, lineHeight: 1.6 },
+
+  // Route result summary card
+  rrSummaryCard: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 14px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, flexWrap: "wrap" },
+  rrSummaryMain: { display: "flex", alignItems: "baseline", gap: 8 },
+  rrSummaryDist: { fontSize: 22, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.02em", color: T.text },
+  rrSummaryTime: { fontSize: 12, color: T.sec, fontWeight: 500 },
+  rrSummaryMeta: { display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" },
+
+  // Route builder 2-step progress indicator
+  rpProgressTrack: { display: "flex", alignItems: "center", marginTop: 8 },
+  rpProgressItem: { display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: T.muted },
+  rpProgressItemActive: { color: T.accent },
+  rpProgressItemDone: { color: T.sec },
+  rpProgressDot: { width: 18, height: 18, borderRadius: "50%", border: "1.5px solid currentColor", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 },
+  rpProgressLabel: { whiteSpace: "nowrap" },
+  rpProgressLine: { flex: 1, height: 1, background: T.border, margin: "0 8px", minWidth: 16 },
+  rpProgressLineDone: { background: T.accent },
 };

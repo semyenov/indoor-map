@@ -137,7 +137,7 @@ const elevatorAssembly = (
   shaftBounds: [number, number, number, number],
   cabinBounds: [number, number, number, number],
 ): CanonicalStructure[] => {
-  const [shaftX1, , shaftX2] = shaftBounds;
+  const [shaftX1] = shaftBounds;
   const [, cabinY1, , cabinY2] = cabinBounds;
   const doorY1 = cabinY1 + 0.7;
   const doorY2 = cabinY2 - 0.7;
@@ -161,26 +161,6 @@ const elevatorAssembly = (
     verticalRectStructure(`furniture-${idPrefix}-portal-top`, level, "Верхний портал лифта", [shaftX1 + 0.02, doorY1, shaftX1 + 0.17, doorY2], {
       baseHeight: 2.16,
       height: 2.38,
-    }),
-    verticalRectStructure(`furniture-${idPrefix}-portal-north`, level, "Северная стойка лифта", [shaftX1 + 0.02, cabinY2 - 0.2, shaftX1 + 0.17, cabinY2 + 0.08], {
-      baseHeight: 0,
-      height: 2.16,
-    }),
-    verticalRectStructure(`furniture-${idPrefix}-portal-south`, level, "Южная стойка лифта", [shaftX1 + 0.02, cabinY1 - 0.08, shaftX1 + 0.17, cabinY1 + 0.2], {
-      baseHeight: 0,
-      height: 2.16,
-    }),
-    verticalRectStructure(`furniture-${idPrefix}-guide-rail-a`, level, "Направляющая лифта A", [shaftX2 - 0.44, cabinY1 + 0.22, shaftX2 - 0.3, cabinY1 + 0.48], {
-      baseHeight: 0,
-      height: 2.92,
-    }),
-    verticalRectStructure(`furniture-${idPrefix}-guide-rail-b`, level, "Направляющая лифта B", [shaftX2 - 0.44, cabinY2 - 0.48, shaftX2 - 0.3, cabinY2 - 0.22], {
-      baseHeight: 0,
-      height: 2.92,
-    }),
-    verticalRectStructure(`furniture-${idPrefix}-panel`, level, "Панель лифта", [shaftX2 - 0.34, cabinY1 + 0.28, shaftX2 - 0.08, cabinY2 - 0.28], {
-      baseHeight: 0.44,
-      height: 1.82,
     }),
     lineStructure(`door-${idPrefix}`, level, "Дверь кабины лифта", [localPoint(shaftX1, doorY1), localPoint(shaftX1, doorY2)]),
   ];

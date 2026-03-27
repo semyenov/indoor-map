@@ -2190,7 +2190,7 @@ export function MapCanvas({
         map.moveLayer("route-terminal");
       }
 
-      console.log("[route:maplibre-fallback] synced breadcrumb route", {
+      console.debug("[route:maplibre-fallback] synced breadcrumb route", {
         activeLevel,
         hasRoute: Boolean(route),
         segmentCount: routeCollection.features.length,
