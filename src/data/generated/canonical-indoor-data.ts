@@ -137,30 +137,52 @@ const elevatorAssembly = (
   shaftBounds: [number, number, number, number],
   cabinBounds: [number, number, number, number],
 ): CanonicalStructure[] => {
-  const [shaftX1] = shaftBounds;
-  const [, cabinY1, , cabinY2] = cabinBounds;
+  const [shaftX1, shaftY1, shaftX2, shaftY2] = shaftBounds;
+  const [cabinX1, cabinY1, cabinX2, cabinY2] = cabinBounds;
+  const cabinMidY = (cabinY1 + cabinY2) / 2;
   const doorY1 = cabinY1 + 0.7;
   const doorY2 = cabinY2 - 0.7;
 
   return [
-    wallBoxStructure(`wall-${idPrefix}-core`, level, `Лифтовое ядро ${level}`, shaftBounds, {
-      westOpenings: [{ center: (cabinY1 + cabinY2) / 2, width: doorY2 - doorY1 }],
-    }),
-    verticalRectStructure(`furniture-${idPrefix}-cabin`, level, "Кабина лифта", cabinBounds, {
+    verticalRectStructure(`furniture-${idPrefix}-cabin`, level, "Площадка лифта", cabinBounds, {
       baseHeight: 0,
-      height: 2.45,
+      height: 0.12,
     }),
-    verticalRectStructure(`furniture-${idPrefix}-ceiling`, level, "Потолок кабины", cabinBounds, {
+    verticalRectStructure(`furniture-${idPrefix}-ceiling`, level, "Козырек лифта", [cabinX1 + 0.08, cabinY1 + 0.08, cabinX2 - 0.08, cabinY2 - 0.08], {
       baseHeight: 2.34,
-      height: 2.5,
+      height: 2.46,
+    }),
+    verticalRectStructure(`furniture-${idPrefix}-rear-wall`, level, "Задняя стенка лифта", [shaftX2 - 0.16, shaftY1 + 0.22, shaftX2 - 0.04, shaftY2 - 0.22], {
+      baseHeight: 0,
+      height: 3.02,
+    }),
+    verticalRectStructure(`furniture-${idPrefix}-guide-south`, level, "Южная направляющая лифта", [cabinX1 + 0.08, cabinY1 + 0.08, cabinX2 - 0.08, cabinY1 + 0.2], {
+      baseHeight: 0.18,
+      height: 2.18,
+    }),
+    verticalRectStructure(`furniture-${idPrefix}-guide-north`, level, "Северная направляющая лифта", [cabinX1 + 0.08, cabinY2 - 0.2, cabinX2 - 0.08, cabinY2 - 0.08], {
+      baseHeight: 0.18,
+      height: 2.18,
     }),
     verticalRectStructure(`furniture-${idPrefix}-threshold`, level, "Порог лифта", [shaftX1 - 0.16, doorY1, shaftX1 + 0.08, doorY2], {
       baseHeight: 0,
       height: 0.06,
     }),
+    verticalRectStructure(`furniture-${idPrefix}-portal-south`, level, "Южная стойка портала", [shaftX1 + 0.02, shaftY1 + 0.08, shaftX1 + 0.15, doorY1 - 0.08], {
+      baseHeight: 0,
+      height: 2.24,
+    }),
+    verticalRectStructure(`furniture-${idPrefix}-portal-north`, level, "Северная стойка портала", [shaftX1 + 0.02, doorY2 + 0.08, shaftX1 + 0.15, shaftY2 - 0.08], {
+      baseHeight: 0,
+      height: 2.24,
+    }),
     verticalRectStructure(`furniture-${idPrefix}-portal-top`, level, "Верхний портал лифта", [shaftX1 + 0.02, doorY1, shaftX1 + 0.17, doorY2], {
       baseHeight: 2.16,
       height: 2.38,
+    }),
+    verticalRectStructure(`furniture-${idPrefix}-panel`, level, "Панель вызова лифта", [cabinX2 - 0.24, cabinMidY - 0.24, cabinX2 - 0.08, cabinMidY + 0.24], {
+      baseHeight: 0.92,
+      height: 1.54,
     }),
     lineStructure(`door-${idPrefix}`, level, "Дверь кабины лифта", [localPoint(shaftX1, doorY1), localPoint(shaftX1, doorY2)]),
   ];

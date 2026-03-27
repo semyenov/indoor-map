@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+        "browsermcp": {
+            "command": "bunx",
+            "args": [
+                "@browsermcp/mcp@latest"
+            ]
+        },
+        "context7": {
+            "command": "bunx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp@latest"
+            ]
+        }
+    }
+}

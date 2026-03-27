@@ -1692,31 +1692,6 @@
   ],
   "structures": [
     {
-      "id": "wall-l1-elevator-core",
-      "level": "L1",
-      "featureKind": "wall",
-      "geometry": {
-        "type": "wall_box",
-        "bounds": [
-          48.7,
-          10.35,
-          51.8,
-          14
-        ],
-        "thickness": 0.18,
-        "height": 3.3,
-        "options": {
-          "westOpenings": [
-            {
-              "center": 12.225000000000001,
-              "width": 1.2500000000000018
-            }
-          ]
-        }
-      },
-      "name": "Лифтовое ядро L1"
-    },
-    {
       "id": "furniture-l1-elevator-cabin",
       "level": "L1",
       "featureKind": "furniture",
@@ -1729,10 +1704,10 @@
           13.55
         ]
       },
-      "name": "Кабина лифта",
+      "name": "Площадка лифта",
       "department": "Вертикальные связи",
       "baseHeight": 0,
-      "height": 2.45
+      "height": 0.12
     },
     {
       "id": "furniture-l1-elevator-ceiling",
@@ -1741,16 +1716,70 @@
       "geometry": {
         "type": "rect",
         "bounds": [
-          49.15,
-          10.9,
-          51.15,
-          13.55
+          49.23,
+          10.98,
+          51.07,
+          13.47
         ]
       },
-      "name": "Потолок кабины",
+      "name": "Козырек лифта",
       "department": "Вертикальные связи",
       "baseHeight": 2.34,
-      "height": 2.5
+      "height": 2.46
+    },
+    {
+      "id": "furniture-l1-elevator-rear-wall",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          51.64,
+          10.57,
+          51.76,
+          13.78
+        ]
+      },
+      "name": "Задняя стенка лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 3.02
+    },
+    {
+      "id": "furniture-l1-elevator-guide-south",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          49.23,
+          10.98,
+          51.07,
+          11.1
+        ]
+      },
+      "name": "Южная направляющая лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.18,
+      "height": 2.18
+    },
+    {
+      "id": "furniture-l1-elevator-guide-north",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          49.23,
+          13.350000000000001,
+          51.07,
+          13.47
+        ]
+      },
+      "name": "Северная направляющая лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.18,
+      "height": 2.18
     },
     {
       "id": "furniture-l1-elevator-threshold",
@@ -1771,6 +1800,42 @@
       "height": 0.06
     },
     {
+      "id": "furniture-l1-elevator-portal-south",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          48.720000000000006,
+          10.43,
+          48.85,
+          11.52
+        ]
+      },
+      "name": "Южная стойка портала",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.24
+    },
+    {
+      "id": "furniture-l1-elevator-portal-north",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          48.720000000000006,
+          12.930000000000001,
+          48.85,
+          13.92
+        ]
+      },
+      "name": "Северная стойка портала",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.24
+    },
+    {
       "id": "furniture-l1-elevator-portal-top",
       "level": "L1",
       "featureKind": "furniture",
@@ -1787,6 +1852,24 @@
       "department": "Вертикальные связи",
       "baseHeight": 2.16,
       "height": 2.38
+    },
+    {
+      "id": "furniture-l1-elevator-panel",
+      "level": "L1",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          50.91,
+          11.985000000000001,
+          51.07,
+          12.465000000000002
+        ]
+      },
+      "name": "Панель вызова лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.92,
+      "height": 1.54
     },
     {
       "id": "door-l1-elevator",
@@ -1808,31 +1891,6 @@
       "name": "Дверь кабины лифта"
     },
     {
-      "id": "wall-l2-elevator-core",
-      "level": "L2",
-      "featureKind": "wall",
-      "geometry": {
-        "type": "wall_box",
-        "bounds": [
-          48.7,
-          10.35,
-          51.8,
-          14
-        ],
-        "thickness": 0.18,
-        "height": 3.3,
-        "options": {
-          "westOpenings": [
-            {
-              "center": 12.225000000000001,
-              "width": 1.2500000000000018
-            }
-          ]
-        }
-      },
-      "name": "Лифтовое ядро L2"
-    },
-    {
       "id": "furniture-l2-elevator-cabin",
       "level": "L2",
       "featureKind": "furniture",
@@ -1845,10 +1903,10 @@
           13.55
         ]
       },
-      "name": "Кабина лифта",
+      "name": "Площадка лифта",
       "department": "Вертикальные связи",
       "baseHeight": 0,
-      "height": 2.45
+      "height": 0.12
     },
     {
       "id": "furniture-l2-elevator-ceiling",
@@ -1857,16 +1915,70 @@
       "geometry": {
         "type": "rect",
         "bounds": [
-          49.15,
-          10.9,
-          51.15,
-          13.55
+          49.23,
+          10.98,
+          51.07,
+          13.47
         ]
       },
-      "name": "Потолок кабины",
+      "name": "Козырек лифта",
       "department": "Вертикальные связи",
       "baseHeight": 2.34,
-      "height": 2.5
+      "height": 2.46
+    },
+    {
+      "id": "furniture-l2-elevator-rear-wall",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          51.64,
+          10.57,
+          51.76,
+          13.78
+        ]
+      },
+      "name": "Задняя стенка лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 3.02
+    },
+    {
+      "id": "furniture-l2-elevator-guide-south",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          49.23,
+          10.98,
+          51.07,
+          11.1
+        ]
+      },
+      "name": "Южная направляющая лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.18,
+      "height": 2.18
+    },
+    {
+      "id": "furniture-l2-elevator-guide-north",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          49.23,
+          13.350000000000001,
+          51.07,
+          13.47
+        ]
+      },
+      "name": "Северная направляющая лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.18,
+      "height": 2.18
     },
     {
       "id": "furniture-l2-elevator-threshold",
@@ -1887,6 +1999,42 @@
       "height": 0.06
     },
     {
+      "id": "furniture-l2-elevator-portal-south",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          48.720000000000006,
+          10.43,
+          48.85,
+          11.52
+        ]
+      },
+      "name": "Южная стойка портала",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.24
+    },
+    {
+      "id": "furniture-l2-elevator-portal-north",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          48.720000000000006,
+          12.930000000000001,
+          48.85,
+          13.92
+        ]
+      },
+      "name": "Северная стойка портала",
+      "department": "Вертикальные связи",
+      "baseHeight": 0,
+      "height": 2.24
+    },
+    {
       "id": "furniture-l2-elevator-portal-top",
       "level": "L2",
       "featureKind": "furniture",
@@ -1903,6 +2051,24 @@
       "department": "Вертикальные связи",
       "baseHeight": 2.16,
       "height": 2.38
+    },
+    {
+      "id": "furniture-l2-elevator-panel",
+      "level": "L2",
+      "featureKind": "furniture",
+      "geometry": {
+        "type": "rect",
+        "bounds": [
+          50.91,
+          11.985000000000001,
+          51.07,
+          12.465000000000002
+        ]
+      },
+      "name": "Панель вызова лифта",
+      "department": "Вертикальные связи",
+      "baseHeight": 0.92,
+      "height": 1.54
     },
     {
       "id": "door-l2-elevator",

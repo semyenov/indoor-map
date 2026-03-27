@@ -661,8 +661,10 @@ const syncRouteBreadcrumbPresentation = (
 ) => {
   if (map.getLayer("route-breadcrumb-glow")) {
     map.setPaintProperty("route-breadcrumb-glow", "circle-color", palette.routeCasing);
-    map.setPaintProperty("route-breadcrumb-glow", "circle-radius", 4.2);
-    map.setPaintProperty("route-breadcrumb-glow", "circle-opacity", 0.5);
+    map.setPaintProperty("route-breadcrumb-glow", "circle-pitch-scale", "viewport");
+    map.setPaintProperty("route-breadcrumb-glow", "circle-pitch-alignment", "viewport");
+    map.setPaintProperty("route-breadcrumb-glow", "circle-radius", 4.8);
+    map.setPaintProperty("route-breadcrumb-glow", "circle-opacity", 0.72);
   }
 
   if (map.getLayer("route-path-glow")) {
@@ -700,12 +702,16 @@ const syncRouteBreadcrumbPresentation = (
 
   if (map.getLayer("route-breadcrumb")) {
     map.setPaintProperty("route-breadcrumb", "circle-color", palette.routeLine);
-    map.setPaintProperty("route-breadcrumb", "circle-radius", 1.45);
-    map.setPaintProperty("route-breadcrumb", "circle-opacity", 0.92);
+    map.setPaintProperty("route-breadcrumb", "circle-pitch-scale", "viewport");
+    map.setPaintProperty("route-breadcrumb", "circle-pitch-alignment", "viewport");
+    map.setPaintProperty("route-breadcrumb", "circle-radius", 2);
+    map.setPaintProperty("route-breadcrumb", "circle-opacity", 0.98);
   }
 
   if (map.getLayer("route-terminal-glow")) {
     map.setPaintProperty("route-terminal-glow", "circle-color", palette.routeCasing);
+    map.setPaintProperty("route-terminal-glow", "circle-pitch-scale", "viewport");
+    map.setPaintProperty("route-terminal-glow", "circle-pitch-alignment", "viewport");
     map.setPaintProperty("route-terminal-glow", "circle-radius", 12.5);
     map.setPaintProperty("route-terminal-glow", "circle-opacity", 0.96);
   }
@@ -713,6 +719,8 @@ const syncRouteBreadcrumbPresentation = (
   if (map.getLayer("route-terminal")) {
     map.setPaintProperty("route-terminal", "circle-color", palette.routeLine);
     map.setPaintProperty("route-terminal", "circle-stroke-color", palette.routeCasing);
+    map.setPaintProperty("route-terminal", "circle-pitch-scale", "viewport");
+    map.setPaintProperty("route-terminal", "circle-pitch-alignment", "viewport");
     map.setPaintProperty("route-terminal", "circle-radius", 5.4);
     map.setPaintProperty("route-terminal", "circle-stroke-width", 2.6);
     map.setPaintProperty("route-terminal", "circle-opacity", 1);
@@ -1240,6 +1248,13 @@ const isGeoJsonSource = (
   return source.type === "geojson" && "setData" in source;
 };
 
+const setGeoJsonSourceData = async (
+  source: maplibregl.GeoJSONSource,
+  data: GeoJSON.GeoJSON,
+) => {
+  await source.setData(data, true);
+};
+
 interface PendingFocusRequest {
   requestId: number;
   featureId: string;
@@ -1260,9 +1275,11 @@ export interface MapCanvasProps {
   themeVariant?: MapThemeVariant;
   selectedFeatureId: string | null;
   route: RouteResult | null;
+  routeRevision: number;
   selectableSpaceFeatures: OfficePolygonFeature[];
   zoomCommand?: { id: number; delta: 1 | -1 } | null;
   onSelectFeature: (featureId: string) => void;
+  onClearSelection: () => void;
   onSelectRoute: () => void;
 }
 
@@ -1279,9 +1296,11 @@ export function MapCanvas({
   themeVariant = "light",
   selectedFeatureId,
   route,
+  routeRevision,
   selectableSpaceFeatures,
   zoomCommand,
   onSelectFeature,
+  onClearSelection,
   onSelectRoute,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1292,11 +1311,13 @@ export function MapCanvas({
   const activeLevelRef = useRef(activeLevel);
   const routeRef = useRef(route);
   const onSelectFeatureRef = useRef(onSelectFeature);
+  const onClearSelectionRef = useRef(onClearSelection);
   const onSelectRouteRef = useRef(onSelectRoute);
   const pendingFocusRef = useRef<PendingFocusRequest | null>(null);
   const focusPulseTimerRef = useRef<number | null>(null);
   const handledFocusRequestIdRef = useRef(focusRequestId);
   const processedZoomCommandIdRef = useRef(0);
+  const routeSyncRequestRef = useRef(0);
   const [sceneMode, setSceneMode] = useState<MapSceneMode>(externalSceneMode ?? DEFAULT_SCENE_MODE);
   const [pitch, setPitch] = useState<number>(SCENE_PRESETS[externalSceneMode ?? DEFAULT_SCENE_MODE].pitch);
   const [bearing, setBearing] = useState<number>(SCENE_PRESETS[externalSceneMode ?? DEFAULT_SCENE_MODE].bearing);
@@ -1317,6 +1338,21 @@ export function MapCanvas({
 
     window.clearTimeout(timerId);
     focusPulseTimerRef.current = null;
+  };
+
+  const runWhenStyleReady = (map: maplibregl.Map, task: () => void) => {
+    if (map.isStyleLoaded()) {
+      task();
+      return;
+    }
+
+    map.once("idle", () => {
+      if (mapRef.current !== map) {
+        return;
+      }
+
+      task();
+    });
   };
 
   const runFocusRequest = (map: maplibregl.Map, request: PendingFocusRequest) => {
@@ -1411,29 +1447,7 @@ export function MapCanvas({
     return false;
   };
 
-  const syncRouteBreadcrumbRendering = (map: maplibregl.Map) => {
-    const currentRoute = routeRef.current;
-    const currentLevel = activeLevelRef.current;
-    const routePathSource = map.getSource(ROUTE_PATH_SOURCE);
-    const routeBreadcrumbSource = map.getSource(ROUTE_BREADCRUMB_SOURCE);
-
-    if (!isGeoJsonSource(routePathSource) || !isGeoJsonSource(routeBreadcrumbSource)) {
-      console.debug("[route:maplibre-fallback] route sources unavailable", {
-        currentLevel,
-        hasRoute: Boolean(currentRoute),
-        hasRoutePathSource: isGeoJsonSource(routePathSource),
-        hasRouteMarkerSource: isGeoJsonSource(routeBreadcrumbSource),
-      });
-      return false;
-    }
-
-    const routeCollection = buildRouteCollection(currentRoute);
-    const breadcrumbCollection = buildRouteBreadcrumbCollection(currentRoute);
-    routePathSource.setData(routeCollection);
-    routeBreadcrumbSource.setData(breadcrumbCollection);
-    updateFilters(map, currentLevel);
-    syncRouteBreadcrumbPresentation(map, palette);
-
+  const moveRouteLayersToTop = (map: maplibregl.Map) => {
     if (map.getLayer("route-path-glow")) {
       map.moveLayer("route-path-glow");
     }
@@ -1458,9 +1472,224 @@ export function MapCanvas({
       map.moveLayer("route-terminal");
     }
 
-    map.triggerRepaint();
+    if (ENABLE_ROUTE_CUSTOM_LAYER && map.getLayer(ROUTE_CUSTOM_LAYER_ID)) {
+      map.moveLayer(ROUTE_CUSTOM_LAYER_ID);
+    }
+  };
 
-    const hasRouteOnActiveLevel = breadcrumbCollection.features.some((feature) => feature.properties.level === currentLevel);
+  const ensureRouteSources = (map: maplibregl.Map, currentRoute: RouteResult | null) => {
+    const routeCollection = buildRouteCollection(currentRoute);
+    const breadcrumbCollection = buildRouteBreadcrumbCollection(currentRoute);
+    let routePathSource = map.getSource(ROUTE_PATH_SOURCE);
+    let routeBreadcrumbSource = map.getSource(ROUTE_BREADCRUMB_SOURCE);
+
+    if (!routePathSource) {
+      map.addSource(ROUTE_PATH_SOURCE, { type: "geojson", data: routeCollection });
+      routePathSource = map.getSource(ROUTE_PATH_SOURCE);
+    }
+
+    if (!routeBreadcrumbSource) {
+      map.addSource(ROUTE_BREADCRUMB_SOURCE, { type: "geojson", data: breadcrumbCollection });
+      routeBreadcrumbSource = map.getSource(ROUTE_BREADCRUMB_SOURCE);
+    }
+
+    return {
+      routeCollection,
+      breadcrumbCollection,
+      routePathSource: isGeoJsonSource(routePathSource) ? routePathSource : null,
+      routeBreadcrumbSource: isGeoJsonSource(routeBreadcrumbSource) ? routeBreadcrumbSource : null,
+    };
+  };
+
+  const removeRouteSources = (map: maplibregl.Map) => {
+    if (map.getSource(ROUTE_BREADCRUMB_SOURCE)) {
+      map.removeSource(ROUTE_BREADCRUMB_SOURCE);
+    }
+
+    if (map.getSource(ROUTE_PATH_SOURCE)) {
+      map.removeSource(ROUTE_PATH_SOURCE);
+    }
+  };
+
+  const removeRouteLayers = (map: maplibregl.Map) => {
+    const layerIds = [
+      "route-terminal",
+      "route-terminal-glow",
+      "route-breadcrumb",
+      "route-breadcrumb-glow",
+      "route-path",
+      "route-path-glow",
+    ] as const;
+
+    for (const layerId of layerIds) {
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId);
+      }
+    }
+
+    if (map.getLayer(ROUTE_CUSTOM_LAYER_ID)) {
+      map.removeLayer(ROUTE_CUSTOM_LAYER_ID);
+    }
+  };
+
+  const addRouteLayers = (map: maplibregl.Map, level: LevelId, currentRoute: RouteResult | null) => {
+    if (ENABLE_ROUTE_CUSTOM_LAYER) {
+      const routeCustomLayer = routeCustomLayerRef.current ?? createRouteCustomLayer(palette);
+      routeCustomLayerRef.current = routeCustomLayer;
+
+      if (!map.getLayer(ROUTE_CUSTOM_LAYER_ID)) {
+        map.addLayer(routeCustomLayer);
+      }
+
+      routeCustomLayer.updatePalette(palette);
+      routeCustomLayer.updateData(currentRoute, level);
+    }
+
+    if (!map.getLayer("route-path-glow")) {
+      map.addLayer({
+        id: "route-path-glow",
+        type: "line",
+        source: ROUTE_PATH_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": palette.routeCasing,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 16, 8, 20, 11, 22, 13],
+          "line-opacity": 0.88,
+          "line-blur": 0.7,
+        },
+      });
+    }
+
+    if (!map.getLayer("route-path")) {
+      map.addLayer({
+        id: "route-path",
+        type: "line",
+        source: ROUTE_PATH_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], level]],
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": palette.routeLine,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 16, 3.2, 20, 4.6, 22, 5.8],
+          "line-opacity": 1,
+        },
+      });
+    }
+
+    if (!map.getLayer("route-breadcrumb-glow")) {
+      map.addLayer({
+        id: "route-breadcrumb-glow",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], false]],
+        paint: {
+          "circle-pitch-scale": "viewport",
+          "circle-pitch-alignment": "viewport",
+          "circle-radius": 4.8,
+          "circle-color": palette.routeCasing,
+          "circle-opacity": 0.72,
+          "circle-blur": 0.18,
+        },
+      });
+    }
+
+    if (!map.getLayer("route-breadcrumb")) {
+      map.addLayer({
+        id: "route-breadcrumb",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], false]],
+        paint: {
+          "circle-pitch-scale": "viewport",
+          "circle-pitch-alignment": "viewport",
+          "circle-radius": 2,
+          "circle-color": palette.routeLine,
+          "circle-opacity": 0.98,
+        },
+      });
+    }
+
+    if (!map.getLayer("route-terminal-glow")) {
+      map.addLayer({
+        id: "route-terminal-glow",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], true]],
+        paint: {
+          "circle-pitch-scale": "viewport",
+          "circle-pitch-alignment": "viewport",
+          "circle-radius": 12.5,
+          "circle-color": palette.routeCasing,
+          "circle-opacity": 0.96,
+          "circle-blur": 0.25,
+        },
+      });
+    }
+
+    if (!map.getLayer("route-terminal")) {
+      map.addLayer({
+        id: "route-terminal",
+        type: "circle",
+        source: ROUTE_BREADCRUMB_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], level], ["==", ["get", "terminal"], true]],
+        paint: {
+          "circle-pitch-scale": "viewport",
+          "circle-pitch-alignment": "viewport",
+          "circle-radius": 5.4,
+          "circle-color": palette.routeLine,
+          "circle-stroke-color": palette.routeCasing,
+          "circle-stroke-width": 2.6,
+          "circle-opacity": 1,
+        },
+      });
+    }
+  };
+
+  const syncRouteRendering = async (
+    map: maplibregl.Map,
+    currentRoute: RouteResult | null,
+    currentLevel: LevelId,
+    requestId: number,
+  ) => {
+    const { routeCollection, breadcrumbCollection, routePathSource, routeBreadcrumbSource } = ensureRouteSources(map, currentRoute);
+    const hasRouteOnActiveLevel = routeCollection.features.some((feature) => feature.properties.level === currentLevel);
+
+    if (!routePathSource || !routeBreadcrumbSource) {
+      console.debug("[route:maplibre-fallback] route sources unavailable", {
+        currentLevel,
+        hasRoute: Boolean(currentRoute),
+        hasRoutePathSource: Boolean(routePathSource),
+        hasRouteMarkerSource: Boolean(routeBreadcrumbSource),
+      });
+      return false;
+    }
+
+    addRouteLayers(map, currentLevel, currentRoute);
+    await Promise.all([
+      setGeoJsonSourceData(routePathSource, routeCollection),
+      setGeoJsonSourceData(routeBreadcrumbSource, breadcrumbCollection),
+    ]);
+
+    if (routeSyncRequestRef.current !== requestId || mapRef.current !== map || !map.isStyleLoaded()) {
+      return hasRouteOnActiveLevel;
+    }
+
+    updateFilters(map, currentLevel);
+    syncRouteBreadcrumbPresentation(map, palette);
+    moveRouteLayersToTop(map);
+
+    if (ENABLE_ROUTE_CUSTOM_LAYER) {
+      routeCustomLayerRef.current?.updatePalette(palette);
+      routeCustomLayerRef.current?.updateData(currentRoute, currentLevel);
+    }
+
+    map.triggerRepaint();
 
     console.debug("[route:maplibre-fallback] synced breadcrumb route", {
       currentLevel,
@@ -1468,9 +1697,22 @@ export function MapCanvas({
       segmentCount: routeCollection.features.length,
       featureCount: breadcrumbCollection.features.length,
       hasRouteOnActiveLevel,
-    });
+      });
 
     return hasRouteOnActiveLevel;
+  };
+
+  const rebuildRouteSourcesAndLayers = async (
+    map: maplibregl.Map,
+    currentRoute: RouteResult | null,
+    currentLevel: LevelId,
+    requestId: number,
+  ) => {
+    removeRouteLayers(map);
+    removeRouteSources(map);
+    ensureRouteSources(map, currentRoute);
+    addRouteLayers(map, currentLevel, currentRoute);
+    return syncRouteRendering(map, currentRoute, currentLevel, requestId);
   };
 
   useEffect(() => {
@@ -1484,6 +1726,10 @@ export function MapCanvas({
   useEffect(() => {
     onSelectFeatureRef.current = onSelectFeature;
   }, [onSelectFeature]);
+
+  useEffect(() => {
+    onClearSelectionRef.current = onClearSelection;
+  }, [onClearSelection]);
 
   useEffect(() => {
     onSelectRouteRef.current = onSelectRoute;
@@ -1505,7 +1751,7 @@ export function MapCanvas({
       attributionControl: false,
     });
 
-    map.on("load", () => {
+    map.on("load", async () => {
       map.addSource(SPACE_SOURCE, { type: "geojson", data: collections.spaces });
       map.addSource(STRUCTURE_SOURCE, { type: "geojson", data: collections.structures });
       map.addSource(POI_SOURCE, { type: "geojson", data: collections.pois });
@@ -1676,13 +1922,6 @@ export function MapCanvas({
         },
       });
 
-      if (ENABLE_ROUTE_CUSTOM_LAYER) {
-        const routeCustomLayer = createRouteCustomLayer(palette);
-        routeCustomLayer.updateData(routeRef.current, activeLevelRef.current);
-        routeCustomLayerRef.current = routeCustomLayer;
-        map.addLayer(routeCustomLayer);
-      }
-
       map.addLayer({
         id: "poi-circle",
         type: "circle",
@@ -1751,111 +1990,7 @@ export function MapCanvas({
           "circle-stroke-width": 2,
         },
       });
-
-      map.addLayer({
-        id: "route-path-glow",
-        type: "line",
-        source: ROUTE_PATH_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
-        paint: {
-          "line-color": palette.routeCasing,
-          "line-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            16,
-            8,
-            20,
-            11,
-            22,
-            13,
-          ],
-          "line-opacity": 0.88,
-          "line-blur": 0.7,
-        },
-      });
-
-      map.addLayer({
-        id: "route-path",
-        type: "line",
-        source: ROUTE_PATH_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "level"], activeLevel]],
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
-        paint: {
-          "line-color": palette.routeLine,
-          "line-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            16,
-            3.2,
-            20,
-            4.6,
-            22,
-            5.8,
-          ],
-          "line-opacity": 1,
-        },
-      });
-
-      map.addLayer({
-        id: "route-breadcrumb-glow",
-        type: "circle",
-        source: ROUTE_BREADCRUMB_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], false]],
-        paint: {
-          "circle-radius": 4.2,
-          "circle-color": palette.routeCasing,
-          "circle-opacity": 0.5,
-          "circle-blur": 0.2,
-        },
-      });
-
-      map.addLayer({
-        id: "route-breadcrumb",
-        type: "circle",
-        source: ROUTE_BREADCRUMB_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], false]],
-        paint: {
-          "circle-radius": 1.45,
-          "circle-color": palette.routeLine,
-          "circle-opacity": 0.92,
-        },
-      });
-
-      map.addLayer({
-        id: "route-terminal-glow",
-        type: "circle",
-        source: ROUTE_BREADCRUMB_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], true]],
-        paint: {
-          "circle-radius": 12.5,
-          "circle-color": palette.routeCasing,
-          "circle-opacity": 0.96,
-          "circle-blur": 0.25,
-        },
-      });
-
-      map.addLayer({
-        id: "route-terminal",
-        type: "circle",
-        source: ROUTE_BREADCRUMB_SOURCE,
-        filter: ["all", ["==", ["geometry-type"], "Point"], ["==", ["get", "level"], activeLevel], ["==", ["get", "terminal"], true]],
-        paint: {
-          "circle-radius": 5.4,
-          "circle-color": palette.routeLine,
-          "circle-stroke-color": palette.routeCasing,
-          "circle-stroke-width": 2.6,
-          "circle-opacity": 1,
-        },
-      });
+      addRouteLayers(map, activeLevelRef.current, routeRef.current);
 
       map.addLayer({
         id: "poi-labels",
@@ -1912,7 +2047,10 @@ export function MapCanvas({
             11.5,
           ],
           "text-font": ["Open Sans Semibold"],
-          "text-allow-overlap": true,
+          "text-allow-overlap": false,
+          "text-optional": true,
+          "text-padding": 4,
+          "symbol-sort-key": ["case", ["==", ["get", "kind"], "meeting_room"], 0, 1],
           "text-max-width": 9,
         },
         paint: {
@@ -1984,13 +2122,20 @@ export function MapCanvas({
         }
 
         if (!featureId) {
+          onClearSelectionRef.current();
           return;
         }
 
         onSelectFeatureRef.current(featureId);
       });
 
-      const hasRouteOnActiveLevel = syncRouteBreadcrumbRendering(map);
+      const routeRequestId = ++routeSyncRequestRef.current;
+      const hasRouteOnActiveLevel = await syncRouteRendering(
+        map,
+        routeRef.current,
+        activeLevelRef.current,
+        routeRequestId,
+      );
       const didFocusSelection = syncSelectionState(map);
 
       if (!didFocusSelection) {
@@ -2056,21 +2201,27 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current;
 
-    if (!map || !map.isStyleLoaded()) {
+    if (!map) {
       return;
     }
 
-    const hasRouteOnActiveLevel = syncRouteBreadcrumbRendering(map);
+    runWhenStyleReady(map, () => {
+      const routeRequestId = ++routeSyncRequestRef.current;
 
-    if (!route) {
-      return;
-    }
+      void (async () => {
+        const hasRouteOnActiveLevel = await syncRouteRendering(map, route, activeLevel, routeRequestId);
 
-    if (hasRouteOnActiveLevel && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 720)) {
-      return;
-    }
+        if (routeSyncRequestRef.current !== routeRequestId || mapRef.current !== map || !map.isStyleLoaded() || !route) {
+          return;
+        }
 
-    fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+        if (hasRouteOnActiveLevel && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 720)) {
+          return;
+        }
+
+        fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+      })();
+    });
   }, [activeFramePadding, activeLevel, bearing, collections, levels, pitch, route, sceneMode]);
 
   useEffect(() => {
@@ -2175,61 +2326,43 @@ export function MapCanvas({
   useEffect(() => {
     const map = mapRef.current;
 
-    if (!map || !map.isStyleLoaded()) {
+    if (!map) {
       return;
     }
 
-    const routePathSource = map.getSource(ROUTE_PATH_SOURCE);
-    const routeBreadcrumbSource = map.getSource(ROUTE_BREADCRUMB_SOURCE);
-    const routeCollection = buildRouteCollection(route);
-    const breadcrumbCollection = buildRouteBreadcrumbCollection(route);
+    runWhenStyleReady(map, () => {
+      const routeRequestId = ++routeSyncRequestRef.current;
+      void (async () => {
+        const hasRouteOnActiveLevel = await rebuildRouteSourcesAndLayers(map, route, activeLevel, routeRequestId);
 
-    if (isGeoJsonSource(routePathSource)) {
-      routePathSource.setData(routeCollection);
+        if (routeSyncRequestRef.current !== routeRequestId || mapRef.current !== map || !map.isStyleLoaded()) {
+          return;
+        }
+
+        if (!route) {
+          return;
+        }
+
+        if (hasRouteOnActiveLevel && fitRouteBounds(map, route, activeLevel, activeFramePadding, pitch, bearing, 720)) {
+          return;
+        }
+
+        fitLevelBounds(map, activeLevel, levels, collections, sceneMode, activeFramePadding, 720);
+      })();
+    });
+  }, [routeRevision]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map) {
+      return;
     }
 
-    if (isGeoJsonSource(routeBreadcrumbSource)) {
-      routeBreadcrumbSource.setData(breadcrumbCollection);
-      updateFilters(map, activeLevel);
-      syncRouteBreadcrumbPresentation(map, palette);
-
-      if (map.getLayer("route-path-glow")) {
-        map.moveLayer("route-path-glow");
-      }
-
-      if (map.getLayer("route-path")) {
-        map.moveLayer("route-path");
-      }
-
-      if (map.getLayer("route-breadcrumb-glow")) {
-        map.moveLayer("route-breadcrumb-glow");
-      }
-
-      if (map.getLayer("route-breadcrumb")) {
-        map.moveLayer("route-breadcrumb");
-      }
-
-      if (map.getLayer("route-terminal-glow")) {
-        map.moveLayer("route-terminal-glow");
-      }
-
-      if (map.getLayer("route-terminal")) {
-        map.moveLayer("route-terminal");
-      }
-
-      console.debug("[route:maplibre-fallback] synced breadcrumb route", {
-        activeLevel,
-        hasRoute: Boolean(route),
-        segmentCount: routeCollection.features.length,
-        featureCount: breadcrumbCollection.features.length,
-        hasRouteOnActiveLevel: breadcrumbCollection.features.some((feature) => feature.properties.level === activeLevel),
-      });
-    }
-
-    if (ENABLE_ROUTE_CUSTOM_LAYER) {
-      routeCustomLayerRef.current?.updatePalette(palette);
-      routeCustomLayerRef.current?.updateData(route, activeLevel);
-    }
+    runWhenStyleReady(map, () => {
+      const routeRequestId = ++routeSyncRequestRef.current;
+      void syncRouteRendering(map, route, activeLevel, routeRequestId);
+    });
   }, [activeLevel, palette, route]);
 
   return (

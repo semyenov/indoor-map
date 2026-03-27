@@ -15,6 +15,8 @@ import {
   Armchair,
   ArrowUpDown,
   Check,
+  ChevronDown,
+  ChevronUp,
   Clapperboard,
   Compass,
   Flag,
@@ -53,6 +55,7 @@ type AtlasKind = "room" | "meeting" | "amenity" | "connector" | "workstation";
 type IndoorFeature = IndoorRuntimeData["dataset"]["features"][number];
 type DrawerMode = "search" | "route" | "detail" | "route-result" | "ops";
 type RouteBuilderStep = "from" | "to";
+type InfoDrawerMode = Extract<DrawerMode, "detail" | "route-result">;
 
 type AtlasSpace = {
   id: string;
@@ -289,7 +292,6 @@ const routeSteps = (
   }
 
   pushStep(`Войдите в ${toLabel}`);
-  pushStep(`Вы пришли: ${toLabel}`);
   return steps;
 };
 
@@ -337,6 +339,8 @@ const Ic = {
   Grid: fixedIcon(LayoutGrid, 14),
   Seats: fixedIcon(Armchair, 12),
   Accessible: fixedIcon(Accessibility, 14),
+  ChevronUp: fixedIcon(ChevronUp, 11),
+  ChevronDown: fixedIcon(ChevronDown, 11),
 };
 
 function BottomActionLabel({
@@ -541,6 +545,7 @@ export default function AtlasV4() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMounted, setDrawerMounted] = useState(false);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>("search");
+  const [lastInfoDrawerMode, setLastInfoDrawerMode] = useState<InfoDrawerMode>("detail");
   const [browseQ, setBrowseQ] = useState("");
   const [browseGroup, setBrowseGroup] = useState<GroupKey>("level");
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>("room-l1-lobby");
@@ -552,6 +557,8 @@ export default function AtlasV4() {
   const [routeToGroup, setRouteToGroup] = useState<GroupKey>("level");
   const [routeBuilderStep, setRouteBuilderStep] = useState<RouteBuilderStep>("from");
   const [accessibleOnly, setAccessibleOnly] = useState(false);
+  const [opsSearchQ, setOpsSearchQ] = useState("");
+  const [opsGroupKey, setOpsGroupKey] = useState<GroupKey>("level");
   const [focusRequestId, setFocusRequestId] = useState(0);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [routeRevision, setRouteRevision] = useState(0);
@@ -559,7 +566,9 @@ export default function AtlasV4() {
   const [roomStatuses, setRoomStatuses] = useState<RoomStatuses>({});
   const [occupancyUpdatedAt, setOccupancyUpdatedAt] = useState<Date | null>(null);
   const [zoomCommand, setZoomCommand] = useState<{ id: number; delta: 1 | -1 } | null>(null);
+  const [mapControlsOpen, setMapControlsOpen] = useState(true);
   const topSearchRef = useRef<HTMLInputElement | null>(null);
+  const routeDefaultsAppliedRef = useRef(false);
   const deferredBrowseQuery = useDeferredValue(browseQ);
   const themeVars = ATLAS_THEME_VARS[themeVariant] as Record<string, string>;
 
@@ -704,7 +713,7 @@ export default function AtlasV4() {
   );
 
   const routeChoices = useMemo(
-    () => atlasSpaces.filter((space) => space.routeTargetId !== null),
+    () => atlasSpaces.filter((space) => space.routeTargetId !== null && space.kind !== "connector"),
     [atlasSpaces],
   );
 
@@ -725,6 +734,7 @@ export default function AtlasV4() {
 
   const routeFrom = routeChoiceByTargetId.get(routeFromId) ?? null;
   const routeTo = routeChoiceByTargetId.get(routeToId) ?? null;
+  const hasRouteBuilderSelection = Boolean(routeFrom || routeTo);
   const activeRouteStep = routeBuilderStep === "to" && routeFrom ? "to" : "from";
   const isEditingFrom = activeRouteStep === "from";
   const activeRouteChoiceList = isEditingFrom ? routeFromChoices : routeToChoices;
@@ -758,6 +768,17 @@ export default function AtlasV4() {
   );
   const isWorkspaceDrawerMode = drawerMode === "search" || drawerMode === "route" || drawerMode === "ops";
   const isInfoDrawerMode = drawerMode === "detail" || drawerMode === "route-result";
+  const bottomPanelMode: DrawerMode | null = drawerOpen
+    ? drawerMode
+    : lastInfoDrawerMode === "route-result" && route
+      ? "route-result"
+      : lastInfoDrawerMode === "detail" && selectedFeature
+        ? "detail"
+        : route
+          ? "route-result"
+          : selectedFeature
+            ? "detail"
+            : null;
   const activeViewModeLabel = VIEW_MODES.find((mode) => mode.id === viewMode)?.label ?? viewMode;
   const bottomHeadline = route
     ? `${routeFrom?.name ?? "Старт"} → ${routeTo?.name ?? "Точка назначения"}`
@@ -772,6 +793,10 @@ export default function AtlasV4() {
   const matchedSearchResults = browseQ.trim()
     ? searchOffice(searchEntries, browseQ).map((entry) => atlasSpaces.find((space) => space.featureId === entry.featureId)).filter((space): space is AtlasSpace => Boolean(space))
     : [];
+  const bottomSearchHeadline = browseQ.trim() ? `Поиск: ${browseQ.trim()}` : "Поиск помещений и людей";
+  const bottomSearchMeta = browseQ.trim()
+    ? `${matchedSearchResults.length} совпадений${browsePeople.length > 0 ? ` · ${browsePeople.length} человек` : ""}`
+    : `${browseSpaces.length} помещений${browsePeople.length > 0 ? ` · ${browsePeople.length} человек` : ""}`;
 
   const statusCounts = statusRoomIds.reduce<Record<RoomStatus, number>>(
     (counts, featureId) => {
@@ -783,12 +808,17 @@ export default function AtlasV4() {
   );
 
   const levelRank = new Map(levels.map((level, index) => [level.id, index]));
-  const opsRooms = [...atlasSpaces.filter((space) => space.cap > 0)].sort(
+  const opsAllRooms = [...atlasSpaces.filter((space) => space.cap > 0)].sort(
     (left, right) =>
       (levelRank.get(left.level) ?? Number.MAX_SAFE_INTEGER) - (levelRank.get(right.level) ?? Number.MAX_SAFE_INTEGER) ||
       STATUS_ORDER[left.status] - STATUS_ORDER[right.status] ||
       left.name.localeCompare(right.name),
   );
+  const opsFilteredRooms = useMemo(
+    () => opsAllRooms.filter((space) => matchesQuery(space, opsSearchQ)),
+    [opsAllRooms, opsSearchQ],
+  );
+  const opsRooms = opsFilteredRooms;
   const opsStatusCounts = opsRooms.reduce<Record<RoomStatus, number>>(
     (counts, space) => {
       counts[space.status] += 1;
@@ -828,15 +858,22 @@ export default function AtlasV4() {
   const opsUpdatedLabel = (occupancyUpdatedAt ?? time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   useEffect(() => {
-    if (routeFromId || routeTargets.length === 0) {
+    if (routeDefaultsAppliedRef.current || routeTargets.length === 0) {
       return;
     }
 
     const defaultFrom = routeTargets.find((target) => target.featureId === "room-l1-lobby")?.id ?? routeTargets[0]?.id ?? "";
     const defaultTo = routeTargets.find((target) => target.featureId === "room-l2-cedar")?.id ?? routeTargets[1]?.id ?? defaultFrom;
+    routeDefaultsAppliedRef.current = true;
     setRouteFromId(defaultFrom);
     setRouteToId(defaultTo);
-  }, [routeFromId, routeTargets]);
+  }, [routeTargets]);
+
+  useEffect(() => {
+    if (drawerMode === "detail" || drawerMode === "route-result") {
+      setLastInfoDrawerMode(drawerMode);
+    }
+  }, [drawerMode]);
 
   const onSelectFeature = (featureId: string) => {
     const nextLevel = featureLevel(featureById, featureId);
@@ -851,6 +888,16 @@ export default function AtlasV4() {
 
       if (nextLevel) {
         setActiveLevel(nextLevel);
+      }
+    });
+  };
+
+  const clearSelectedFeature = () => {
+    startTransition(() => {
+      setSelectedFeatureId(null);
+
+      if (drawerMode === "detail") {
+        setDrawerOpen(false);
       }
     });
   };
@@ -915,16 +962,18 @@ export default function AtlasV4() {
 
   const openBottomContextDrawer = () => {
     if (drawerOpen) {
-      if (drawerMode === "detail" || drawerMode === "route-result" || drawerMode === "ops") {
-        setDrawerOpen(false);
-        return;
-      }
+      setDrawerOpen(false);
+      return;
+    }
 
-      if (drawerMode === "search") {
-        openBrowse();
-        return;
-      }
+    if (lastInfoDrawerMode === "route-result" && route) {
+      setDrawerMode("route-result");
+      setDrawerOpen(true);
+      return;
+    }
 
+    if (lastInfoDrawerMode === "detail" && selectedFeature) {
+      setDrawerMode("detail");
       setDrawerOpen(true);
       return;
     }
@@ -1006,6 +1055,15 @@ export default function AtlasV4() {
     setRouteBuilderStep(fromId ? "to" : "from");
   };
 
+  const clearRouteBuilder = () => {
+    setRouteFromId("");
+    setRouteToId("");
+    setRouteFromQ("");
+    setRouteToQ("");
+    setRouteBuilderStep("from");
+    setRouteError(null);
+  };
+
   const clearRoutePoint = (step: RouteBuilderStep) => {
     if (step === "from") {
       setRouteFromId("");
@@ -1085,7 +1143,6 @@ export default function AtlasV4() {
       <div style={S.mapBg}>
         <Suspense fallback={<div style={S.mapLoading}>Загрузка карты…</div>}>
           <LazyMapCanvas
-            key={`map:${themeVariant}:${activeLevel}:${routeRevision}`}
             activeLevel={activeLevel}
             collections={dataset.collections}
             externalSceneMode={viewMode}
@@ -1095,8 +1152,10 @@ export default function AtlasV4() {
             focusRequestId={focusRequestId}
             levels={dataset.levels}
             onSelectFeature={onSelectFeature}
+            onClearSelection={clearSelectedFeature}
             onSelectRoute={onSelectRoute}
             route={route}
+            routeRevision={routeRevision}
             selectableSpaceFeatures={indexes.selectableSpaceFeatures}
             selectedFeatureId={selectedFeatureId}
             showControls={false}
@@ -1134,6 +1193,7 @@ export default function AtlasV4() {
                 <button
                   style={S.searchClearBtn}
                   className="hud-btn"
+                  aria-label="Очистить поиск"
                   onClick={() => {
                     setBrowseQ("");
                     closeSearch();
@@ -1145,71 +1205,10 @@ export default function AtlasV4() {
               ) : null}
               <kbd style={S.kbd}>/</kbd>
             </div>
-          </div>
-        </div>
-
-        <div style={S.topSceneBlock}>
-          <div style={S.topSectionLabel}>Сцена</div>
-          <div style={S.viewModes}>
-            {VIEW_MODES.map((mode) => (
-              <button
-                key={mode.id}
-                style={{ ...S.segmentBtn, ...S.segmentBtnEqual, ...(viewMode === mode.id ? S.segmentBtnActive : {}) }}
-                className="hud-btn hud-segment-btn"
-                data-active={viewMode === mode.id ? "true" : undefined}
-                onClick={() => setViewMode(mode.id)}
-                type="button"
-              >
-                {mode.id === "plan" ? <Ic.Floor /> : mode.id === "explore" ? <Ic.Compass /> : <Ic.Eye />}
-                <span>{mode.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={S.topActionBlock}>
-          <div style={S.topSectionLabel}>Управление</div>
-          <div style={S.topActionRow}>
-            <div style={S.topFloorGroup}>
-              {levels.map((level) => (
-                <button
-                  key={level.id}
-                  style={{ ...S.segmentBtn, ...S.segmentBtnMono, ...(activeLevel === level.id ? S.segmentBtnActive : {}) }}
-                  className="hud-btn hud-segment-btn"
-                  data-active={activeLevel === level.id ? "true" : undefined}
-                  onClick={() => setActiveLevel(level.id)}
-                  type="button"
-                >
-                  {level.id}
-                </button>
-              ))}
-            </div>
-            <div style={S.topFloorGroup}>
-              {THEME_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  style={{ ...S.segmentBtn, ...(themeVariant === option.id ? S.segmentBtnActive : {}) }}
-                  className="hud-btn hud-segment-btn"
-                  data-active={themeVariant === option.id ? "true" : undefined}
-                  onClick={() => setThemeVariant(option.id)}
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div style={S.zoomStack}>
-              <button style={S.zoomBtn} className="hud-btn hud-segment-btn" onClick={() => queueZoom(-1)} type="button">
-                −
-              </button>
-              <div style={S.zoomDivider} />
-              <button style={S.zoomBtn} className="hud-btn hud-segment-btn" onClick={() => queueZoom(1)} type="button">
-                +
-              </button>
-            </div>
             <button
               style={S.opsBtn}
               className="hud-btn"
+              aria-label="Панель операций"
               onClick={() => {
                 if (drawerOpen && drawerMode === "ops") {
                   closeDrawer();
@@ -1225,118 +1224,174 @@ export default function AtlasV4() {
                 <span style={{ ...S.liveDot, background: ST.available.c, width: 6, height: 6 }} /> {statusCounts.available} свободно
               </span>
             </button>
-            <div style={S.syncChip}>
-              <span style={{ ...S.liveDot, background: "#34d399", width: 5, height: 5 }} />
-              {(occupancyUpdatedAt ?? time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </div>
           </div>
         </div>
+
       </header>
+
+      <div style={S.mapControls}>
+        <div style={S.mapControlsHeader}>
+          <span style={S.topSectionLabel}>Управление</span>
+          <button
+            style={S.mapControlsToggle}
+            className="hud-btn"
+            aria-label={mapControlsOpen ? "Свернуть панель управления" : "Развернуть панель управления"}
+            onClick={() => setMapControlsOpen((v) => !v)}
+            type="button"
+          >
+            {mapControlsOpen ? <Ic.ChevronUp /> : <Ic.ChevronDown />}
+          </button>
+        </div>
+        {mapControlsOpen && <div style={S.mapControlsRow}>
+          <div style={S.viewModes}>
+            {VIEW_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                style={{ ...S.segmentBtn, ...S.segmentBtnEqual, ...(viewMode === mode.id ? S.segmentBtnActive : {}) }}
+                className="hud-btn hud-segment-btn"
+                data-active={viewMode === mode.id ? "true" : undefined}
+                onClick={() => setViewMode(mode.id)}
+                type="button"
+              >
+                {mode.id === "plan" ? <Ic.Floor /> : mode.id === "explore" ? <Ic.Compass /> : <Ic.Eye />}
+                <span>{mode.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>}
+        {mapControlsOpen && <div style={S.mapControlsRow}>
+          <div style={S.topFloorGroup}>
+            {levels.map((level) => (
+              <button
+                key={level.id}
+                style={{ ...S.segmentBtn, ...S.segmentBtnMono, ...(activeLevel === level.id ? S.segmentBtnActive : {}) }}
+                className="hud-btn hud-segment-btn"
+                data-active={activeLevel === level.id ? "true" : undefined}
+                onClick={() => setActiveLevel(level.id)}
+                type="button"
+              >
+                {level.id}
+              </button>
+            ))}
+          </div>
+          <div style={S.topFloorGroup}>
+            {THEME_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                style={{ ...S.segmentBtn, ...(themeVariant === option.id ? S.segmentBtnActive : {}) }}
+                className="hud-btn hud-segment-btn"
+                data-active={themeVariant === option.id ? "true" : undefined}
+                onClick={() => setThemeVariant(option.id)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div style={S.zoomStack}>
+            <button style={{ ...S.segmentBtn, ...S.segmentBtnMono }} className="hud-btn hud-segment-btn" onClick={() => queueZoom(-1)} aria-label="Уменьшить масштаб" type="button">
+              −
+            </button>
+            <button style={{ ...S.segmentBtn, ...S.segmentBtnMono }} className="hud-btn hud-segment-btn" onClick={() => queueZoom(1)} aria-label="Увеличить масштаб" type="button">
+              +
+            </button>
+          </div>
+        </div>}
+      </div>
 
       <div style={S.bottomBar}>
         <button
-          style={{ ...S.bottomContextBlock, ...(drawerOpen && drawerMode === "route" ? S.bottomContextBlockRoute : {}) }}
+          style={S.bottomContextBlock}
           className="hud-btn"
+          aria-label="Открыть панель"
           onClick={openBottomContextDrawer}
           type="button"
         >
+          <div style={S.bottomContextStrip} />
           <div style={S.bottomContext}>
             <div style={S.bottomModuleLabel}>
-              {drawerOpen && drawerMode === "route"
+              {bottomPanelMode === "route"
                 ? "Построение маршрута"
-                : drawerOpen && drawerMode === "route-result"
+                : bottomPanelMode === "route-result"
                   ? "Активный маршрут"
-                  : drawerOpen && drawerMode === "detail"
-                    ? "Выбор"
-                    : drawerOpen && drawerMode === "ops"
+                  : bottomPanelMode === "detail"
+                    ? "Детали"
+                    : bottomPanelMode === "search"
+                      ? "Поиск"
+                      : bottomPanelMode === "ops"
                       ? "Операции"
                       : route
                         ? "Активный маршрут"
-                        : selectedFeature
-                          ? "Выбор"
+                          : selectedFeature
+                            ? "Выбранный объект"
                           : "Пространство"}
             </div>
             <div style={S.bottomHeadline}>
-              {drawerOpen && drawerMode === "route" ? (
+              {bottomPanelMode === "route" ? (
                 <>
                   {routeFrom?.name ?? "Выберите старт"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Выберите точку назначения"}
                 </>
-              ) : drawerOpen && drawerMode === "route-result" && route ? (
+              ) : bottomPanelMode === "route-result" && route ? (
                 <>
                   {routeFrom?.name ?? "Старт"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Точка назначения"}
                 </>
-              ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
+              ) : bottomPanelMode === "detail" && selectedFeature ? (
                 selectedFeature.properties.employee ?? selectedFeature.properties.name
-              ) : drawerOpen && drawerMode === "ops" ? (
+              ) : bottomPanelMode === "search" ? (
+                bottomSearchHeadline
+              ) : bottomPanelMode === "ops" ? (
                 "Оперативная сводка"
               ) : (
                 bottomHeadline
               )}
             </div>
             <div style={S.bottomMetaRow}>
-              {drawerOpen && drawerMode === "route" ? (
+              {bottomPanelMode === "route" ? (
                 <>
                   <span style={S.bottomMeta}>{routeFrom && routeTo ? "Маршрут готов к построению" : "Выберите обе точки, чтобы продолжить"}</span>
-                  {routeFrom ? <span style={S.bottomChip}>{routeFrom.level}</span> : null}
-                  {routeTo ? <span style={S.bottomChip}>{routeTo.level}</span> : null}
                 </>
-              ) : drawerOpen && drawerMode === "route-result" && route ? (
+              ) : bottomPanelMode === "route-result" && route ? (
                 <>
                   <span style={S.bottomMeta}>{routeSummaryDistance} м · {routeDurationLabel(route.summary.distance)}</span>
-                  {route.summary.levels.map((level) => (
-                    <span key={level} style={S.bottomChip}>{level}</span>
-                  ))}
                 </>
-              ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
+              ) : bottomPanelMode === "detail" && selectedFeature ? (
                 <>
                   <span style={S.bottomMeta}>{selectedFeature.properties.department ?? "Общие"} · {selectedFeature.properties.level}</span>
-                  <span style={S.bottomChip}>{selectedStatusLabel}</span>
                 </>
-              ) : drawerOpen && drawerMode === "ops" ? (
+              ) : bottomPanelMode === "search" ? (
+                <>
+                  <span style={S.bottomMeta}>{bottomSearchMeta}</span>
+                </>
+              ) : bottomPanelMode === "ops" ? (
                 <>
                   <span style={S.bottomMeta}>{statusCounts.available} свободно · {statusCounts.occupied} занято</span>
-                  <span style={S.bottomChip}>Все уровни</span>
                 </>
               ) : (
                 <>
                   <span style={S.bottomMeta}>{bottomMeta}</span>
-                  {route ? <span style={S.bottomChip}>{route.summary.levels.join(" · ")}</span> : null}
                 </>
               )}
             </div>
+          </div>
+          <div style={S.bottomExpandArrow}>
+            {drawerOpen ? <Ic.ChevronDown /> : <Ic.ChevronUp />}
           </div>
         </button>
 
         {drawerOpen && drawerMode === "route" ? (
           <div style={S.bottomRouteActions}>
+            <div style={S.bottomSecondaryGroup}>
+              <button
+                style={{ ...S.bottomSegBtn, opacity: hasRouteBuilderSelection ? 1 : 0.45, pointerEvents: hasRouteBuilderSelection ? "auto" : "none" }}
+                className="hud-btn hud-segment-btn"
+                onClick={clearRouteBuilder}
+                type="button"
+              >
+                <BottomActionLabel icon={<Ic.ClearRoute />} label="Очистить" />
+              </button>
+            </div>
             <button
-              style={{ ...S.ghostBtn, opacity: routeFrom && routeTo ? 1 : 0.45, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
-              className="hud-btn"
-              onClick={swapRouteEndpoints}
-              type="button"
-            >
-              <BottomActionLabel icon={<Ic.Swap />} label="Поменять местами" />
-            </button>
-            <button
-              style={{ ...S.ghostBtn, opacity: routeFrom || routeTo ? 1 : 0.45, pointerEvents: routeFrom || routeTo ? "auto" : "none" }}
-              className="hud-btn"
-              onClick={() => {
-                setRouteFromId("");
-                setRouteToId("");
-                setRouteFromQ("");
-                setRouteToQ("");
-                setRouteBuilderStep("from");
-                setRouteError(null);
-              }}
-              type="button"
-            >
-              <BottomActionLabel icon={<Ic.ClearRoute />} label="Очистить" />
-            </button>
-            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть" />
-            </button>
-            <button
-              style={{ ...S.accentBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
+              style={{ ...S.bottomPrimaryBtn, opacity: routeFrom && routeTo ? 1 : 0.35, pointerEvents: routeFrom && routeTo ? "auto" : "none" }}
               className="hud-accent"
               onClick={buildRoute}
               type="button"
@@ -1346,14 +1401,13 @@ export default function AtlasV4() {
           </div>
         ) : drawerOpen && drawerMode === "route-result" && route ? (
           <div style={S.bottomRouteActions}>
-            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть" />
-            </button>
-            <button style={S.ghostBtn} className="hud-btn" onClick={() => openRouteBuilder()} type="button">
-              <BottomActionLabel icon={<Ic.RouteEdit />} label="Изменить маршрут" />
-            </button>
+            <div style={S.bottomSecondaryGroup}>
+              <button style={S.bottomSegBtn} className="hud-btn hud-segment-btn" onClick={() => openRouteBuilder()} type="button">
+                <BottomActionLabel icon={<Ic.RouteEdit />} label="Изменить маршрут" />
+              </button>
+            </div>
             <button
-              style={S.accentBtn}
+              style={S.bottomPrimaryBtn}
               className="hud-accent"
               onClick={() => {
                 setRoute(null);
@@ -1368,19 +1422,18 @@ export default function AtlasV4() {
           </div>
         ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
           <div style={S.bottomRouteActions}>
-            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть" />
-            </button>
+            <div style={S.bottomSecondaryGroup}>
+              <button
+                style={{ ...S.bottomSegBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
+                className="hud-btn hud-segment-btn"
+                onClick={openRouteFromSelected}
+                type="button"
+              >
+                <BottomActionLabel icon={<Ic.RouteFrom />} label="Маршрут отсюда" />
+              </button>
+            </div>
             <button
-              style={{ ...S.ghostBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
-              className="hud-btn"
-              onClick={openRouteFromSelected}
-              type="button"
-            >
-              <BottomActionLabel icon={<Ic.RouteFrom />} label="Маршрут отсюда" />
-            </button>
-            <button
-              style={{ ...S.accentBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
+              style={{ ...S.bottomPrimaryBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
               className="hud-accent"
               onClick={openRouteToSelected}
               type="button"
@@ -1389,21 +1442,13 @@ export default function AtlasV4() {
             </button>
           </div>
         ) : drawerOpen && drawerMode === "search" ? (
-          <div style={S.bottomRouteActions}>
-            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть поиск" />
-            </button>
-          </div>
+          <div style={S.bottomRouteActions} />
         ) : drawerOpen && drawerMode === "ops" ? (
-          <div style={S.bottomRouteActions}>
-            <button style={S.ghostBtn} className="hud-btn" onClick={closeDrawer} type="button">
-              <BottomActionLabel icon={<Ic.ClosePanel />} label="Закрыть панель" />
-            </button>
-          </div>
+          <div style={S.bottomRouteActions} />
         ) : (
           <div style={S.bottomActionPrimary}>
             <button
-              style={{ ...S.fab, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
+              style={{ ...S.bottomPrimaryBtn, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
               className="hud-accent"
               data-active={drawerOpen && drawerMode === "route" ? "true" : undefined}
               onClick={() => {
@@ -1465,9 +1510,6 @@ export default function AtlasV4() {
                         {browseQ.trim() ? `${matchedSearchResults.length} совпадений` : `${browseSpaces.length} помещений`}
                         {browsePeople.length > 0 ? ` · ${browsePeople.length} человек` : ""}
                       </span>
-                      <button style={S.iconBtn} className="hud-btn" onClick={closeSearch} type="button">
-                        <Ic.X />
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1516,122 +1558,97 @@ export default function AtlasV4() {
               <div style={S.routePanel}>
                 <div style={S.bpHeader}>
                   <div style={S.rpTopToolbar}>
-                    <div style={S.rpTopFlow}>
-                      <div style={S.rpTopFlowText}>
-                        <div style={S.rpTopHeadlineRow}>
-                          <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
-                        </div>
-                        <div style={S.rpTopFlowSubline}>{activeRouteSubtitle}</div>
-                      </div>
-
+                    <div style={S.rpPlannerBar}>
+                      {[
+                        { step: "from" as const, title: "Старт", point: routeFrom, helper: "Выберите, откуда начать маршрут." },
+                        { step: "to" as const, title: "Назначение", point: routeTo, helper: "Выберите, куда нужно попасть." },
+                      ].map(({ step, title, point, helper }, plannerIndex) => {
+                        const isActive = activeRouteStep === step;
+                        return (
+                          <Fragment key={step}>
+                            {plannerIndex === 1 ? (
+                              <div style={S.rpSwapDock}>
+                                <button style={S.rpSwapBtn} className="hud-btn" onClick={swapRouteEndpoints} type="button">
+                                  <Ic.Swap />
+                                </button>
+                              </div>
+                            ) : null}
+                            <div
+                              style={{ ...S.rpPlannerCard, ...(isActive ? S.rpPlannerCardActive : {}) }}
+                              onClick={() => setRouteBuilderStep(step)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  setRouteBuilderStep(step);
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                            >
+                              <div style={S.rpStepCard}>
+                                <div style={S.rpStepCardTop}>
+                                  <span style={S.panelSectionLabel}>{title}</span>
+                                  {point ? (
+                                    <button
+                                      style={S.rpStepClearBtn}
+                                      className="hud-btn"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        clearRoutePoint(step);
+                                      }}
+                                      type="button"
+                                    >
+                                      <Ic.X s={10} />
+                                    </button>
+                                  ) : null}
+                                </div>
+                                {point ? (
+                                  <div style={S.rpStepCardBody}>
+                                    <div style={S.rpStepCardName}>{point.name}</div>
+                                    <div style={S.rpStepCardMeta}>
+                                      <span style={S.rpStepMiniChip}>{point.level}</span>
+                                      <span style={S.rpStepMiniChip}>{point.kindLabel}</span>
+                                      {point.cap > 0 ? <span style={S.rpStepMiniChip}>{point.cap} мест</span> : null}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={S.rpStepCardPlaceholder}>{helper}</div>
+                                )}
+                              </div>
+                            </div>
+                          </Fragment>
+                        );
+                      })}
                     </div>
-                    <div style={S.rpTopAside}>
-                      
-                      <div style={S.rpTopActions}>
-                        <button
-                          type="button"
-                          title="Маршрут без барьеров"
-                          style={{ ...S.rpTopToggle, ...(accessibleOnly ? S.rpTopToggleActive : {}) }}
-                          className="hud-btn"
-                          data-active={accessibleOnly ? "true" : undefined}
-                          onClick={() => setAccessibleOnly((v) => !v)}
-                        >
-                          <Ic.Accessible />
-                          <span>{accessibleOnly ? "Без барьеров" : "Любой путь"}</span>
-                        </button>
-                        <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                          <Ic.X />
-                        </button>
-                      </div>
+                    <div style={S.rpTopActions}>
+                      <button
+                        type="button"
+                        style={{ ...S.rpTopToggle, opacity: hasRouteBuilderSelection ? 1 : 0.45, pointerEvents: hasRouteBuilderSelection ? "auto" : "none" }}
+                        className="hud-btn"
+                        onClick={clearRouteBuilder}
+                      >
+                        <Ic.ClearRoute />
+                        <span>Очистить</span>
+                      </button>
+                      <button
+                        type="button"
+                        title="Маршрут без барьеров"
+                        style={{ ...S.rpTopToggle, ...(accessibleOnly ? S.rpTopToggleActive : {}) }}
+                        className="hud-btn"
+                        data-active={accessibleOnly ? "true" : undefined}
+                        onClick={() => setAccessibleOnly((v) => !v)}
+                      >
+                        <Ic.Accessible />
+                        <span>{accessibleOnly ? "Без барьеров" : "Любой путь"}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
                 <div style={S.rpFlowShell}>
-                  <div style={S.rpPlannerBar}>
-                    {[
-                      { step: "from" as const, title: "Старт", point: routeFrom, helper: "Выберите, откуда начать маршрут." },
-                      { step: "to" as const, title: "Назначение", point: routeTo, helper: "Выберите, куда нужно попасть." },
-                    ].map(({ step, title, point, helper }, plannerIndex) => {
-                      const isActive = activeRouteStep === step;
-                      return (
-                        <Fragment key={step}>
-                          {plannerIndex === 1 ? (
-                            <div style={S.rpSwapDock}>
-                              <button style={S.rpSwapBtn} className="hud-btn" onClick={swapRouteEndpoints} type="button">
-                                <Ic.Swap />
-                              </button>
-                            </div>
-                          ) : null}
-                          <div
-                            style={{ ...S.rpPlannerCard, ...(isActive ? S.rpPlannerCardActive : {}) }}
-                            onClick={() => setRouteBuilderStep(step)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                setRouteBuilderStep(step);
-                              }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                          >
-                            <div style={S.rpStepCard}>
-                              <div style={S.rpStepCardTop}>
-                                <span style={S.panelSectionLabel}>{title}</span>
-                                <span
-                                  style={{
-                                    ...S.rpActiveStateChip,
-                                    ...(isActive ? null : S.rpActiveStateChipHidden),
-                                  }}
-                                >
-                                  Активно
-                                </span>
-                              </div>
-                              {point ? (
-                                <div style={S.rpStepCardBody}>
-                                  <div style={S.rpStepCardName}>{point.name}</div>
-                                  <div style={S.rpStepCardMeta}>
-                                    <span style={S.rpStepMiniChip}>{point.level}</span>
-                                    <span style={S.rpStepMiniChip}>{point.kindLabel}</span>
-                                    {point.cap > 0 ? <span style={S.rpStepMiniChip}>{point.cap} мест</span> : null}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div style={S.rpStepCardBody}>
-                                  <div style={S.rpStepCardPlaceholder}>{helper}</div>
-                                </div>
-                              )}
-                              <div style={S.rpStepCardActions}>
-                                <button
-                                  style={{ ...S.ghostBtn, ...S.rpStepAction }}
-                                  className="hud-btn"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setRouteBuilderStep(step);
-                                  }}
-                                  type="button"
-                                >
-                                  {point ? "Изменить" : "Выбрать"}
-                                </button>
-                                {point ? (
-                                  <button
-                                    style={{ ...S.iconBtn, width: 28, height: 28 }}
-                                    className="hud-btn"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      clearRoutePoint(step);
-                                    }}
-                                    type="button"
-                                  >
-                                    <Ic.X s={10} />
-                                  </button>
-                                ) : null}
-                              </div>
-                            </div>
-                          </div>
-                        </Fragment>
-                      );
-                    })}
-                  </div>
+                  {/* <div style={S.rpTopFlow}>
+                    <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
+                    <div style={S.rpTopFlowSubline}>{activeRouteSubtitle}</div>
+                  </div> */}
 
                   <div style={S.rpStage}>
                     <div style={S.rpStageControls} className="hud-focus-shell">
@@ -1689,17 +1706,6 @@ export default function AtlasV4() {
 
             {drawerMode === "route-result" && route ? (
               <div style={S.drawerInfoPanel}>
-                <div style={S.infoDrawerHeader}>
-                  <div style={S.infoDrawerHeaderMain}>
-                    <span style={S.panelSectionLabel}>Маршрут</span>
-                    <div style={S.infoDrawerHeaderTitle}>
-                      {routeFrom?.name ?? "Старт"} <span style={{ color: T.muted }}>→</span> {routeTo?.name ?? "Точка назначения"}
-                    </div>
-                  </div>
-                  <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                    <Ic.X />
-                  </button>
-                </div>
                 <div style={S.sidePanelBody}>
                   <div style={S.rrSummaryCard}>
                     <div style={S.rrSummaryMain}>
@@ -1751,82 +1757,60 @@ export default function AtlasV4() {
 
             {drawerMode === "detail" && selectedFeature ? (
               <div style={S.drawerInfoPanel}>
-                <div style={S.infoDrawerHeader}>
-                  <div style={S.infoDrawerHeaderMain}>
-                    <span style={S.panelSectionLabel}>
-                      {selectedFeature.properties.employee ? "Сотрудник" : "Пространство"}
-                    </span>
-                    <div style={S.infoDrawerHeaderTitle}>
-                      {selectedFeature.properties.employee ?? selectedFeature.properties.name}
-                    </div>
-                  </div>
-                  <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                    <Ic.X />
-                  </button>
-                </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "0 16px 10px", flexWrap: "wrap" as const }}>
-                  <span style={{ ...S.statusPill, color: ST[selectedStatus].c, background: ST[selectedStatus].bg }}>
-                    {selectedStatusLabel}
-                  </span>
-                  {selectedSpace && selectedSpace.cap > 0 ? (
-                    <span style={S.infoChip}>{selectedSpace.cap} мест</span>
-                  ) : null}
-                </div>
                 <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
                   {(() => {
                     const equipment = selectedFeature.properties.equipment ?? [];
                     const hasEquipment = equipment.length > 0;
                     const hasSubtitle = Boolean(selectedFeature.properties.subtitle);
                     const hasCapacity = (selectedFeature.properties.capacity ?? 0) > 0;
+                    const heroSubtitle = selectedFeature.properties.employee
+                      ? selectedFeature.properties.name
+                      : selectedFeature.properties.subtitle ?? "Доступный узел пространства";
 
                     return (
                       <>
-                  {selectedFeature.properties.employee ? (
-                    <div style={S.detailSummaryCard}>
-                      <div style={S.personAv}>{selectedFeature.properties.employee[0]}</div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600 }}>{selectedFeature.properties.employee}</div>
-                        <div style={{ fontSize: 11, color: T.muted }}>{selectedFeature.properties.name}</div>
-                      </div>
-                    </div>
-                  ) : null}
-                  {hasSubtitle || hasCapacity ? (
-                    <div style={S.detailSummaryCard}>
-                      <div style={S.detailSummaryContent}>
-                        <div style={S.detailSummaryRow}>
-                          {hasSubtitle ? (
-                            <div style={S.detailSummaryText}>{selectedFeature.properties.subtitle}</div>
-                          ) : <div />}
-                          <div style={S.detailSummaryMeta}>
-                            <span style={S.infoChip}>{selectedFeature.properties.department ?? "Общие"}</span>
-                            {hasCapacity ? <span style={S.infoChip}>{selectedFeature.properties.capacity} мест</span> : null}
+                        {hasSubtitle && !selectedFeature.properties.employee ? (
+                          <div style={S.detailSectionCard}>
+                            <div style={S.detailSectionLabel}>Описание</div>
+                            <div style={S.detailSectionText}>{selectedFeature.properties.subtitle}</div>
                           </div>
+                        ) : null}
+
+                        <div style={S.detailMetaGrid}>
+                          {[
+                            ["Отдел", selectedFeature.properties.department ?? "Общие"],
+                            ["Этаж", selectedFeature.properties.level],
+                            ["Тип", selectedSpace?.kindLabel ?? "–"],
+                            ["Вместимость", (selectedSpace?.cap ?? 0) > 0 ? `${selectedSpace?.cap} мест` : "–"],
+                          ].map(([label, value]) => (
+                            <div key={label} style={S.detailMetaCell}>
+                              <span style={S.detailMetaLabel}>{label}</span>
+                              <span style={S.detailMetaValue}>{value}</span>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    </div>
-                  ) : null}
-                  <div style={S.detailMetaGrid}>
-                    {[
-                      ["Отдел", selectedFeature.properties.department ?? "Общие"],
-                      ["Этаж", selectedFeature.properties.level],
-                      ["Тип", selectedSpace?.kindLabel ?? "–"],
-                      ["Вместимость", (selectedSpace?.cap ?? 0) > 0 ? `${selectedSpace?.cap} мест` : "–"],
-                    ].map(([label, value]) => (
-                      <div key={label} style={S.detailMetaCell}>
-                        <span style={{ fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" }}>{label}</span>
-                        <span style={{ fontSize: 12, fontWeight: 600 }}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {hasEquipment ? (
-                    <div style={S.detailEquipmentRow}>
-                      {equipment.map((equipment: string) => (
-                        <span key={equipment} style={S.infoChip}>
-                          {equipment}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
+
+                        {hasEquipment ? (
+                          <div style={S.detailSectionCard}>
+                            <div style={S.detailSectionLabel}>Оснащение</div>
+                            <div style={S.detailEquipmentRow}>
+                              {equipment.map((equipment: string) => (
+                                <span key={equipment} style={S.infoChip}>
+                                  {equipment}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {selectedFeature.properties.employee ? (
+                          <div style={S.detailSectionCard}>
+                            <div style={S.detailSectionLabel}>Рабочее место</div>
+                            <div style={S.detailSectionText}>
+                              {selectedFeature.properties.name}
+                            </div>
+                          </div>
+                        ) : null}
                       </>
                     );
                   })()}
@@ -1836,58 +1820,30 @@ export default function AtlasV4() {
 
             {drawerMode === "ops" ? (
               <div style={S.opsWorkspacePanel}>
-                <div style={S.bpHeader}>
-                  <div style={S.opsWorkspaceToolbar}>
-                    <div style={S.opsWorkspaceToolbarMain}>
-                      <div style={S.rpTopFlowTitle}>Оперативная сводка</div>
-                      <div style={S.rpTopFlowSubline}>Сводка по этажу, общему статусу и живым помещениям в одном рабочем shell.</div>
-                    </div>
-                    <div style={S.opsWorkspaceToolbarMeta}>
-                      <span style={S.opsShellLiveTag}>Обновлено {opsUpdatedLabel}</span>
-                      <button style={S.iconBtn} className="hud-btn" onClick={closeDrawer} type="button">
-                        <Ic.X />
-                      </button>
-                    </div>
-                  </div>
-                </div>
                 <div style={S.opsWorkspaceBody}>
                   <div style={S.opsShell}>
                     <div style={S.opsShellHero}>
-                      <div style={S.opsShellHeroTop}>
-                        <div style={S.opsShellLeadCard}>
-                          <span style={S.panelSectionLabel}>Все уровни</span>
-                          <div style={S.opsShellLeadValueRow}>
-                            <span style={{ ...S.opsHeroMetric, color: availableStatusConfig.c }}>{opsStatusCounts.available}</span>
-                            <div style={S.opsShellLeadMeta}>
-                              <span style={S.opsHeroMetricLabel}>свободно сейчас</span>
-                              <div style={S.panelChipRow}>
-                                <span style={S.infoChip}>{opsLevelSummaries.length} уровня</span>
-                                <span style={S.infoChip}>{opsRoomCount} помещений</span>
-                              </div>
-                            </div>
+                      <div style={S.opsHeroSummaryRow}>
+                        <div style={S.opsHeroMetricCard}>
+                          <div style={S.opsHeroMetricValueRow}>
+                            <span style={{ ...S.opsHeroMetricValue, color: availableStatusConfig.c }}>
+                              {opsStatusCounts.available}
+                            </span>
+                            <span style={S.opsHeroMetricUnit}>СВОБОДНО</span>
                           </div>
+                          <div style={S.opsHeroMetricSubtext}>{opsAvailabilityRate}% из {opsRoomCount}</div>
                         </div>
-                        <div style={S.opsShellHeroSummary}>
-                          <div style={S.opsHeroCopy}>
-                            <div style={S.opsHeroTitle}>Оперативная загрузка пространства</div>
-                            <div style={S.sidePanelSubline}>
-                              Доступно {opsAvailabilityRate}% помещений. В использовании сейчас {opsOccupiedNow} из {opsRoomCount}.
+                        <div style={S.opsMetricsGrid}>
+                          {[
+                            { label: "СВОБОДНО", value: opsStatusCounts.available, color: availableStatusConfig.c },
+                            { label: "ЗАНЯТО", value: opsStatusCounts.occupied + opsStatusCounts.focus, color: "#f87171" },
+                            { label: "ВНЕ СЕТИ", value: opsStatusCounts.offline, color: T.muted },
+                          ].map(({ label, value, color }) => (
+                            <div key={label} style={S.opsMetricItem}>
+                              <span style={S.opsMetricLabel}>{label}</span>
+                              <span style={{ ...S.opsMetricValue, color }}>{value}</span>
                             </div>
-                          </div>
-                          <div style={S.opsShellHeroFacts}>
-                            <div style={S.opsShellFact}>
-                              <span style={S.opsShellFactLabel}>В работе</span>
-                              <span style={S.opsShellFactValue}>{opsOccupiedNow}</span>
-                            </div>
-                            <div style={S.opsShellFact}>
-                              <span style={S.opsShellFactLabel}>Вне сети</span>
-                              <span style={S.opsShellFactValue}>{opsStatusCounts.offline}</span>
-                            </div>
-                            <div style={S.opsShellFact}>
-                              <span style={S.opsShellFactLabel}>Покрытие</span>
-                              <span style={S.opsShellFactValue}>{opsAvailabilityRate}%</span>
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
                       <div style={S.opsBreakdownBar}>
@@ -1909,112 +1865,59 @@ export default function AtlasV4() {
                           );
                         })}
                       </div>
-                      <div style={S.opsShellMetricRail}>
-                        <div style={S.opsMetaCard}>
-                          <span style={S.opsMetaLabel}>ДОСТУПНОСТЬ</span>
-                          <span style={S.opsMetaValue}>{opsAvailabilityRate}%</span>
-                        </div>
-                        <div style={S.opsMetaCard}>
-                          <span style={S.opsMetaLabel}>ЗАГРУЗКА</span>
-                          <span style={S.opsMetaValue}>{opsLoadRate}%</span>
-                        </div>
-                        <div style={S.opsMetaCard}>
-                          <span style={S.opsMetaLabel}>ВНЕ СЕТИ</span>
-                          <span style={S.opsMetaValue}>{opsStatusCounts.offline}</span>
-                        </div>
-                      </div>
                     </div>
 
-                    <div style={S.opsLevelRail}>
-                      {opsLevelSummaries.map((summary) => (
-                        <button
-                          key={summary.level}
-                          style={{ ...S.opsLevelCard, ...(activeLevel === summary.level ? S.opsLevelCardActive : {}) }}
-                          className="hud-card"
-                          onClick={() => setActiveLevel(summary.level)}
-                          type="button"
-                        >
-                          <div style={S.opsLevelCardTop}>
-                            <span style={S.panelSectionLabel}>{summary.level}</span>
-                            <span style={S.infoChip}>{summary.rooms.length} помещений</span>
-                          </div>
-                          <div style={S.opsLevelCardBody}>
-                            <span style={{ ...S.opsLevelCardValue, color: availableStatusConfig.c }}>{summary.counts.available}</span>
-                            <span style={S.opsLevelCardMeta}>свободно · {summary.loadRate}% загрузка</span>
-                          </div>
-                          <div style={S.opsLevelCardStats}>
-                            <span style={S.opsLevelCardStat}>Занято {summary.counts.occupied}</span>
-                            <span style={S.opsLevelCardStat}>Фокус {summary.counts.focus}</span>
-                            <span style={S.opsLevelCardStat}>Вне сети {summary.counts.offline}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={S.opsShellSection}>
-                      <div style={S.sidePanelSectionHeader}>
-                        <span style={S.panelSectionLabel}>Живые помещения</span>
-                        <div style={S.panelChipRow}>
-                          <span style={S.infoChip}>{opsRooms.length} позиций</span>
-                          <span style={S.infoChip}>{opsStatusCounts.available} свободно</span>
+                    <div style={{ ...S.rpStage, ...S.opsSelectorStage }}>
+                      {/* Search and grouping controls */}
+                      <div style={S.rpStageControls} className="hud-focus-shell">
+                        <div style={S.rpColSearch}>
+                          <Ic.Search s={13} />
+                          <input
+                            style={S.rpColInput}
+                            placeholder="Поиск помещений…"
+                            value={opsSearchQ}
+                            onChange={(event) => setOpsSearchQ(event.target.value)}
+                          />
+                          {opsSearchQ ? (
+                            <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={() => setOpsSearchQ("")} type="button">
+                              <Ic.X s={10} />
+                            </button>
+                          ) : null}
+                        </div>
+                        <div style={S.rpColToolbar}>
+                          <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                          {GROUP_OPTIONS.slice(0, 3).map((group) => (
+                            <button
+                              key={group.key}
+                              style={{ ...S.pillSm, ...(opsGroupKey === group.key ? S.pillSmActive : {}) }}
+                              className="hud-btn"
+                              data-active={opsGroupKey === group.key ? "true" : undefined}
+                              onClick={() => setOpsGroupKey(group.key)}
+                              type="button"
+                            >
+                              {group.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                      <div style={S.opsShellSectionIntro}>
-                        <span style={S.sidePanelSubline}>Все уровни в одном списке. Выбор карточки переключит карту на нужный этаж.</span>
-                      </div>
-                      <div style={S.opsLevelGroupStack}>
-                        {opsLevelSummaries.map((summary) => (
-                          <div key={summary.level} style={S.opsLevelGroup}>
-                            <div style={S.opsLevelGroupHeader}>
-                              <div style={S.opsLevelGroupTitleRow}>
-                                <span style={S.opsLevelBadge}>{summary.level}</span>
-                                <span style={S.opsLevelGroupTitle}>{summary.rooms.length} помещений</span>
-                              </div>
-                              <div style={S.panelChipRow}>
-                                <span style={S.infoChip}>{summary.counts.available} свободно</span>
-                                <span style={S.infoChip}>{summary.counts.occupied} занято</span>
-                              </div>
-                            </div>
-                            <div style={S.opsRoomGrid}>
-                              {summary.rooms.map((space) => {
-                                const config = ST[space.status];
-                                return (
-                                  <button
-                                    key={space.id}
-                                    style={{
-                                      ...S.opsRoomCard,
-                                      ...(selectedFeatureId === space.featureId ? S.opsRoomCardSelected : {}),
-                                    }}
-                                    className="hud-card"
-                                    onClick={() => {
-                                      onSelectFeature(space.featureId);
-                                    }}
-                                    type="button"
-                                  >
-                                    <div style={S.opsRoomHeader}>
-                                      <div style={S.opsRoomTitleRow}>
-                                        <span style={{ ...S.statusDot, background: config.c, width: 8, height: 8 }} />
-                                        <span style={S.opsRoomName}>{space.name}</span>
-                                      </div>
-                                      <span style={{ ...S.statusPill, ...S.opsStatusPill, color: config.c, background: config.bg }}>{config.label}</span>
-                                    </div>
-                                    <div style={S.opsRoomMeta}>
-                                      <span style={S.opsRoomMetaItem}>{space.level}</span>
-                                      <span style={S.opsRoomMetaItem}>{space.cap} мест</span>
-                                      <span style={S.opsRoomMetaItem}>{space.kindLabel}</span>
-                                    </div>
-                                    <div style={S.opsRoomFooter}>
-                                      <span style={S.opsRoomDept}>{space.dept}</span>
-                                      {space.status === "occupied" || space.status === "focus" ? (
-                                        <span style={S.opsRoomSignal}>Требует внимания</span>
-                                      ) : null}
-                                    </div>
-                                  </button>
-                                );
-                              })}
+
+                      {/* Room grid */}
+                      <div style={S.rpStageBody}>
+                        {opsRooms.length > 0 ? (
+                          <RouteCandidateGrid
+                            spaces={opsRooms}
+                            groupKey={opsGroupKey}
+                            onSelect={(space) => onSelectFeature(space.featureId)}
+                            selectedFeatureId={selectedFeatureId}
+                          />
+                        ) : (
+                          <div style={S.rpEmptyState}>
+                            <div style={S.rpEmptyTitle}>Помещения не найдены</div>
+                            <div style={S.sidePanelSubline}>
+                              {opsSearchQ.trim() ? "По текущему фильтру ничего не найдено. Попробуйте изменить запрос или группу." : "Нет доступных помещений."}
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2035,78 +1938,78 @@ const BOTTOM_BAR_CLEARANCE = 96;
 const SIDE_PANEL_TOP_INSET = 16;
 const ATLAS_THEME_VARS = {
   dark: {
-    "--atlas-bg": "#0c1018",
-    "--atlas-glass": "rgba(15,20,32,.72)",
-    "--atlas-glass-heavy": "rgba(12,16,26,.92)",
-    "--atlas-chrome-surface": "rgba(255,255,255,.032)",
-    "--atlas-chrome-surface-soft": "rgba(255,255,255,.018)",
-    "--atlas-chrome-surface-strong": "rgba(255,255,255,.045)",
-    "--atlas-panel-surface": "rgba(255,255,255,.026)",
-    "--atlas-panel-surface-soft": "rgba(255,255,255,.016)",
-    "--atlas-panel-surface-strong": "rgba(255,255,255,.038)",
-    "--atlas-border": "rgba(255,255,255,.07)",
-    "--atlas-border-strong": "rgba(255,255,255,.12)",
-    "--atlas-text": "#e4e6ea",
-    "--atlas-sec": "rgba(255,255,255,.50)",
-    "--atlas-muted": "rgba(255,255,255,.28)",
-    "--atlas-accent": "#38bdf8",
-    "--atlas-accent-bg": "rgba(56,189,248,.10)",
-    "--atlas-accent-border": "rgba(56,189,248,.22)",
-    "--atlas-hover-surface": "rgba(255,255,255,.06)",
-    "--atlas-focus-surface": "rgba(56,189,248,.08)",
-    "--atlas-btn-surface": "rgba(255,255,255,.045)",
-    "--atlas-btn-surface-hover": "rgba(255,255,255,.072)",
-    "--atlas-btn-surface-active": "rgba(56,189,248,.09)",
-    "--atlas-btn-surface-border": "rgba(255,255,255,.14)",
-    "--atlas-btn-primary-bg": "rgba(56,189,248,.12)",
-    "--atlas-btn-primary-bg-hover": "rgba(56,189,248,.18)",
-    "--atlas-btn-primary-text": "#7fd8ff",
-    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.028)",
-    "--atlas-elev-top": "0 10px 34px rgba(0,0,0,.22)",
-    "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.18)",
-    "--atlas-elev-drawer": "0 8px 34px rgba(0,0,0,.24)",
-    "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.18)",
-    "--atlas-elev-floating": "0 6px 18px rgba(0,0,0,.18)",
-    "--atlas-elev-accent": "inset 0 0 0 1px rgba(56,189,248,.10)",
-    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(56,189,248,.18)",
+    "--atlas-bg": "#0b1420",
+    "--atlas-glass": "rgba(13,22,38,.80)",
+    "--atlas-glass-heavy": "rgba(9,15,28,.95)",
+    "--atlas-chrome-surface": "rgba(255,255,255,.054)",
+    "--atlas-chrome-surface-soft": "rgba(255,255,255,.030)",
+    "--atlas-chrome-surface-strong": "rgba(255,255,255,.074)",
+    "--atlas-panel-surface": "rgba(255,255,255,.044)",
+    "--atlas-panel-surface-soft": "rgba(255,255,255,.026)",
+    "--atlas-panel-surface-strong": "rgba(255,255,255,.062)",
+    "--atlas-border": "rgba(255,255,255,.09)",
+    "--atlas-border-strong": "rgba(255,255,255,.16)",
+    "--atlas-text": "#e6ecf2",
+    "--atlas-sec": "rgba(230,236,242,.58)",
+    "--atlas-muted": "rgba(230,236,242,.36)",
+    "--atlas-accent": "#36c2f6",
+    "--atlas-accent-bg": "rgba(54,194,246,.12)",
+    "--atlas-accent-border": "rgba(54,194,246,.26)",
+    "--atlas-hover-surface": "rgba(255,255,255,.07)",
+    "--atlas-focus-surface": "rgba(54,194,246,.10)",
+    "--atlas-btn-surface": "rgba(255,255,255,.062)",
+    "--atlas-btn-surface-hover": "rgba(255,255,255,.094)",
+    "--atlas-btn-surface-active": "rgba(54,194,246,.11)",
+    "--atlas-btn-surface-border": "rgba(255,255,255,.16)",
+    "--atlas-btn-primary-bg": "rgba(54,194,246,.14)",
+    "--atlas-btn-primary-bg-hover": "rgba(54,194,246,.22)",
+    "--atlas-btn-primary-text": "#80dcff",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.046)",
+    "--atlas-elev-top": "0 4px 16px rgba(0,0,0,.22), 0 12px 36px rgba(0,0,0,.18)",
+    "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.20)",
+    "--atlas-elev-drawer": "0 8px 36px rgba(0,0,0,.28)",
+    "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.20)",
+    "--atlas-elev-floating": "0 4px 12px rgba(0,0,0,.20), 0 8px 24px rgba(0,0,0,.16)",
+    "--atlas-elev-accent": "inset 0 0 0 1px rgba(54,194,246,.12)",
+    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(54,194,246,.22)",
     "--atlas-overlay": "rgba(0,0,0,.08)",
   },
   light: {
-    "--atlas-bg": "#e4eaee",
-    "--atlas-glass": "rgba(239,244,247,.88)",
-    "--atlas-glass-heavy": "rgba(248,251,253,.96)",
-    "--atlas-chrome-surface": "rgba(255,255,255,.72)",
-    "--atlas-chrome-surface-soft": "rgba(245,249,251,.58)",
-    "--atlas-chrome-surface-strong": "rgba(255,255,255,.84)",
-    "--atlas-panel-surface": "rgba(247,250,252,.78)",
-    "--atlas-panel-surface-soft": "rgba(239,245,248,.68)",
-    "--atlas-panel-surface-strong": "rgba(255,255,255,.90)",
-    "--atlas-border": "rgba(39,63,81,.14)",
-    "--atlas-border-strong": "rgba(39,63,81,.22)",
-    "--atlas-text": "#162632",
-    "--atlas-sec": "rgba(22,38,50,.76)",
-    "--atlas-muted": "rgba(34,55,71,.48)",
-    "--atlas-accent": "#0f84c9",
-    "--atlas-accent-bg": "rgba(15,132,201,.14)",
-    "--atlas-accent-border": "rgba(15,132,201,.28)",
-    "--atlas-hover-surface": "rgba(28,58,78,.075)",
-    "--atlas-focus-surface": "rgba(15,132,201,.11)",
-    "--atlas-btn-surface": "rgba(255,255,255,.86)",
-    "--atlas-btn-surface-hover": "rgba(239,246,250,.98)",
-    "--atlas-btn-surface-active": "rgba(15,132,201,.10)",
-    "--atlas-btn-surface-border": "rgba(39,63,81,.18)",
-    "--atlas-btn-primary-bg": "rgba(15,132,201,.12)",
-    "--atlas-btn-primary-bg-hover": "rgba(15,132,201,.18)",
-    "--atlas-btn-primary-text": "#0f84c9",
-    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.34)",
-    "--atlas-elev-top": "0 8px 18px rgba(26,42,55,.10)",
-    "--atlas-elev-bottom": "0 -1px 16px rgba(26,42,55,.08)",
-    "--atlas-elev-drawer": "0 8px 18px rgba(26,42,55,.10)",
-    "--atlas-elev-side": "-4px 0 16px rgba(26,42,55,.08)",
-    "--atlas-elev-floating": "0 4px 12px rgba(26,42,55,.08)",
-    "--atlas-elev-accent": "inset 0 0 0 1px rgba(15,132,201,.10)",
-    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(15,132,201,.18)",
-    "--atlas-overlay": "rgba(26,42,55,.04)",
+    "--atlas-bg": "#f0f4f7",
+    "--atlas-glass": "rgba(248,251,253,.94)",
+    "--atlas-glass-heavy": "rgba(255,255,255,.98)",
+    "--atlas-chrome-surface": "rgba(255,255,255,.96)",
+    "--atlas-chrome-surface-soft": "rgba(250,252,254,.80)",
+    "--atlas-chrome-surface-strong": "rgba(255,255,255,.99)",
+    "--atlas-panel-surface": "rgba(255,255,255,.92)",
+    "--atlas-panel-surface-soft": "rgba(245,249,252,.82)",
+    "--atlas-panel-surface-strong": "rgba(255,255,255,.99)",
+    "--atlas-border": "rgba(16,44,66,.12)",
+    "--atlas-border-strong": "rgba(16,44,66,.22)",
+    "--atlas-text": "#0d1f2e",
+    "--atlas-sec": "rgba(13,31,46,.78)",
+    "--atlas-muted": "rgba(13,31,46,.48)",
+    "--atlas-accent": "#0775b5",
+    "--atlas-accent-bg": "rgba(7,117,181,.10)",
+    "--atlas-accent-border": "rgba(7,117,181,.24)",
+    "--atlas-hover-surface": "rgba(13,38,60,.06)",
+    "--atlas-focus-surface": "rgba(7,117,181,.10)",
+    "--atlas-btn-surface": "rgba(255,255,255,.96)",
+    "--atlas-btn-surface-hover": "#ffffff",
+    "--atlas-btn-surface-active": "rgba(7,117,181,.09)",
+    "--atlas-btn-surface-border": "rgba(16,44,66,.16)",
+    "--atlas-btn-primary-bg": "rgba(7,117,181,.12)",
+    "--atlas-btn-primary-bg-hover": "rgba(7,117,181,.20)",
+    "--atlas-btn-primary-text": "#0775b5",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.80), 0 1px 4px rgba(10,28,46,.10)",
+    "--atlas-elev-top": "0 2px 12px rgba(10,28,46,.10), 0 8px 32px rgba(10,28,46,.10)",
+    "--atlas-elev-bottom": "0 -1px 12px rgba(10,28,46,.08)",
+    "--atlas-elev-drawer": "0 8px 32px rgba(10,28,46,.12)",
+    "--atlas-elev-side": "-4px 0 16px rgba(10,28,46,.10)",
+    "--atlas-elev-floating": "0 2px 8px rgba(10,28,46,.10), 0 6px 20px rgba(10,28,46,.10)",
+    "--atlas-elev-accent": "inset 0 0 0 1px rgba(7,117,181,.12)",
+    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(7,117,181,.24)",
+    "--atlas-overlay": "rgba(10,28,46,.04)",
   },
 } as const;
 const T = {
@@ -2274,12 +2177,12 @@ const CSS = `
   .hud-segment-btn:focus,.hud-segment-btn:active{outline:none!important;box-shadow:none!important}
   .hud-segment-btn:focus:not(:focus-visible):not([data-active="true"]){background:rgba(255,255,255,.012)!important;border-color:transparent!important;box-shadow:none!important;color:${T.muted}!important}
   .hud-btn{cursor:pointer}.hud-btn:hover{background:${T.btnSurfaceHover}!important;border-color:${T.btnSurfaceBorder}!important;box-shadow:${CONTROL_SHADOW}!important;color:${T.text}!important}
-  .hud-btn:focus-visible{outline:none;background:${T.btnSurfaceActive}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1c!important;color:${T.text}!important}
+  .hud-btn:focus-visible{outline:2px solid ${T.accent};outline-offset:2px;background:${T.btnSurfaceActive}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1c!important;color:${T.text}!important}
   .hud-btn[data-active="true"],.hud-btn[data-active="true"]:hover,.hud-btn[data-active="true"]:focus-visible,.hud-btn[data-active="true"]:active{outline:none;background:${T.accentBg}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1f!important;color:${T.accent}!important}
   .hud-btn:active{background:${T.btnSurfaceActive}!important}
   .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;box-shadow:${CONTROL_SHADOW},${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:focus-visible{outline:none;background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}22,${CONTROL_SHADOW}!important;color:${T.btnPrimaryText}!important}.hud-accent:active{background:${T.btnPrimaryBgHover}!important}
   .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;color:${T.btnPrimaryText}!important}
-  .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:none;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
+  .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:2px solid ${T.accent};outline-offset:2px;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
   .hud-input-shell:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important}
   .hud-input-shell:focus-within{background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
   .hud-focus-shell:hover{background:var(--atlas-hover-surface)!important}
@@ -2298,21 +2201,61 @@ const S: Record<string, CSSProperties> = {
     right: 0,
     zIndex: 10,
     display: "grid",
-    gridTemplateColumns: "minmax(320px, 1.2fr) auto auto",
+    gridTemplateColumns: "1fr",
     alignItems: "stretch",
     gap: 0,
     padding: 0,
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    border: CONTROL_BORDER_STRONG,
+    borderBottom: CONTROL_BORDER_STRONG,
     borderRadius: 0,
     boxShadow: T.elevTop,
     minHeight: TOP_BAR_CLEARANCE,
   },
-  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", borderRight: CONTROL_BORDER, background: CHROME_SURFACE_SOFT },
+  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", background: CHROME_SURFACE_SOFT },
+  mapControls: {
+    position: "absolute",
+    top: TOP_BAR_CLEARANCE + 12,
+    right: 12,
+    zIndex: 8,
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    alignItems: "stretch",
+    padding: 8,
+    background: T.glass,
+    backdropFilter: "blur(28px) saturate(150%)",
+    WebkitBackdropFilter: "blur(28px) saturate(150%)",
+    border: CONTROL_BORDER_STRONG,
+    boxShadow: T.elevTop,
+  },
+  mapControlsHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingBottom: 2,
+  },
+  mapControlsToggle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 22,
+    height: 22,
+    background: "none",
+    border: "none",
+    color: T.muted,
+    flexShrink: 0,
+    padding: 0,
+  },
+  mapControlsRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+  },
   topBrandRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
-  topSectionLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  topSectionLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em" },
   logo: { display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minHeight: CONTROL_HEIGHT, background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, flexShrink: 0 },
   searchField: { display: "flex", alignItems: "center", gap: 10, padding: "0 14px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 320, minHeight: CONTROL_HEIGHT, flex: 1 },
   searchInput: { flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: T.text, fontSize: 13, fontWeight: 500, fontFamily: FONT },
@@ -2348,26 +2291,36 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    border: CONTROL_BORDER_STRONG,
+    borderTop: CONTROL_BORDER_STRONG,
     borderRadius: 0,
     boxShadow: T.elevBottom,
     minHeight: BOTTOM_BAR_CLEARANCE,
   },
-  bottomModuleLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  bottomModuleLabel: { fontSize: 11, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   bottomContextBlock: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "stretch",
     width: "100%",
     minWidth: 0,
     minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "12px 16px",
-    background: "linear-gradient(90deg, rgba(255,255,255,.055), rgba(255,255,255,.024))",
+    padding: 0,
+    background: "none",
     border: "none",
     borderRight: CONTROL_BORDER_STRONG,
     textAlign: "left",
+    overflow: "hidden",
   },
-  bottomContextBlockRoute: {
-    padding: "14px 16px",
+  bottomContextStrip: {
+    display: "none",
+  },
+  bottomExpandArrow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 42,
+    flexShrink: 0,
+    color: T.muted,
+    borderLeft: CONTROL_BORDER,
   },
   bottomActionPrimary: {
     display: "flex",
@@ -2375,9 +2328,8 @@ const S: Record<string, CSSProperties> = {
     justifyContent: "flex-end",
     gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "12px 16px",
+    padding: "0 16px",
     background: "transparent",
-    flexWrap: "wrap",
   },
   bottomRouteActions: {
     display: "flex",
@@ -2385,13 +2337,42 @@ const S: Record<string, CSSProperties> = {
     justifyContent: "flex-end",
     gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "12px 16px",
+    padding: "0 16px",
     background: "transparent",
-    flexWrap: "wrap",
   },
-  bottomContext: { display: "grid", gap: 4, minWidth: 0, maxWidth: 560 },
+  bottomSecondaryGroup: {
+    display: "flex",
+    alignItems: "center",
+    background: CHROME_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+  },
+  bottomSegBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    minHeight: ACTION_HEIGHT,
+    padding: "0 14px",
+    background: "none",
+    color: T.text,
+    border: "none",
+    borderRight: CONTROL_BORDER,
+    borderRadius: 0,
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: FONT,
+    letterSpacing: ".01em",
+    whiteSpace: "nowrap",
+  },
+  bottomPrimaryBtn: {
+    ...primaryActionBase,
+    padding: "0 18px",
+    whiteSpace: "nowrap",
+  },
+  bottomContext: { display: "grid", gap: 3, minWidth: 0, flex: 1, padding: "13px 14px 13px 20px", alignContent: "center" },
   bottomHeadline: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: 800,
     letterSpacing: "-.02em",
     color: T.text,
@@ -2400,28 +2381,27 @@ const S: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
   },
   bottomMetaRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  bottomMeta: { fontSize: 11, color: T.sec, fontWeight: 500 },
+  bottomMeta: { fontSize: 12, color: T.sec, fontWeight: 500 },
   bottomChip: { ...microChipBase, padding: "0 8px", fontSize: 10, fontWeight: 700, fontFamily: MONO, textTransform: "uppercase" },
   bottomActionLabel: {
     display: "inline-flex",
     alignItems: "center",
-    gap: 8,
+    gap: 7,
     whiteSpace: "nowrap",
   },
   bottomActionText: {
-    fontWeight: 700,
+    fontWeight: 600,
     letterSpacing: ".01em",
     lineHeight: 1,
   },
   bottomActionGlyph: {
-    width: 16,
-    height: 16,
+    width: 15,
+    height: 15,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-    borderRadius: ACTION_RADIUS,
-    color: T.accent,
+    color: T.sec,
     background: "none",
     border: "none",
     boxShadow: "none",
@@ -2433,7 +2413,7 @@ const S: Record<string, CSSProperties> = {
     boxShadow: "none",
   },
   floorPicker: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4 },
-  zoomStack: { ...utilityControlBase, padding: 0, overflow: "hidden" },
+  zoomStack: { ...segmentedFrame },
   zoomBtn: {
     width: 36,
     minHeight: CONTROL_HEIGHT,
@@ -2474,7 +2454,7 @@ const S: Record<string, CSSProperties> = {
   },
   drawerLayer: {
     position: "absolute",
-    top: TOP_BAR_CLEARANCE,
+    top: TOP_BAR_CLEARANCE - 1,
     right: 0,
     bottom: BOTTOM_BAR_CLEARANCE,
     left: 0,
@@ -2507,11 +2487,14 @@ const S: Record<string, CSSProperties> = {
   drawerSheetWorkspace: {
     height: "100%",
     maxHeight: "none",
+    border: "none",
   },
   drawerSheetInfo: {
     height: "auto",
     maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`,
     pointerEvents: "auto",
+    border: "none",
+    borderTop: CONTROL_BORDER_STRONG,
   },
   browsePanel: {
     width: "100%",
@@ -2582,7 +2565,7 @@ const S: Record<string, CSSProperties> = {
     padding: 0,
     background: PANEL_SURFACE_SOFT,
   },
-  rpTopToolbar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center", gap: 14 },
+  rpTopToolbar: { display: "flex", alignItems: "stretch", gap: 10 },
   rpTopFlow: { display: "grid", gap: 3, minWidth: 0 },
   rpTopFlowText: { display: "grid", gap: 4, minWidth: 0 },
   rpTopHeadlineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" },
@@ -2610,7 +2593,7 @@ const S: Record<string, CSSProperties> = {
     border: `1px solid ${ST.occupied.c}2b`,
   },
   rpTopAside: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, minWidth: 0, flexWrap: "wrap" },
-  rpTopActions: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
+  rpTopActions: { display: "flex", alignItems: "flex-start", gap: 8, flexShrink: 0, paddingTop: 2 },
   rpTopToggle: {
     ...secondaryActionBase,
     minHeight: 28,
@@ -2630,8 +2613,8 @@ const S: Record<string, CSSProperties> = {
   rpFlowStepActive: { ...segmentedButtonActive },
   rpFlowStepReady: { color: ST.available.c, fontSize: 12, lineHeight: 1, marginTop: -1 },
   rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 10, minHeight: 0, overflow: "hidden", padding: "10px 14px 14px" },
-  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", gap: 10, alignItems: "stretch", flexShrink: 0 },
-  rpPlannerCard: { display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 108, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", gap: 10, alignItems: "stretch", flex: 1, minWidth: 0 },
+  rpPlannerCard: { display: "flex", flexDirection: "column", justifyContent: "center", padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0, cursor: "pointer" },
   rpPlannerCardActive: { background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `0 0 0 1px ${T.accent}26` },
   rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
   rpSwapDock: { display: "flex", alignItems: "center", justifyContent: "center" },
@@ -2702,15 +2685,16 @@ const S: Record<string, CSSProperties> = {
   rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
   rpEmptyState: { display: "grid", gap: 6, padding: "16px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER },
   rpEmptyTitle: { fontSize: 13, fontWeight: 700, color: T.text },
-  rpStepCard: { display: "flex", flexDirection: "column", gap: 10, color: T.text, textAlign: "left" },
+  rpStepCard: { display: "flex", flexDirection: "column", gap: 5, color: T.text, textAlign: "left" },
+  rpStepClearBtn: { width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: T.muted, padding: 0, flexShrink: 0 },
   rpStepCardActive: { background: "transparent" },
   rpStepCardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
   rpActiveStateChip: { ...microChipBase, minWidth: 72, padding: "0 10px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, justifyContent: "center", fontFamily: FONT },
   rpActiveStateChipHidden: { visibility: "hidden" },
-  rpStepCardBody: { display: "grid", gap: 8 },
-  rpStepCardName: { fontSize: 13, fontWeight: 700, lineHeight: 1.3 },
+  rpStepCardBody: { display: "grid", gap: 4 },
+  rpStepCardName: { fontSize: 13, fontWeight: 700, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   rpStepCardPlaceholder: { fontSize: 11, color: T.muted, lineHeight: 1.4 },
-  rpStepCardMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 1 },
+  rpStepCardMeta: { display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" },
   rpStepCardActions: { display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 8, flexWrap: "wrap", paddingTop: 2 },
   rpStepAction: { minHeight: 26, padding: "0 9px", fontSize: 10 },
   rpStepMiniChip: { ...microChipBase, padding: "0 7px", minHeight: 22, fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.sec, letterSpacing: ".03em" },
@@ -2748,7 +2732,6 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
     background: PANEL_SURFACE_SOFT,
-    borderTop: CONTROL_BORDER_STRONG,
   },
   infoDrawerHeader: {
     display: "flex",
@@ -2908,8 +2891,10 @@ const S: Record<string, CSSProperties> = {
   },
   opsWorkspaceBody: {
     flex: 1,
+    display: "flex",
+    flexDirection: "column",
     minHeight: 0,
-    overflowY: "auto",
+    overflow: "hidden",
     padding: "10px 14px 14px",
   },
   opsShell: {
@@ -2919,17 +2904,87 @@ const S: Record<string, CSSProperties> = {
     background: "transparent",
     border: "none",
     boxShadow: "none",
-    overflow: "visible",
-    minHeight: "100%",
+    overflow: "hidden",
+    flex: 1,
+    minHeight: 0,
   },
   opsShellHero: {
     display: "flex",
     flexDirection: "column",
-    gap: 10,
-    padding: "12px 14px",
+    gap: 8,
+    padding: "12px",
     background: PANEL_SURFACE,
     border: CONTROL_BORDER,
     boxShadow: CONTROL_SHADOW,
+    flexShrink: 0,
+  },
+  opsHeroSummaryRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(180px, .72fr) minmax(0, 1.28fr)",
+    gap: 8,
+    alignItems: "stretch",
+  },
+  opsSelectorStage: {
+    flex: 1,
+    minHeight: 0,
+  },
+  opsHeroMetricCard: {
+    display: "grid",
+    gap: 4,
+    padding: "10px 12px",
+    background: `linear-gradient(135deg, ${T.accentBg} 0%, rgba(56,189,248,.06) 100%)`,
+    border: `1px solid ${T.accentBorder}`,
+    boxShadow: `inset 0 0 0 1px ${T.accent}14`,
+  },
+  opsHeroMetricValueRow: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: 8,
+  },
+  opsHeroMetricValue: {
+    fontSize: 34,
+    fontWeight: 800,
+    fontFamily: MONO,
+    lineHeight: 1,
+    letterSpacing: "-.02em",
+  },
+  opsHeroMetricUnit: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: T.muted,
+    letterSpacing: ".06em",
+    textTransform: "uppercase",
+  },
+  opsHeroMetricSubtext: {
+    fontSize: 10,
+    color: T.sec,
+    fontWeight: 500,
+  },
+  opsMetricsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 8,
+  },
+  opsMetricItem: {
+    display: "grid",
+    gap: 2,
+    padding: "9px 10px",
+    background: PANEL_SURFACE_SOFT,
+    border: CONTROL_BORDER,
+    textAlign: "center",
+    alignContent: "center",
+  },
+  opsMetricLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: T.muted,
+    letterSpacing: ".05em",
+  },
+  opsMetricValue: {
+    fontSize: 22,
+    fontWeight: 800,
+    fontFamily: MONO,
+    lineHeight: 1,
   },
   opsShellHeroTop: {
     display: "grid",
@@ -2986,7 +3041,7 @@ const S: Record<string, CSSProperties> = {
     fontWeight: 700,
     color: T.muted,
     textTransform: "uppercase",
-    letterSpacing: ".08em",
+    letterSpacing: ".06em",
   },
   opsShellFactValue: {
     fontSize: 18,
@@ -3142,16 +3197,16 @@ const S: Record<string, CSSProperties> = {
   opsHeroMain: { display: "flex", alignItems: "flex-start", gap: 16 },
   opsHeroMetricBlock: { display: "grid", gap: 4, minWidth: 108, flexShrink: 0 },
   opsHeroMetric: { fontSize: 42, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.04em", lineHeight: 0.95 },
-  opsHeroMetricLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  opsHeroMetricLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   opsHeroCopy: { display: "grid", gap: 4, minWidth: 0, paddingTop: 2 },
   opsHeroTitle: { fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", color: T.text },
   opsBreakdownBar: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 },
-  opsBreakdownSegment: { display: "grid", gap: 4, padding: "10px 12px", minWidth: 0, minHeight: 72, alignContent: "space-between", boxShadow: CONTROL_SHADOW },
-  opsBreakdownValue: { fontSize: 16, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
-  opsBreakdownLabel: { fontSize: 10, fontWeight: 600, color: "currentColor", textTransform: "uppercase", letterSpacing: ".05em", opacity: 0.9 },
+  opsBreakdownSegment: { display: "grid", gap: 3, padding: "8px 12px", minWidth: 0, minHeight: 50, alignContent: "center", boxShadow: CONTROL_SHADOW },
+  opsBreakdownValue: { fontSize: 14, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
+  opsBreakdownLabel: { fontSize: 9, fontWeight: 700, color: "currentColor", textTransform: "uppercase", letterSpacing: ".05em", opacity: 0.9 },
   opsMetaRow: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 },
   opsMetaCard: { display: "grid", gap: 4, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
-  opsMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em" },
+  opsMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   opsMetaValue: { fontSize: 18, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.03em", lineHeight: 1 },
   opsStatusGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
   opsStatusCard: { display: "grid", gap: 6, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 92, alignContent: "space-between" },
@@ -3227,21 +3282,28 @@ const S: Record<string, CSSProperties> = {
   panelInset: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0 },
   panelInsetAccent: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, borderRadius: 0 },
   panelInsetScroll: { overflowY: "auto", padding: "0 0 2px", minHeight: 0, flex: 1 },
-  panelSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", fontFamily: MONO },
+  panelSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", fontFamily: MONO },
   panelMetaGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
   panelMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0 },
   panelChipRow: { display: "flex", gap: 6, flexWrap: "wrap" },
   panelActionRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   panelActionColumn: { display: "flex", flexDirection: "column", gap: 8 },
   infoChip: { ...microChipBase, padding: "0 10px", fontSize: 11, fontWeight: 600, color: T.sec },
-  detailSummaryCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
-  detailSummaryContent: { display: "grid", gap: 6, minWidth: 0, width: "100%" },
-  detailSummaryRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0 },
-  detailSummaryMeta: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, flexShrink: 0, whiteSpace: "nowrap" },
-  detailSummaryText: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.35, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  detailMetaGrid: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 6 },
-  detailMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "9px 10px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
-  detailEquipmentRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", paddingTop: 2 },
+  detailHeroCard: { display: "grid", gap: 12, padding: "14px 16px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  detailHeroMain: { display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 },
+  detailHeroGlyph: { width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}16`, color: T.accent, fontSize: 11, fontWeight: 700, fontFamily: MONO, flexShrink: 0 },
+  detailHeroText: { display: "grid", gap: 8, minWidth: 0, flex: 1 },
+  detailHeroTitleRow: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, minWidth: 0, flexWrap: "wrap" },
+  detailHeroTitle: { fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.2, color: T.text, minWidth: 0 },
+  detailHeroSubline: { fontSize: 12, color: T.sec, lineHeight: 1.5 },
+  detailMetaGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
+  detailMetaCell: { display: "flex", flexDirection: "column", gap: 4, padding: "12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  detailMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
+  detailMetaValue: { fontSize: 13, fontWeight: 650, color: T.text, lineHeight: 1.35 },
+  detailSectionCard: { display: "grid", gap: 8, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  detailSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", fontFamily: MONO },
+  detailSectionText: { fontSize: 13, color: T.text, lineHeight: 1.5, fontWeight: 600 },
+  detailEquipmentRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
 
   // Search empty state
   emptySearchBlock: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", gap: 8, textAlign: "center" },
