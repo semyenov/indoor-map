@@ -1,0 +1,149 @@
+.map-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.map-shell {
+  position: absolute;
+  inset: 0;
+}
+
+.map-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  width: min(320px, calc(100% - 24px));
+  padding: 12px;
+  background: rgba(18, 24, 36, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.map-toolbar-collapsed {
+  width: auto;
+}
+
+.map-toolbar-header,
+.map-toolbar-header-actions,
+.map-toolbar-group,
+.map-focus-row,
+.map-readout-grid,
+.map-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-toolbar-header,
+.map-focus-row {
+  justify-content: space-between;
+}
+
+.map-toolbar-header-actions,
+.map-toolbar-group,
+.map-readout-grid {
+  flex-wrap: wrap;
+}
+
+.map-toolbar-body {
+  display: grid;
+  gap: 8px;
+}
+
+.map-toolbar-copy,
+.map-focus-copy,
+.map-toolbar-section {
+  display: grid;
+  gap: 4px;
+}
+
+.map-toolbar-kicker,
+.map-toolbar-section-label,
+.map-focus-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(196, 208, 224, 0.7);
+}
+
+.map-toolbar-copy strong,
+.map-focus-copy strong,
+.map-readout strong {
+  color: #eef4fb;
+}
+
+.map-toolbar-badge,
+.map-tool,
+.map-readout,
+.map-toolbar-section,
+.focus-tool,
+.map-zoom-btn {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(225, 232, 240, 0.84);
+}
+
+.map-toolbar-badge,
+.map-tool,
+.map-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  font: inherit;
+}
+
+.map-tool-active,
+.focus-tool {
+  border-color: rgba(96, 165, 250, 0.34);
+  background: rgba(96, 165, 250, 0.16);
+  color: #eff6ff;
+}
+
+.map-readout {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+}
+
+.map-readout span {
+  font-size: 10px;
+  color: rgba(196, 208, 224, 0.7);
+}
+
+.map-slider {
+  display: grid;
+  gap: 8px;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  flex-direction: column;
+}
+
+@media (max-width: 720px) {
+  .map-toolbar {
+    width: auto;
+    right: 12px;
+  }
+
+  .map-toolbar-header,
+  .map-toolbar-header-actions,
+  .map-focus-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

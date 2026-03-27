@@ -98,12 +98,6 @@ const THEME_OPTIONS: Array<{ id: MapThemeVariant; label: string }> = [
   { id: "dark", label: "Тёмная" },
 ];
 
-const ST: Record<RoomStatus, { c: string; bg: string; label: string }> = {
-  available: { c: "#34d399", bg: "rgba(52,211,153,.12)", label: "Свободно" },
-  occupied: { c: "#f87171", bg: "rgba(248,113,113,.12)", label: "Занято" },
-  focus: { c: "#fbbf24", bg: "rgba(251,191,36,.12)", label: "Фокус" },
-  offline: { c: "#64748b", bg: "rgba(100,116,139,.10)", label: "Не в сети" },
-};
 
 const KIND_L: Record<AtlasKind, string> = {
   room: "Рабочая зона",
@@ -559,6 +553,8 @@ export default function AtlasV4() {
   const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [opsSearchQ, setOpsSearchQ] = useState("");
   const [opsGroupKey, setOpsGroupKey] = useState<GroupKey>("level");
+  const [opsStatusFilter, setOpsStatusFilter] = useState<Set<RoomStatus>>(new Set());
+  const [hoveredStepIdx, setHoveredStepIdx] = useState<number | null>(null);
   const [focusRequestId, setFocusRequestId] = useState(0);
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [routeRevision, setRouteRevision] = useState(0);
@@ -823,7 +819,7 @@ export default function AtlasV4() {
     () => opsAllRooms.filter((space) => matchesQuery(space, opsSearchQ)),
     [opsAllRooms, opsSearchQ],
   );
-  const opsRooms = opsFilteredRooms;
+  const opsRooms = opsStatusFilter.size > 0 ? opsFilteredRooms.filter((space) => opsStatusFilter.has(space.status)) : opsFilteredRooms;
   const opsStatusCounts = opsRooms.reduce<Record<RoomStatus, number>>(
     (counts, space) => {
       counts[space.status] += 1;
@@ -835,7 +831,7 @@ export default function AtlasV4() {
   const opsOccupiedNow = opsStatusCounts.occupied + opsStatusCounts.focus;
   const opsAvailabilityRate = opsRoomCount > 0 ? Math.round((opsStatusCounts.available / opsRoomCount) * 100) : 0;
   const opsLoadRate = opsRoomCount > 0 ? Math.round((opsOccupiedNow / opsRoomCount) * 100) : 0;
-  const availableStatusConfig = ST?.available ?? { c: "#34d399", bg: "rgba(52,211,153,.12)", label: "Свободно" };
+  const availableStatusConfig = ST.available;
   const opsLevelSummaries = levels
     .map((level) => {
       const rooms = opsRooms.filter((space) => space.level === level.id);
@@ -1159,6 +1155,7 @@ export default function AtlasV4() {
             onSelectFeature={onSelectFeature}
             onClearSelection={clearSelectedFeature}
             onSelectRoute={onSelectRoute}
+            hoveredStepIdx={hoveredStepIdx}
             route={route}
             routeRevision={routeRevision}
             selectableSpaceFeatures={indexes.selectableSpaceFeatures}
@@ -1175,7 +1172,7 @@ export default function AtlasV4() {
           <div style={S.topSectionLabel}>Пространство</div>
           <div style={S.topBrandRow}>
             <div style={S.logo}>
-              <span style={{ color: "#38bdf8", display: "inline-flex" }}>
+              <span style={{ color: T.accent, display: "inline-flex" }}>
                 <Ic.Brand />
               </span>
               <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-.02em" }}>Atlas</span>
@@ -1306,7 +1303,11 @@ export default function AtlasV4() {
 
       <div style={{ ...S.bottomBar, ...(drawerOpen ? S.bottomBarDrawerOpen : null) }}>
         <button
-          style={{ ...S.bottomContextBlock, ...(hasBottomActionPanel ? null : S.bottomContextBlockSolo) }}
+          style={{
+            ...S.bottomContextBlock,
+            ...(drawerOpen ? S.bottomContextBlockDrawerOpen : null),
+            ...(hasBottomActionPanel ? null : S.bottomContextBlockSolo),
+          }}
           className="hud-btn"
           aria-label="Открыть панель"
           onClick={openBottomContextDrawer}
@@ -1314,6 +1315,7 @@ export default function AtlasV4() {
         >
           <div style={S.bottomContextStrip} />
           <div style={S.bottomContext}>
+            <div key={`${bottomPanelMode}:${selectedFeatureId ?? ""}:${routeFrom?.id ?? ""}:${routeTo?.id ?? ""}`} style={S.bottomContextContent}>
             <div style={S.bottomModuleLabel}>
               {bottomPanelMode === "route"
                 ? "Построение маршрута"
@@ -1377,14 +1379,15 @@ export default function AtlasV4() {
                 </>
               )}
             </div>
+            </div>
           </div>
-          <div style={S.bottomExpandArrow}>
+          <div style={{ ...S.bottomExpandArrow, ...(drawerOpen ? S.bottomExpandArrowDrawerOpen : null) }}>
             {drawerOpen ? <Ic.ChevronDown /> : <Ic.ChevronUp />}
           </div>
         </button>
 
         {drawerOpen && drawerMode === "route" ? (
-          <div style={S.bottomRouteActions}>
+          <div style={{ ...S.bottomRouteActions, ...S.bottomRouteActionsDrawerOpen }}>
             <div style={S.bottomSecondaryGroup}>
               <button
                 style={{ ...S.bottomSegBtn, opacity: hasRouteBuilderSelection ? 1 : 0.45, pointerEvents: hasRouteBuilderSelection ? "auto" : "none" }}
@@ -1405,7 +1408,7 @@ export default function AtlasV4() {
             </button>
           </div>
         ) : drawerOpen && drawerMode === "route-result" && route ? (
-          <div style={S.bottomRouteActions}>
+          <div style={{ ...S.bottomRouteActions, ...S.bottomRouteActionsDrawerOpen }}>
             <div style={S.bottomSecondaryGroup}>
               <button style={S.bottomSegBtn} className="hud-btn hud-segment-btn" onClick={() => openRouteBuilder()} type="button">
                 <BottomActionLabel icon={<Ic.RouteEdit />} label="Изменить маршрут" />
@@ -1426,7 +1429,7 @@ export default function AtlasV4() {
             </button>
           </div>
         ) : drawerOpen && drawerMode === "detail" && selectedFeature ? (
-          <div style={S.bottomRouteActions}>
+          <div style={{ ...S.bottomRouteActions, ...S.bottomRouteActionsDrawerOpen }}>
             <div style={S.bottomSecondaryGroup}>
               <button
                 style={{ ...S.bottomSegBtn, opacity: selectedRouteTarget ? 1 : 0.45, pointerEvents: selectedRouteTarget ? "auto" : "none" }}
@@ -1488,7 +1491,7 @@ export default function AtlasV4() {
             }}
           >
             {drawerMode === "search" ? (
-              <div style={S.browsePanel}>
+              <div style={S.browsePanel} className="oa-fade">
                 <div style={S.rpFlowShell}>
                   <div style={S.rpStage}>
                     <div style={S.rpStageControls}>
@@ -1556,13 +1559,70 @@ export default function AtlasV4() {
             ) : null}
 
             {drawerMode === "route" ? (
-              <div style={S.routePanel}>
+              <div style={S.routePanel} className="oa-fade">
                 <div style={S.rpFlowShell}>
+                  <div style={S.rpStage}>
+                    <div style={{ ...S.rpStageControls, ...S.rpStageControlsRoute }} className="hud-focus-shell">
+                      <div style={S.rpStageSearchRow}>
+                        <div style={S.rpColSearch}>
+                          <Ic.Search s={13} />
+                          <input
+                            style={S.rpColInput}
+                            placeholder={isEditingFrom ? "Найдите стартовую точку…" : "Найдите точку назначения…"}
+                            value={activeRouteQuery}
+                            onChange={(event) => setActiveRouteQuery(event.target.value)}
+                          />
+                          {activeRouteQuery ? (
+                            <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={clearActiveRouteQuery} type="button">
+                              <Ic.X s={10} />
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div style={S.rpStageMetaRow}>
+                        <div style={S.rpColToolbar}>
+                          <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
+                          {GROUP_OPTIONS.slice(0, 3).map((group) => (
+                            <button
+                              key={group.key}
+                              style={{ ...S.pillSm, ...(activeRouteGroup === group.key ? S.pillSmActive : {}) }}
+                              className="hud-btn"
+                              data-active={activeRouteGroup === group.key ? "true" : undefined}
+                              onClick={() => setActiveRouteGrouping(group.key)}
+                              type="button"
+                            >
+                              {group.label}
+                            </button>
+                          ))}
+                        </div>
+                        <span style={S.rpStageStat}>
+                          {activeRouteQuery.trim() ? `${activeRouteChoiceList.length} совп` : `${activeRouteChoiceList.length} точек`}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={S.rpStageBody}>
+                      {activeRouteChoiceList.length > 0 ? (
+                        <RouteCandidateGrid
+                          spaces={activeRouteChoiceList}
+                          groupKey={activeRouteGroup}
+                          onSelect={(space) => selectRoutePoint(activeRouteStep, space.routeTargetId ?? "")}
+                          selectedFeatureId={activeRouteSelectedFeatureId}
+                        />
+                      ) : (
+                        <div style={S.rpEmptyState}>
+                          <div style={S.rpEmptyTitle}>{activeRouteEmpty}</div>
+                          <div style={S.sidePanelSubline}>
+                            {activeRouteQuery.trim() ? "По текущему фильтру ничего не найдено. Попробуйте изменить запрос или группу." : "Начните с выбора точки или используйте поиск, чтобы быстро сузить список."}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div style={S.rpPlannerBar}>
                     {[
-                      { step: "from" as const, point: routeFrom, placeholder: "Откуда", helper: "Выберите начальную точку" },
-                      { step: "to" as const, point: routeTo, placeholder: "Куда", helper: "Выберите конечную точку" },
-                    ].map(({ step, point, placeholder, helper }, plannerIndex) => {
+                      { step: "from" as const, point: routeFrom, placeholder: "Откуда", helper: "Выберите начальную точку", label: "СТАРТ" },
+                      { step: "to" as const, point: routeTo, placeholder: "Куда", helper: "Выберите конечную точку", label: "ФИНИШ" },
+                    ].map(({ step, point, placeholder, helper, label }, plannerIndex) => {
                       const isActive = activeRouteStep === step;
                       return (
                         <Fragment key={step}>
@@ -1590,6 +1650,7 @@ export default function AtlasV4() {
                                 {step === "from" ? <Ic.RouteFrom /> : <Ic.RouteTo />}
                               </div>
                               <div style={S.rpPlannerBody}>
+                                <div style={S.rpPlannerLabel}>{label}</div>
                                 <div style={point ? S.rpPlannerName : S.rpPlannerNameEmpty}>
                                   {point ? point.name : placeholder}
                                 </div>
@@ -1618,62 +1679,12 @@ export default function AtlasV4() {
                       );
                     })}
                   </div>
-                  <div style={S.rpStage}>
-                    <div style={S.rpStageControls} className="hud-focus-shell">
-                      <div style={S.rpColSearch}>
-                        <Ic.Search s={13} />
-                        <input
-                          style={S.rpColInput}
-                          placeholder={isEditingFrom ? "Найдите стартовую точку…" : "Найдите точку назначения…"}
-                          value={activeRouteQuery}
-                          onChange={(event) => setActiveRouteQuery(event.target.value)}
-                        />
-                        {activeRouteQuery ? (
-                          <button style={{ ...S.iconBtn, width: 22, height: 22 }} className="hud-btn" onClick={clearActiveRouteQuery} type="button">
-                            <Ic.X s={10} />
-                          </button>
-                        ) : null}
-                      </div>
-                      <div style={S.rpColToolbar}>
-                        <span style={{ fontSize: 10, color: T.muted, fontWeight: 600 }}>ГРУППА</span>
-                        {GROUP_OPTIONS.slice(0, 3).map((group) => (
-                          <button
-                            key={group.key}
-                            style={{ ...S.pillSm, ...(activeRouteGroup === group.key ? S.pillSmActive : {}) }}
-                            className="hud-btn"
-                            data-active={activeRouteGroup === group.key ? "true" : undefined}
-                            onClick={() => setActiveRouteGrouping(group.key)}
-                            type="button"
-                          >
-                            {group.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={S.rpStageBody}>
-                      {activeRouteChoiceList.length > 0 ? (
-                        <RouteCandidateGrid
-                          spaces={activeRouteChoiceList}
-                          groupKey={activeRouteGroup}
-                          onSelect={(space) => selectRoutePoint(activeRouteStep, space.routeTargetId ?? "")}
-                          selectedFeatureId={activeRouteSelectedFeatureId}
-                        />
-                      ) : (
-                        <div style={S.rpEmptyState}>
-                          <div style={S.rpEmptyTitle}>{activeRouteEmpty}</div>
-                          <div style={S.sidePanelSubline}>
-                            {activeRouteQuery.trim() ? "По текущему фильтру ничего не найдено. Попробуйте изменить запрос или группу." : "Начните с выбора точки или используйте поиск, чтобы быстро сузить список."}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
             ) : null}
 
             {drawerMode === "route-result" && route ? (
-              <div style={S.drawerInfoPanel}>
+              <div style={S.drawerInfoPanel} className="oa-fade">
                 <div style={S.sidePanelBody}>
                   <div style={S.rrSummaryCard}>
                     <div style={S.rrSummaryMain}>
@@ -1703,15 +1714,22 @@ export default function AtlasV4() {
                             const index = columnIndex * routeStepRows + rowIndex;
                             const isLast = index === routeStepsList.length - 1;
                             const isLastInColumn = rowIndex === column.length - 1;
+                            const isHovered = hoveredStepIdx === index;
                             return (
-                              <div key={`${index}-${step}`} style={{ ...S.rrStep, position: "relative" }}>
+                              <div
+                                key={`${index}-${step}`}
+                                style={{ ...S.rrStep, position: "relative", ...(isHovered ? { background: T.accentBg, borderRadius: 0 } : {}) }}
+                                onMouseEnter={() => setHoveredStepIdx(index)}
+                                onMouseLeave={() => setHoveredStepIdx(null)}
+                                onClick={() => setHoveredStepIdx(index)}
+                              >
                                 {!isLastInColumn && (
                                   <div style={{ position: "absolute", left: 10, top: 28, width: 1, bottom: -10, background: T.border }} />
                                 )}
-                                <div style={{ ...S.rrStepN, position: "relative", zIndex: 1, ...(isLast ? { background: T.accent, color: "#0c1018", border: `1px solid ${T.accent}` } : {}) }}>
+                                <div style={{ ...S.rrStepN, position: "relative", zIndex: 1, ...(isLast ? { background: T.accent, color: T.bg, border: `1px solid ${T.accent}` } : isHovered ? { background: T.accentBg, border: `1px solid ${T.accentBorder}`, color: T.accent } : {}) }}>
                                   {isLast ? <Ic.Check /> : index + 1}
                                 </div>
-                                <span style={S.rrStepT}>{step}</span>
+                                <span style={{ ...S.rrStepT, ...(isHovered ? { color: T.text } : {}) }}>{step}</span>
                               </div>
                             );
                           })}
@@ -1724,34 +1742,40 @@ export default function AtlasV4() {
             ) : null}
 
             {drawerMode === "detail" && selectedFeature ? (
-              <div style={S.drawerInfoPanel}>
-                <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
-                  {(() => {
-                    const equipment = selectedFeature.properties.equipment ?? [];
-                    const hasEquipment = equipment.length > 0;
-                    const hasSubtitle = Boolean(selectedFeature.properties.subtitle);
-                    const hasCapacity = (selectedFeature.properties.capacity ?? 0) > 0;
-                    const heroSubtitle = selectedFeature.properties.employee
-                      ? selectedFeature.properties.name
-                      : selectedFeature.properties.subtitle ?? "Доступный узел пространства";
+              <div style={S.drawerInfoPanel} className="oa-fade">
+                {(() => {
+                  const equipment = selectedFeature.properties.equipment ?? [];
+                  const hasEquipment = equipment.length > 0;
+                  const hasSubtitle = Boolean(selectedFeature.properties.subtitle);
+                  const hasCapacity = (selectedSpace?.cap ?? 0) > 0;
+                  const spaceStatus = selectedSpace?.status ?? null;
+                  const stCfg = spaceStatus ? ST[spaceStatus] : null;
 
-                    return (
-                      <>
+                  return (
+                    <>
+                      {stCfg ? (
+                        <div style={{ ...S.detailStatusBand, background: stCfg.band, borderLeft: `3px solid ${stCfg.c}`, borderBottom: `1px solid ${stCfg.border}` }}>
+                          <div style={{ ...S.detailStatusDot, background: stCfg.c, boxShadow: `0 0 8px ${stCfg.c}` }} />
+                          <span style={{ ...S.detailStatusLbl, color: stCfg.c }}>{stCfg.label}</span>
+                        </div>
+                      ) : null}
+
+                      <div style={{ ...S.sidePanelBody, ...S.sidePanelBodyDetail }}>
                         {hasSubtitle && !selectedFeature.properties.employee ? (
-                          <div style={S.detailSectionCard}>
-                            <div style={S.detailSectionLabel}>Описание</div>
-                            <div style={S.detailSectionText}>{selectedFeature.properties.subtitle}</div>
+                          <div style={S.detailDescBlock}>
+                            <span style={S.detailSectionLabel}>Описание</span>
+                            <span style={S.detailDescText}>{selectedFeature.properties.subtitle}</span>
                           </div>
                         ) : null}
 
                         <div style={S.detailMetaGrid}>
-                          {[
-                            ["Отдел", selectedFeature.properties.department ?? "Общие"],
-                            ["Этаж", selectedFeature.properties.level],
-                            ["Тип", selectedSpace?.kindLabel ?? "–"],
-                            ["Вместимость", (selectedSpace?.cap ?? 0) > 0 ? `${selectedSpace?.cap} мест` : "–"],
-                          ].map(([label, value]) => (
-                            <div key={label} style={S.detailMetaCell}>
+                          {([
+                            ["Отдел", selectedFeature.properties.department ?? "Общие", false],
+                            ["Этаж", selectedFeature.properties.level, false],
+                            ["Тип", selectedSpace?.kindLabel ?? "–", false],
+                            ["Вместимость", hasCapacity ? `${selectedSpace?.cap} мест` : "–", hasCapacity],
+                          ] as [string, string, boolean][]).map(([label, value, accent]) => (
+                            <div key={label} style={accent ? S.detailMetaCellAccent : S.detailMetaCell}>
                               <span style={S.detailMetaLabel}>{label}</span>
                               <span style={S.detailMetaValue}>{value}</span>
                             </div>
@@ -1759,35 +1783,31 @@ export default function AtlasV4() {
                         </div>
 
                         {hasEquipment ? (
-                          <div style={S.detailSectionCard}>
-                            <div style={S.detailSectionLabel}>Оснащение</div>
+                          <div style={S.detailDescBlock}>
+                            <span style={S.detailSectionLabel}>Оснащение</span>
                             <div style={S.detailEquipmentRow}>
-                              {equipment.map((equipment: string) => (
-                                <span key={equipment} style={S.infoChip}>
-                                  {equipment}
-                                </span>
+                              {equipment.map((e: string) => (
+                                <span key={e} style={S.infoChip}>{e}</span>
                               ))}
                             </div>
                           </div>
                         ) : null}
 
                         {selectedFeature.properties.employee ? (
-                          <div style={S.detailSectionCard}>
-                            <div style={S.detailSectionLabel}>Рабочее место</div>
-                            <div style={S.detailSectionText}>
-                              {selectedFeature.properties.name}
-                            </div>
+                          <div style={S.detailDescBlock}>
+                            <span style={S.detailSectionLabel}>Рабочее место</span>
+                            <span style={S.detailDescText}>{selectedFeature.properties.name}</span>
                           </div>
                         ) : null}
-                      </>
-                    );
-                  })()}
-                </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             ) : null}
 
             {drawerMode === "ops" ? (
-              <div style={S.opsWorkspacePanel}>
+              <div style={S.opsWorkspacePanel} className="oa-fade">
                 <div style={S.opsWorkspaceBody}>
                   <div style={S.opsShell}>
                     <div style={S.opsShellHero}>
@@ -1804,7 +1824,7 @@ export default function AtlasV4() {
                         <div style={S.opsMetricsGrid}>
                           {[
                             { label: "СВОБОДНО", value: opsStatusCounts.available, color: availableStatusConfig.c },
-                            { label: "ЗАНЯТО", value: opsStatusCounts.occupied + opsStatusCounts.focus, color: "#f87171" },
+                            { label: "ЗАНЯТО", value: opsStatusCounts.occupied + opsStatusCounts.focus, color: ST.occupied.c },
                             { label: "ВНЕ СЕТИ", value: opsStatusCounts.offline, color: T.muted },
                           ].map(({ label, value, color }) => (
                             <div key={label} style={S.opsMetricItem}>
@@ -1822,8 +1842,8 @@ export default function AtlasV4() {
                               key={statusKey}
                               style={{
                                 ...S.opsBreakdownSegment,
-                                background: count > 0 ? config.bg : "rgba(255,255,255,.02)",
-                                border: count > 0 ? `1px solid ${config.c}22` : CONTROL_BORDER,
+                                background: count > 0 ? config.bg : T.overlay,
+                                border: count > 0 ? `1px solid ${config.border}` : T.controlBorder,
                                 color: count > 0 ? config.c : T.muted,
                               }}
                             >
@@ -1867,6 +1887,34 @@ export default function AtlasV4() {
                             </button>
                           ))}
                         </div>
+                        <div style={S.rpColToolbar}>
+                          {(Object.entries(ST) as [RoomStatus, { c: string; bg: string; label: string }][]).map(([status, cfg]) => {
+                            const active = opsStatusFilter.has(status);
+                            return (
+                              <button
+                                key={status}
+                                style={{
+                                  ...S.pillSm,
+                                  ...(active ? { background: cfg.bg, border: `1px solid ${cfg.c}44`, color: cfg.c } : {}),
+                                }}
+                                className="hud-btn"
+                                data-active={active ? "true" : undefined}
+                                onClick={() => {
+                                  setOpsStatusFilter((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(status)) next.delete(status);
+                                    else next.add(status);
+                                    return next;
+                                  });
+                                }}
+                                type="button"
+                              >
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.c, display: "inline-block", flexShrink: 0 }} />
+                                {cfg.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {/* Room grid */}
@@ -1906,51 +1954,70 @@ const BOTTOM_BAR_CLEARANCE = 96;
 const SIDE_PANEL_TOP_INSET = 16;
 const ATLAS_THEME_VARS = {
   dark: {
-    "--atlas-bg": "#0b1420",
-    "--atlas-glass": "rgba(13,22,38,.84)",
-    "--atlas-glass-heavy": "rgba(9,15,28,.96)",
-    "--atlas-chrome-surface": "rgba(255,255,255,.068)",
-    "--atlas-chrome-surface-soft": "rgba(255,255,255,.040)",
-    "--atlas-chrome-surface-strong": "rgba(255,255,255,.092)",
-    "--atlas-panel-surface": "rgba(255,255,255,.044)",
-    "--atlas-panel-surface-soft": "rgba(255,255,255,.026)",
-    "--atlas-panel-surface-strong": "rgba(255,255,255,.062)",
-    "--atlas-border": "rgba(255,255,255,.09)",
-    "--atlas-border-strong": "rgba(255,255,255,.15)",
-    "--atlas-text": "#eaf0f6",
-    "--atlas-sec": "rgba(230,236,242,.70)",
-    "--atlas-muted": "rgba(230,236,242,.48)",
-    "--atlas-accent": "#36c2f6",
-    "--atlas-accent-bg": "rgba(54,194,246,.14)",
-    "--atlas-accent-border": "rgba(54,194,246,.32)",
-    "--atlas-hover-surface": "rgba(255,255,255,.082)",
-    "--atlas-focus-surface": "rgba(54,194,246,.12)",
-    "--atlas-btn-surface": "rgba(255,255,255,.074)",
-    "--atlas-btn-surface-hover": "rgba(255,255,255,.108)",
-    "--atlas-btn-surface-active": "rgba(54,194,246,.13)",
-    "--atlas-btn-primary-bg": "rgba(54,194,246,.16)",
-    "--atlas-btn-primary-bg-hover": "rgba(54,194,246,.25)",
-    "--atlas-btn-primary-text": "#8de0ff",
-    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.058)",
-    "--atlas-elev-top": "0 4px 16px rgba(0,0,0,.30), 0 12px 36px rgba(0,0,0,.22)",
-    "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.26)",
-    "--atlas-elev-drawer": "0 8px 36px rgba(0,0,0,.36)",
-    "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.26)",
-    "--atlas-elev-floating": "0 4px 12px rgba(0,0,0,.28), 0 8px 24px rgba(0,0,0,.20)",
-    "--atlas-elev-accent": "inset 0 0 0 1px rgba(54,194,246,.16)",
-    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(54,194,246,.28)",
-    "--atlas-overlay": "rgba(0,0,0,.10)",
+    "--atlas-bg": "#060e1e",
+    "--atlas-glass": "rgba(5,11,24,.74)",
+    "--atlas-glass-heavy": "rgba(5,11,24,.97)",
+    "--atlas-chrome-surface": "rgba(120,170,255,.09)",
+    "--atlas-chrome-surface-soft": "rgba(100,150,255,.055)",
+    "--atlas-chrome-surface-strong": "rgba(140,185,255,.15)",
+    "--atlas-panel-surface": "rgba(100,150,255,.07)",
+    "--atlas-panel-surface-soft": "rgba(80,130,255,.035)",
+    "--atlas-panel-surface-strong": "rgba(140,185,255,.17)",
+    "--atlas-border": "rgba(120,170,255,.17)",
+    "--atlas-border-strong": "rgba(140,190,255,.30)",
+    "--atlas-text": "#e6eeff",
+    "--atlas-sec": "rgba(200,218,255,.72)",
+    "--atlas-muted": "rgba(170,196,245,.44)",
+    "--atlas-accent": "#3dc8ff",
+    "--atlas-accent-bg": "rgba(61,200,255,.15)",
+    "--atlas-accent-bg-faint": "rgba(61,200,255,.06)",
+    "--atlas-accent-border": "rgba(61,200,255,.36)",
+    "--atlas-hover-surface": "rgba(120,170,255,.09)",
+    "--atlas-focus-surface": "rgba(61,200,255,.13)",
+    "--atlas-btn-surface": "rgba(120,165,255,.08)",
+    "--atlas-btn-surface-hover": "rgba(140,180,255,.12)",
+    "--atlas-btn-surface-active": "rgba(61,200,255,.15)",
+    "--atlas-btn-primary-bg": "rgba(61,200,255,.18)",
+    "--atlas-btn-primary-bg-hover": "rgba(61,200,255,.28)",
+    "--atlas-btn-primary-text": "#90e4ff",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(160,200,255,.12), 0 1px 4px rgba(0,4,18,.32)",
+    "--atlas-elev-top": "0 4px 16px rgba(0,4,20,.38), 0 12px 36px rgba(0,4,20,.28)",
+    "--atlas-elev-bottom": "0 -2px 28px rgba(0,4,20,.32)",
+    "--atlas-elev-drawer": "0 8px 36px rgba(0,4,20,.44)",
+    "--atlas-elev-side": "-8px 0 28px rgba(0,4,20,.32)",
+    "--atlas-elev-floating": "0 4px 12px rgba(0,4,20,.34), 0 8px 24px rgba(0,4,20,.26)",
+    "--atlas-elev-accent": "inset 0 0 0 1px rgba(61,200,255,.18)",
+    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(61,200,255,.34)",
+    "--atlas-status-available": "#2fd68e",
+    "--atlas-status-available-bg": "rgba(47,214,142,.16)",
+    "--atlas-status-available-border": "rgba(47,214,142,.32)",
+    "--atlas-status-available-band": "rgba(47,214,142,.24)",
+    "--atlas-status-occupied": "#f96b6b",
+    "--atlas-status-occupied-bg": "rgba(249,107,107,.16)",
+    "--atlas-status-occupied-border": "rgba(249,107,107,.32)",
+    "--atlas-status-occupied-band": "rgba(249,107,107,.28)",
+    "--atlas-status-focus": "#f9c030",
+    "--atlas-status-focus-bg": "rgba(249,192,48,.16)",
+    "--atlas-status-focus-border": "rgba(249,192,48,.32)",
+    "--atlas-status-focus-band": "rgba(249,192,48,.24)",
+    "--atlas-status-offline": "#7e95b8",
+    "--atlas-status-offline-bg": "rgba(126,149,184,.12)",
+    "--atlas-status-offline-border": "rgba(126,149,184,.22)",
+    "--atlas-status-offline-band": "rgba(126,149,184,.16)",
+    "--atlas-scrollbar-thumb": "rgba(120,160,255,.14)",
+    "--atlas-panel-blur": "blur(24px) saturate(180%)",
+    "--atlas-overlay": "rgba(0,4,18,.14)",
   },
   light: {
     "--atlas-bg": "#f0f4f7",
     "--atlas-glass": "rgba(248,251,253,.94)",
     "--atlas-glass-heavy": "rgba(255,255,255,.98)",
     "--atlas-chrome-surface": "rgba(255,255,255,.96)",
-    "--atlas-chrome-surface-soft": "rgba(250,252,254,.80)",
+    "--atlas-chrome-surface-soft": "rgba(250,252,254,.82)",
     "--atlas-chrome-surface-strong": "rgba(255,255,255,.99)",
-    "--atlas-panel-surface": "rgba(255,255,255,.92)",
-    "--atlas-panel-surface-soft": "rgba(245,249,252,.82)",
-    "--atlas-panel-surface-strong": "rgba(255,255,255,.99)",
+    "--atlas-panel-surface": "rgba(240,244,247,.82)",
+    "--atlas-panel-surface-soft": "rgba(235,241,246,.64)",
+    "--atlas-panel-surface-strong": "rgba(255,255,255,.94)",
     "--atlas-border": "rgba(16,44,66,.12)",
     "--atlas-border-strong": "rgba(16,44,66,.22)",
     "--atlas-text": "#0d1f2e",
@@ -1958,6 +2025,7 @@ const ATLAS_THEME_VARS = {
     "--atlas-muted": "rgba(13,31,46,.48)",
     "--atlas-accent": "#0775b5",
     "--atlas-accent-bg": "rgba(7,117,181,.10)",
+    "--atlas-accent-bg-faint": "rgba(7,117,181,.04)",
     "--atlas-accent-border": "rgba(7,117,181,.24)",
     "--atlas-hover-surface": "rgba(13,38,60,.06)",
     "--atlas-focus-surface": "rgba(7,117,181,.10)",
@@ -1975,6 +2043,24 @@ const ATLAS_THEME_VARS = {
     "--atlas-elev-floating": "0 2px 8px rgba(10,28,46,.10), 0 6px 20px rgba(10,28,46,.10)",
     "--atlas-elev-accent": "inset 0 0 0 1px rgba(7,117,181,.12)",
     "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(7,117,181,.24)",
+    "--atlas-status-available": "#34d399",
+    "--atlas-status-available-bg": "rgba(52,211,153,.12)",
+    "--atlas-status-available-border": "rgba(52,211,153,.17)",
+    "--atlas-status-available-band": "rgba(52,211,153,.18)",
+    "--atlas-status-occupied": "#f87171",
+    "--atlas-status-occupied-bg": "rgba(248,113,113,.12)",
+    "--atlas-status-occupied-border": "rgba(248,113,113,.17)",
+    "--atlas-status-occupied-band": "rgba(248,113,113,.20)",
+    "--atlas-status-focus": "#fbbf24",
+    "--atlas-status-focus-bg": "rgba(251,191,36,.12)",
+    "--atlas-status-focus-border": "rgba(251,191,36,.17)",
+    "--atlas-status-focus-band": "rgba(251,191,36,.18)",
+    "--atlas-status-offline": "#64748b",
+    "--atlas-status-offline-bg": "rgba(100,116,139,.10)",
+    "--atlas-status-offline-border": "rgba(100,116,139,.15)",
+    "--atlas-status-offline-band": "rgba(100,116,139,.14)",
+    "--atlas-scrollbar-thumb": "rgba(16,44,66,.14)",
+    "--atlas-panel-blur": "blur(100px) saturate(140%)",
     "--atlas-overlay": "rgba(10,28,46,.04)",
   },
 } as const;
@@ -1990,6 +2076,7 @@ const T = {
   accent: "var(--atlas-accent)",
   accentBg: "var(--atlas-accent-bg)",
   accentBorder: "var(--atlas-accent-border)",
+  accentBgFaint: "var(--atlas-accent-bg-faint)",
   btnSurface: "var(--atlas-btn-surface)",
   btnSurfaceHover: "var(--atlas-btn-surface-hover)",
   btnSurfaceActive: "var(--atlas-btn-surface-active)",
@@ -2006,30 +2093,54 @@ const T = {
   elevAccent: "var(--atlas-elev-accent)",
   elevAccentActive: "var(--atlas-elev-accent-active)",
   overlay: "var(--atlas-overlay)",
+  chromeSurface: "var(--atlas-chrome-surface)",
+  chromeSurfaceSoft: "var(--atlas-chrome-surface-soft)",
+  chromeSurfaceStrong: "var(--atlas-chrome-surface-strong)",
+  panelSurface: "var(--atlas-panel-surface)",
+  panelSurfaceSoft: "var(--atlas-panel-surface-soft)",
+  panelSurfaceStrong: "var(--atlas-panel-surface-strong)",
+  controlBorder: "1px solid var(--atlas-border)",
+  controlBorderStrong: "1px solid var(--atlas-border-strong)",
+  statusAvailable: "var(--atlas-status-available)",
+  statusAvailableBg: "var(--atlas-status-available-bg)",
+  statusAvailableBorder: "var(--atlas-status-available-border)",
+  statusAvailableBand: "var(--atlas-status-available-band)",
+  statusOccupied: "var(--atlas-status-occupied)",
+  statusOccupiedBg: "var(--atlas-status-occupied-bg)",
+  statusOccupiedBorder: "var(--atlas-status-occupied-border)",
+  statusOccupiedBand: "var(--atlas-status-occupied-band)",
+  statusFocus: "var(--atlas-status-focus)",
+  statusFocusBg: "var(--atlas-status-focus-bg)",
+  statusFocusBorder: "var(--atlas-status-focus-border)",
+  statusFocusBand: "var(--atlas-status-focus-band)",
+  statusOffline: "var(--atlas-status-offline)",
+  statusOfflineBg: "var(--atlas-status-offline-bg)",
+  statusOfflineBorder: "var(--atlas-status-offline-border)",
+  statusOfflineBand: "var(--atlas-status-offline-band)",
+  scrollbarThumb: "var(--atlas-scrollbar-thumb)",
+  panelBlur: "var(--atlas-panel-blur)",
+};
+
+const ST: Record<RoomStatus, { c: string; bg: string; border: string; band: string; label: string }> = {
+  available: { c: T.statusAvailable, bg: T.statusAvailableBg, border: T.statusAvailableBorder, band: T.statusAvailableBand, label: "Свободно" },
+  occupied: { c: T.statusOccupied, bg: T.statusOccupiedBg, border: T.statusOccupiedBorder, band: T.statusOccupiedBand, label: "Занято" },
+  focus: { c: T.statusFocus, bg: T.statusFocusBg, border: T.statusFocusBorder, band: T.statusFocusBand, label: "Фокус" },
+  offline: { c: T.statusOffline, bg: T.statusOfflineBg, border: T.statusOfflineBorder, band: T.statusOfflineBand, label: "Не в сети" },
 };
 
 const CONTROL_HEIGHT = 42;
 const ACTION_HEIGHT = 42;
 const ACTION_RADIUS = 0;
 const CONTROL_INNER_HEIGHT = 34;
-const CHROME_SURFACE = "var(--atlas-chrome-surface)";
-const CHROME_SURFACE_SOFT = "var(--atlas-chrome-surface-soft)";
-const CHROME_SURFACE_STRONG = "var(--atlas-chrome-surface-strong)";
-const PANEL_SURFACE = "var(--atlas-panel-surface)";
-const PANEL_SURFACE_SOFT = "var(--atlas-panel-surface-soft)";
-const PANEL_SURFACE_STRONG = "var(--atlas-panel-surface-strong)";
-const CONTROL_BORDER = `1px solid ${T.border}`;
-const CONTROL_BORDER_STRONG = `1px solid ${T.borderH}`;
-const CONTROL_SHADOW = T.controlShadow;
 const segmentedFrame: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 4,
   padding: 4,
   minHeight: CONTROL_HEIGHT,
-  background: CHROME_SURFACE,
-  border: CONTROL_BORDER,
-  boxShadow: CONTROL_SHADOW,
+  background: T.chromeSurface,
+  border: T.controlBorder,
+  boxShadow: T.controlShadow,
 };
 const segmentedButtonBase: CSSProperties = {
   display: "flex",
@@ -2039,7 +2150,7 @@ const segmentedButtonBase: CSSProperties = {
   minWidth: 0,
   minHeight: CONTROL_INNER_HEIGHT,
   padding: "0 12px",
-  background: CHROME_SURFACE_SOFT,
+  background: T.chromeSurfaceSoft,
   border: "1px solid transparent",
   borderRadius: 0,
   fontSize: 12,
@@ -2060,9 +2171,9 @@ const utilityControlBase: CSSProperties = {
   minHeight: CONTROL_HEIGHT,
   padding: "0 14px",
   borderRadius: 0,
-  background: CHROME_SURFACE,
-  border: CONTROL_BORDER,
-  boxShadow: CONTROL_SHADOW,
+  background: T.chromeSurface,
+  border: T.controlBorder,
+  boxShadow: T.controlShadow,
 };
 const secondaryActionBase: CSSProperties = {
   display: "inline-flex",
@@ -2079,7 +2190,7 @@ const secondaryActionBase: CSSProperties = {
   fontWeight: 700,
   fontFamily: FONT,
   letterSpacing: ".01em",
-  boxShadow: CONTROL_SHADOW,
+  boxShadow: T.controlShadow,
 };
 const primaryActionBase: CSSProperties = {
   display: "inline-flex",
@@ -2096,12 +2207,12 @@ const primaryActionBase: CSSProperties = {
   fontWeight: 700,
   fontFamily: FONT,
   letterSpacing: ".01em",
-  boxShadow: `${CONTROL_SHADOW}, ${T.elevAccent}`,
+  boxShadow: `${T.controlShadow}, ${T.elevAccent}`,
 };
 const chromeSectionBase: CSSProperties = {
-  background: PANEL_SURFACE,
-  border: CONTROL_BORDER,
-  boxShadow: CONTROL_SHADOW,
+  background: T.panelSurface,
+  border: T.controlBorder,
+  boxShadow: T.controlShadow,
 };
 const microChipBase: CSSProperties = {
   display: "inline-flex",
@@ -2111,8 +2222,8 @@ const microChipBase: CSSProperties = {
   fontSize: 11,
   fontWeight: 700,
   color: T.sec,
-  background: CHROME_SURFACE,
-  border: CONTROL_BORDER,
+  background: T.chromeSurface,
+  border: T.controlBorder,
   borderRadius: 0,
   letterSpacing: ".01em",
 };
@@ -2122,7 +2233,7 @@ const CSS = `
   *{box-sizing:border-box;margin:0;padding:0}
   ::placeholder{color:${T.muted}}
   select{-webkit-appearance:none;-moz-appearance:none;appearance:none}
-  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:5px}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.scrollbarThumb};border-radius:5px}
   @keyframes oa-fade{from{opacity:0}to{opacity:1}}
   @keyframes oa-slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   @keyframes oa-slide-out{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(10px)}}
@@ -2134,25 +2245,6 @@ const CSS = `
   .oa-slide-up{animation:oa-slide-up .22s ease-out}
   .oa-slide-out{animation:oa-slide-out .2s ease-in both}
   .oa-slide-left{animation:oa-slide-left .2s ease-out}
-  .hud-glass{background:${T.glass};backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%);border:1px solid ${T.border}}
-  .hud-glass-heavy{background:${T.glassH};backdrop-filter:blur(40px) saturate(145%);-webkit-backdrop-filter:blur(40px) saturate(145%);border:1px solid ${T.borderH}}
-  .hud-hover{cursor:pointer;transition:background .12s,border-color .12s}.hud-hover:hover{background:${T.glassH}!important;border-color:${T.borderH}!important}
-  .hud-btn,.hud-card,.hud-accent,.hud-input-shell,.hud-focus-shell{transition:background .12s,border-color .12s,color .12s,box-shadow .12s,transform .08s}
-  .hud-btn,.hud-accent{-webkit-appearance:none;appearance:none;outline:none}
-  .hud-btn::-moz-focus-inner,.hud-accent::-moz-focus-inner{border:0;padding:0}
-  .hud-segment-btn:focus,.hud-segment-btn:active{outline:none!important;box-shadow:none!important}
-  .hud-segment-btn:focus:not(:focus-visible):not([data-active="true"]){background:rgba(255,255,255,.012)!important;border-color:transparent!important;box-shadow:none!important;color:${T.muted}!important}
-  .hud-btn{cursor:pointer}.hud-btn:hover{background:${T.btnSurfaceHover}!important;border-color:${T.btnSurfaceBorder}!important;box-shadow:${CONTROL_SHADOW}!important;color:${T.text}!important}
-  .hud-btn:focus-visible{outline:2px solid ${T.accent};outline-offset:2px;background:${T.btnSurfaceActive}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1c!important;color:${T.text}!important}
-  .hud-btn[data-active="true"],.hud-btn[data-active="true"]:hover,.hud-btn[data-active="true"]:focus-visible,.hud-btn[data-active="true"]:active{outline:none;background:${T.accentBg}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}1f!important;color:${T.accent}!important}
-  .hud-btn:active{background:${T.btnSurfaceActive}!important}
-  .hud-accent{cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .08s}.hud-accent:hover{background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;box-shadow:${CONTROL_SHADOW},${T.elevAccentActive}!important;color:${T.btnPrimaryText}!important}.hud-accent:focus-visible{outline:none;background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;box-shadow:inset 0 0 0 1px ${T.accent}22,${CONTROL_SHADOW}!important;color:${T.btnPrimaryText}!important}.hud-accent:active{background:${T.btnPrimaryBgHover}!important}
-  .hud-accent[data-active="true"],.hud-accent[data-active="true"]:hover,.hud-accent[data-active="true"]:focus-visible{background:${T.btnPrimaryBgHover}!important;border-color:${T.accentBorder}!important;color:${T.btnPrimaryText}!important}
-  .hud-card{cursor:pointer}.hud-card:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important;box-shadow:none!important}.hud-card:focus-visible{outline:2px solid ${T.accent};outline-offset:2px;background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
-  .hud-input-shell:hover{background:var(--atlas-hover-surface)!important;border-color:${T.borderH}!important}
-  .hud-input-shell:focus-within{background:var(--atlas-focus-surface)!important;border-color:${T.accentBorder}!important;box-shadow:none!important}
-  .hud-focus-shell:hover{background:var(--atlas-hover-surface)!important}
-  .hud-focus-shell:focus-within{background:var(--atlas-focus-surface)!important;box-shadow:inset 0 0 0 1px ${T.accentBorder}!important}
 `;
 
 const S: Record<string, CSSProperties> = {
@@ -2174,11 +2266,11 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderBottom: CONTROL_BORDER_STRONG,
+    borderBottom: T.controlBorderStrong,
     borderRadius: 0,
     minHeight: TOP_BAR_CLEARANCE,
   },
-  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", background: CHROME_SURFACE_SOFT },
+  topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", background: T.chromeSurfaceSoft },
   mapControls: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE + 12,
@@ -2192,7 +2284,7 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    border: CONTROL_BORDER_STRONG,
+    border: T.controlBorderStrong,
     boxShadow: T.elevTop,
   },
   mapControlsHeader: {
@@ -2221,18 +2313,18 @@ const S: Record<string, CSSProperties> = {
   },
   topBrandRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
   topSectionLabel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em" },
-  logo: { display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minHeight: CONTROL_HEIGHT, background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, flexShrink: 0 },
-  searchField: { display: "flex", alignItems: "center", gap: 10, padding: "0 14px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 320, minHeight: CONTROL_HEIGHT, flex: 1 },
+  logo: { display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minHeight: CONTROL_HEIGHT, background: T.chromeSurface, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0, flexShrink: 0 },
+  searchField: { display: "flex", alignItems: "center", gap: 10, padding: "0 14px", borderRadius: 0, fontFamily: FONT, fontSize: 13, fontWeight: 500, color: T.sec, background: T.chromeSurface, border: T.controlBorder, boxShadow: T.controlShadow, minWidth: 320, minHeight: CONTROL_HEIGHT, flex: 1 },
   searchInput: { flex: 1, minWidth: 0, background: "none", border: "none", outline: "none", color: T.text, fontSize: 13, fontWeight: 500, fontFamily: FONT },
-  searchClearBtn: { width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.05)", border: "1px solid transparent", borderRadius: 0, color: T.muted, flexShrink: 0 },
-  kbd: { marginLeft: "auto", padding: "0 8px", minHeight: 24, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: "rgba(255,255,255,.04)", borderRadius: 0, border: CONTROL_BORDER },
-  topSceneBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", borderRight: CONTROL_BORDER, minWidth: 280, background: CHROME_SURFACE_SOFT },
-  topActionBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 420, background: CHROME_SURFACE_SOFT },
+  searchClearBtn: { width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", background: T.chromeSurface, border: "1px solid transparent", borderRadius: 0, color: T.muted, flexShrink: 0 },
+  kbd: { marginLeft: "auto", padding: "0 8px", minHeight: 24, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, fontFamily: MONO, color: T.muted, background: T.chromeSurfaceSoft, borderRadius: 0, border: T.controlBorder },
+  topSceneBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", borderRight: T.controlBorder, minWidth: 280, background: T.chromeSurfaceSoft },
+  topActionBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 420, background: T.chromeSurfaceSoft },
   topActionRow: { display: "flex", alignItems: "stretch", justifyContent: "flex-end", gap: 8, flexWrap: "nowrap" },
   topFloorGroup: { ...segmentedFrame },
-  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: CONTROL_BORDER },
+  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: T.chromeSurfaceSoft, border: T.controlBorder },
   themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
-  themeBtnActive: { color: T.text, background: "rgba(255,255,255,.08)" },
+  themeBtnActive: { color: T.text, background: T.chromeSurfaceStrong },
   viewModes: { ...segmentedFrame, width: "100%" },
   segmentBtn: { ...segmentedButtonBase },
   segmentBtnEqual: { flex: "1 1 0" },
@@ -2256,15 +2348,13 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderTop: CONTROL_BORDER_STRONG,
+    borderTop: T.controlBorderStrong,
     borderRadius: 0,
-    boxShadow: T.elevBottom,
     minHeight: BOTTOM_BAR_CLEARANCE,
+    boxShadow: T.elevBottom,
   },
   bottomBarDrawerOpen: {
-    background: T.glassH,
-    backdropFilter: "none",
-    WebkitBackdropFilter: "none",
+    background: T.glass,
   },
   bottomModuleLabel: { fontSize: 11, lineHeight: 1, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   bottomContextBlock: {
@@ -2274,11 +2364,14 @@ const S: Record<string, CSSProperties> = {
     minWidth: 0,
     minHeight: BOTTOM_BAR_CLEARANCE,
     padding: 0,
-    background: "none",
+    background: T.glass,
     border: "none",
-    borderRight: CONTROL_BORDER_STRONG,
+    borderRight: T.controlBorderStrong,
     textAlign: "left",
     overflow: "hidden",
+  },
+  bottomContextBlockDrawerOpen: {
+    background: T.glass,
   },
   bottomContextBlockSolo: {
     borderRight: "none",
@@ -2293,7 +2386,11 @@ const S: Record<string, CSSProperties> = {
     width: 42,
     flexShrink: 0,
     color: T.muted,
-    borderLeft: CONTROL_BORDER,
+    background: T.glass,
+    borderLeft: T.controlBorder,
+  },
+  bottomExpandArrowDrawerOpen: {
+    background: T.glass,
   },
   bottomActionPrimary: {
     display: "flex",
@@ -2301,8 +2398,8 @@ const S: Record<string, CSSProperties> = {
     justifyContent: "flex-end",
     gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "0 16px",
-    background: "transparent",
+    padding: "12px 14px",
+    background: T.glass,
   },
   bottomRouteActions: {
     display: "flex",
@@ -2310,15 +2407,18 @@ const S: Record<string, CSSProperties> = {
     justifyContent: "flex-end",
     gap: 8,
     minHeight: BOTTOM_BAR_CLEARANCE,
-    padding: "0 16px",
-    background: "transparent",
+    padding: "12px 14px",
+    background: T.glass,
+  },
+  bottomRouteActionsDrawerOpen: {
+    background: T.glass,
   },
   bottomSecondaryGroup: {
     display: "flex",
     alignItems: "center",
-    background: CHROME_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.glass,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
   },
   bottomSegBtn: {
     display: "inline-flex",
@@ -2327,10 +2427,10 @@ const S: Record<string, CSSProperties> = {
     gap: 7,
     minHeight: ACTION_HEIGHT,
     padding: "0 14px",
-    background: "none",
+    background: T.chromeSurfaceSoft,
     color: T.text,
     border: "none",
-    borderRight: CONTROL_BORDER,
+    boxShadow: `inset 0 0 0 1px ${T.border}`,
     borderRadius: 0,
     fontSize: 12,
     fontWeight: 600,
@@ -2343,7 +2443,8 @@ const S: Record<string, CSSProperties> = {
     padding: "0 18px",
     whiteSpace: "nowrap",
   },
-  bottomContext: { display: "grid", gap: 3, minWidth: 0, flex: 1, padding: "13px 14px 13px 20px", alignContent: "center" },
+  bottomContext: { display: "grid", minWidth: 0, flex: 1, padding: "12px 14px", alignContent: "center" },
+  bottomContextContent: { display: "flex", flexDirection: "column", gap: 3, animation: "oa-fade .15s ease-out", minWidth: 0 },
   bottomHeadline: {
     fontSize: 18,
     fontWeight: 800,
@@ -2402,7 +2503,7 @@ const S: Record<string, CSSProperties> = {
   },
   zoomDivider: { width: 1, height: 22, background: T.border },
   fab: { ...primaryActionBase, whiteSpace: "nowrap" },
-  fabActive: { background: T.btnPrimaryBgHover, border: `1px solid ${T.accentBorder}`, boxShadow: `${CONTROL_SHADOW}, ${T.elevAccentActive}` },
+  fabActive: { background: T.btnPrimaryBgHover, border: `1px solid ${T.accentBorder}`, boxShadow: `${T.controlShadow}, ${T.elevAccentActive}` },
   searchDrawerLayer: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE,
@@ -2456,6 +2557,9 @@ const S: Record<string, CSSProperties> = {
     boxShadow: T.elevDrawer,
     display: "flex",
     flexDirection: "column",
+    background: T.glass,
+    backdropFilter: T.panelBlur,
+    WebkitBackdropFilter: T.panelBlur,
   },
   drawerSheetWorkspace: {
     height: "100%",
@@ -2469,7 +2573,7 @@ const S: Record<string, CSSProperties> = {
     height: "auto",
     maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`,
     pointerEvents: "auto",
-    borderTop: CONTROL_BORDER_STRONG,
+    borderTop: T.controlBorderStrong,
     borderRight: "none",
     borderBottom: "none",
     borderLeft: "none",
@@ -2483,15 +2587,8 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
-  bpHeader: { padding: "10px 12px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
-  bpToolbarMeta: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
-  bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
-  bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
+  bpHeader: { padding: "10px 12px", borderBottom: T.controlBorderStrong, flexShrink: 0, background: T.panelSurfaceStrong },
   bpDivider: { width: 1, height: 20, background: T.border },
-  bpToolbar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  bpGroupRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  bpGroupLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginRight: 4 },
-  bpCount: { fontSize: 11, color: T.muted, fontWeight: 500 },
   bpBody: { flex: 1, overflowY: "auto", padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 12 },
   bpPeopleSection: { display: "grid", gap: 8 },
   bpSectionTitle: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".06em" },
@@ -2504,10 +2601,10 @@ const S: Record<string, CSSProperties> = {
   group: { display: "flex", flexDirection: "column", gap: 8 },
   groupHeader: { display: "flex", alignItems: "center", gap: 8 },
   groupLabel: { fontSize: 12, fontWeight: 700, color: T.sec, textTransform: "uppercase", letterSpacing: ".04em" },
-  groupCount: { fontSize: 10, fontWeight: 600, color: T.muted, background: "rgba(255,255,255,.04)", padding: "1px 7px", borderRadius: 10 },
+  groupCount: { fontSize: 10, fontWeight: 600, color: T.muted, background: T.chromeSurfaceSoft, padding: "1px 7px", borderRadius: 10 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 },
   gridCompact: { gridTemplateColumns: "repeat(auto-fill,minmax(170px,1fr))", gap: 8 },
-  card: { display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
+  card: { display: "flex", flexDirection: "column", gap: 8, padding: "12px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text },
   cardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   cardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   cardNameRow: { display: "flex", alignItems: "center", gap: 7 },
@@ -2518,8 +2615,8 @@ const S: Record<string, CSSProperties> = {
   cardKind: { fontSize: 11, color: T.muted, fontWeight: 500 },
   cardCap: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: T.sec, fontWeight: 500 },
   cardDept: { fontSize: 10, color: T.muted, fontWeight: 500, marginTop: -2 },
-  routeChoiceGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 8 },
-  routeChoiceCard: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 13px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text, minHeight: 114 },
+  routeChoiceGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 10 },
+  routeChoiceCard: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0, textAlign: "left", fontFamily: FONT, color: T.text, minHeight: 108 },
   routeChoiceCardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   routeChoiceTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
   routeChoiceNameRow: { display: "flex", alignItems: "center", gap: 7, minWidth: 0 },
@@ -2529,8 +2626,8 @@ const S: Record<string, CSSProperties> = {
   routeChoiceFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: "auto" },
   routeChoiceDept: { fontSize: 10, color: T.muted, fontWeight: 500 },
   routeChoiceStatus: { fontSize: 10, padding: "2px 8px", flexShrink: 0 },
-  personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left" },
-  personAv: { width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,rgba(56,189,248,.2),rgba(56,189,248,.05))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.accent, flexShrink: 0 },
+  personRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left" },
+  personAv: { width: 30, height: 30, borderRadius: "50%", background: `linear-gradient(135deg,${T.accentBg},${T.accentBgFaint})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.accent, flexShrink: 0 },
   personInfo: { flex: 1, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 },
   routePanel: {
     width: "100%",
@@ -2541,14 +2638,8 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
     padding: 0,
-    background: PANEL_SURFACE_SOFT,
+    background: "transparent",
   },
-  rpTopToolbar: { display: "flex", alignItems: "stretch", gap: 10, flexWrap: "wrap" },
-  rpTopFlow: { display: "grid", gap: 3, minWidth: 0 },
-  rpTopFlowText: { display: "grid", gap: 4, minWidth: 0 },
-  rpTopHeadlineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" },
-  rpTopFlowTitle: { fontSize: 15, fontWeight: 800, letterSpacing: "-.025em", lineHeight: 1.1, minWidth: 0 },
-  rpTopFlowSubline: { fontSize: 11, color: T.muted, lineHeight: 1.35, minWidth: 0, maxWidth: 560 },
   rpTopStatusChip: {
     ...microChipBase,
     minHeight: 24,
@@ -2563,12 +2654,12 @@ const S: Record<string, CSSProperties> = {
   rpTopStatusChipReady: {
     color: ST.available.c,
     background: ST.available.bg,
-    border: `1px solid ${ST.available.c}2b`,
+    border: `1px solid ${ST.available.border}`,
   },
   rpTopStatusChipError: {
     color: ST.occupied.c,
     background: ST.occupied.bg,
-    border: `1px solid ${ST.occupied.c}2b`,
+    border: `1px solid ${ST.occupied.border}`,
   },
   rpTopAside: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, minWidth: 0, flexWrap: "wrap" },
   rpTopActions: { display: "flex", alignItems: "stretch", justifyContent: "flex-end", gap: 8, flexShrink: 0, flexWrap: "wrap", minWidth: 0 },
@@ -2590,47 +2681,52 @@ const S: Record<string, CSSProperties> = {
   rpFlowStep: { ...microChipBase, padding: "0 12px", minHeight: 30, gap: 6, fontSize: 11, fontWeight: 700, color: T.sec, fontFamily: FONT },
   rpFlowStepActive: { ...segmentedButtonActive },
   rpFlowStepReady: { color: ST.available.c, fontSize: 12, lineHeight: 1, marginTop: -1 },
-  rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 10, minHeight: 0, overflow: "hidden", padding: "10px 14px 14px" },
-  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 40px minmax(0,1fr)", gap: 10, alignItems: "stretch", flexShrink: 0, minWidth: 0 },
+  rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 12, minHeight: 0, overflow: "hidden", padding: "10px 14px 14px" },
+  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", gap: 10, alignItems: "stretch", flexShrink: 0, minWidth: 0, padding: 8, background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow },
   rpPlannerCard: {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    minHeight: 68,
-    padding: "10px 12px",
-    background: PANEL_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    minHeight: 74,
+    padding: "12px 14px",
+    background: T.chromeSurface,
+    border: T.controlBorder,
+    boxShadow: "none",
     minWidth: 0,
     cursor: "pointer",
   },
-  rpPlannerCardActive: { background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `0 0 0 1px ${T.accent}26` },
-  rpPlannerRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
+  rpPlannerCardActive: { background: T.panelSurfaceStrong, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f` },
+  rpPlannerRow: { display: "flex", alignItems: "center", gap: 12, minWidth: 0 },
   rpPlannerGlyph: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     color: T.muted,
     flexShrink: 0,
+    background: T.chromeSurfaceSoft,
+    border: T.controlBorder,
   },
   rpPlannerGlyphActive: { color: T.accent },
-  rpPlannerBody: { display: "grid", gap: 2, minWidth: 0, flex: 1 },
-  rpPlannerName: { fontSize: 14, fontWeight: 700, letterSpacing: "-.018em", lineHeight: 1.2, color: T.text, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  rpPlannerNameEmpty: { fontSize: 14, fontWeight: 600, letterSpacing: "-.018em", lineHeight: 1.2, color: T.muted, minWidth: 0 },
-  rpPlannerHint: { fontSize: 11, color: T.muted, lineHeight: 1.4, minWidth: 0 },
-  rpPlannerMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  rpPlannerBody: { display: "grid", gap: 3, minWidth: 0, flex: 1 },
+  rpPlannerLabel: { fontSize: 10, fontWeight: 700, color: T.muted, letterSpacing: ".07em", fontFamily: MONO, lineHeight: 1 },
+  rpPlannerName: { fontSize: 15, fontWeight: 700, letterSpacing: "-.02em", lineHeight: 1.2, color: T.text, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  rpPlannerNameEmpty: { fontSize: 15, fontWeight: 600, letterSpacing: "-.02em", lineHeight: 1.2, color: T.muted, minWidth: 0 },
+  rpPlannerHint: { fontSize: 11, color: T.muted, lineHeight: 1.35, minWidth: 0 },
+  rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow, minWidth: 0 },
   rpSwapDock: { display: "flex", alignItems: "center", justifyContent: "center" },
-  rpStage: { display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  rpStage: { display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow },
   rpStageTitle: { fontSize: 15, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.2, marginTop: 0 },
   rpStageStat: { ...microChipBase, padding: "0 9px", minHeight: 26, fontSize: 10, fontWeight: 700, color: T.sec, fontFamily: MONO, letterSpacing: ".04em", flexShrink: 0 },
-  rpStageControls: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: CONTROL_BORDER, flexShrink: 0, background: PANEL_SURFACE },
-  rpStageBody: { flex: 1, overflowY: "auto", padding: "12px 14px 14px", minHeight: 0, scrollPaddingBottom: 18 },
+  rpStageControls: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: T.controlBorder, flexShrink: 0, background: T.chromeSurface },
+  rpStageControlsRoute: { flexDirection: "column", alignItems: "stretch", gap: 10 },
+  rpStageSearchRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
+  rpStageMetaRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minWidth: 0, flexWrap: "wrap" },
+  rpStageBody: { flex: 1, overflowY: "auto", padding: "10px 14px 14px", minHeight: 0, scrollPaddingBottom: 18 },
   rpAside: { display: "flex", flexDirection: "column", gap: 12, minHeight: 0 },
-  rpAsideShell: { display: "flex", flexDirection: "column", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 0 },
-  rpAsideSection: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", borderBottom: CONTROL_BORDER_STRONG },
+  rpAsideShell: { display: "flex", flexDirection: "column", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow, minHeight: 0 },
+  rpAsideSection: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", borderBottom: T.controlBorderStrong },
   rpAsideSectionActive: { background: T.accentBg },
   rpAsideSectionLast: { borderBottom: "none" },
   rpColumns: {
@@ -2646,25 +2742,25 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
     minWidth: 0,
-    background: PANEL_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurface,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
   },
-  rpColLast: { borderRight: CONTROL_BORDER },
+  rpColLast: { borderRight: T.controlBorder },
   rpColHeader: {
     display: "flex",
     alignItems: "flex-start",
     gap: 8,
     padding: "10px 14px",
-    borderBottom: CONTROL_BORDER,
+    borderBottom: T.controlBorder,
     flexShrink: 0,
-    background: PANEL_SURFACE_STRONG,
+    background: T.panelSurfaceStrong,
   },
   rpColLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 2 },
   rpSelected: { display: "flex", alignItems: "center", gap: 7, padding: "0 10px", minHeight: 30, background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, borderRadius: 0, marginTop: 0 },
   rpSelectedName: { fontSize: 13, fontWeight: 650 },
   rpSelectedLevel: { fontSize: 10, fontWeight: 700, fontFamily: MONO, color: T.accent, marginLeft: "auto" },
-  rpClearBtn: { width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,.06)", border: "1px solid transparent", borderRadius: 0, color: T.muted, marginLeft: 4, flexShrink: 0 },
+  rpClearBtn: { width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", background: T.chromeSurface, border: "1px solid transparent", borderRadius: 0, color: T.muted, marginLeft: 4, flexShrink: 0 },
   rpColSearch: {
     display: "flex",
     alignItems: "center",
@@ -2683,15 +2779,15 @@ const S: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 6,
     flexShrink: 0,
-    flexWrap: "nowrap",
+    flexWrap: "wrap",
     padding: 0,
     background: "transparent",
   },
   rpColBody: { flex: 1, overflowY: "auto", padding: "14px", scrollPaddingBottom: 18 },
-  rpEmptyState: { display: "grid", gap: 6, padding: "16px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER },
+  rpEmptyState: { display: "grid", gap: 6, padding: "12px 14px", background: T.panelSurface, border: T.controlBorder },
   rpEmptyTitle: { fontSize: 13, fontWeight: 700, color: T.text },
   rpStepCard: { display: "flex", flexDirection: "column", gap: 5, color: T.text, textAlign: "left" },
-  rpStepClearBtn: { width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", color: T.muted, padding: 0, flexShrink: 0 },
+  rpStepClearBtn: { width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", background: T.chromeSurfaceSoft, border: T.controlBorder, color: T.muted, padding: 0, flexShrink: 0 },
   rpStepCardActive: { background: "transparent" },
   rpStepCardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 },
   rpActiveStateChip: { ...microChipBase, minWidth: 72, padding: "0 10px", minHeight: 24, fontSize: 10, fontWeight: 700, color: T.sec, justifyContent: "center", fontFamily: FONT },
@@ -2718,14 +2814,14 @@ const S: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   rpSwapBtn: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: CHROME_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: `${CONTROL_SHADOW}, ${T.elevFloating}`,
+    background: T.chromeSurfaceSoft,
+    border: T.controlBorder,
+    boxShadow: "none",
     borderRadius: 0,
     color: T.sec,
     position: "relative",
@@ -2736,7 +2832,7 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    background: PANEL_SURFACE_SOFT,
+    background: "transparent",
   },
   infoDrawerHeader: {
     display: "flex",
@@ -2744,8 +2840,8 @@ const S: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     gap: 12,
     padding: "12px 16px",
-    borderBottom: CONTROL_BORDER_STRONG,
-    background: PANEL_SURFACE_STRONG,
+    borderBottom: T.controlBorderStrong,
+    background: T.panelSurfaceStrong,
     flexShrink: 0,
   },
   infoDrawerHeaderMain: {
@@ -2770,8 +2866,8 @@ const S: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     gap: 16,
     padding: "12px 16px",
-    borderTop: CONTROL_BORDER_STRONG,
-    background: PANEL_SURFACE_STRONG,
+    borderTop: T.controlBorderStrong,
+    background: T.panelSurfaceStrong,
     flexShrink: 0,
   },
   rpFooterSummary: { display: "grid", gap: 3, minWidth: 0 },
@@ -2786,7 +2882,7 @@ const S: Record<string, CSSProperties> = {
   },
   rpFooterMeta: { fontSize: 11, color: T.sec },
   rpFooterActions: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" },
-  rpResult: { padding: "16px 20px", borderTop: CONTROL_BORDER, flexShrink: 0, display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" },
+  rpResult: { padding: "16px 20px", borderTop: T.controlBorder, flexShrink: 0, display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" },
   rrHero: { display: "flex", alignItems: "center", gap: 14, flex: "1 1 400px", flexWrap: "wrap" },
   rrIcon: { width: 42, height: 42, borderRadius: 0, background: T.accentBg, color: T.accent, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   rrMain: { display: "flex", flexDirection: "column" },
@@ -2799,13 +2895,13 @@ const S: Record<string, CSSProperties> = {
   rrStatL: { fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" },
   rrDirections: { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 0 },
   rrStep: { display: "flex", alignItems: "flex-start", gap: 10, padding: "6px 0", marginBottom: 10 },
-  rrStepN: { width: 22, height: 22, borderRadius: 0, background: CHROME_SURFACE, border: CONTROL_BORDER, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },
+  rrStepN: { width: 22, height: 22, borderRadius: 0, background: T.chromeSurface, border: T.controlBorder, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },
   rrStepT: { fontSize: 12, color: T.sec, lineHeight: 1.5, paddingTop: 2 },
   rrStepsGrid: { display: "grid", gap: 20, alignItems: "start" },
   rrStepsColumn: { display: "grid", alignContent: "start", gap: 0, minWidth: 0 },
   accentBtn: { ...primaryActionBase },
   ghostBtn: { ...secondaryActionBase },
-  iconBtn: { width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: CHROME_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, color: T.sec, flexShrink: 0 },
+  iconBtn: { width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", background: T.chromeSurface, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0, color: T.sec, flexShrink: 0 },
   detailFloat: {
     position: "absolute",
     top: TOP_BAR_CLEARANCE + SIDE_PANEL_TOP_INSET,
@@ -2819,7 +2915,7 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderLeft: CONTROL_BORDER_STRONG,
+    borderLeft: T.controlBorderStrong,
     boxShadow: T.elevSide,
     overflow: "hidden",
   },
@@ -2836,7 +2932,7 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderLeft: CONTROL_BORDER_STRONG,
+    borderLeft: T.controlBorderStrong,
     boxShadow: T.elevSide,
     overflow: "hidden",
   },
@@ -2854,15 +2950,15 @@ const S: Record<string, CSSProperties> = {
     background: T.glass,
     backdropFilter: "blur(28px) saturate(150%)",
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
-    borderLeft: CONTROL_BORDER_STRONG,
+    borderLeft: T.controlBorderStrong,
     boxShadow: T.elevSide,
     overflow: "hidden",
   },
   checkRow: { display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none", fontSize: 12, color: T.sec, fontWeight: 500 },
-  checkBox: { width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${T.borderH}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
+  checkBox: { width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${T.borderH}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: T.bg, flexShrink: 0 },
   checkBoxOn: { background: T.accent, border: `1.5px solid ${T.accent}` },
   rrStatsPanel: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
-  rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow },
   opsShellBody: {
     padding: "14px 16px 16px",
   },
@@ -2874,7 +2970,7 @@ const S: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    background: PANEL_SURFACE_SOFT,
+    background: "transparent",
   },
   opsWorkspaceToolbar: {
     display: "grid",
@@ -2918,9 +3014,9 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: 8,
     padding: "12px",
-    background: PANEL_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurface,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
     flexShrink: 0,
   },
   opsHeroSummaryRow: {
@@ -2937,7 +3033,7 @@ const S: Record<string, CSSProperties> = {
     display: "grid",
     gap: 4,
     padding: "10px 12px",
-    background: `linear-gradient(135deg, ${T.accentBg} 0%, rgba(56,189,248,.06) 100%)`,
+    background: `linear-gradient(135deg, ${T.accentBg} 0%, ${T.accentBgFaint} 100%)`,
     border: `1px solid ${T.accentBorder}`,
     boxShadow: `inset 0 0 0 1px ${T.accent}14`,
   },
@@ -2974,8 +3070,8 @@ const S: Record<string, CSSProperties> = {
     display: "grid",
     gap: 2,
     padding: "9px 10px",
-    background: PANEL_SURFACE_SOFT,
-    border: CONTROL_BORDER,
+    background: T.panelSurfaceSoft,
+    border: T.controlBorder,
     textAlign: "center",
     alignContent: "center",
   },
@@ -3001,9 +3097,9 @@ const S: Record<string, CSSProperties> = {
     display: "grid",
     gap: 8,
     padding: "12px 14px",
-    background: PANEL_SURFACE_STRONG,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurfaceStrong,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
     minWidth: 0,
   },
   opsShellLeadValueRow: {
@@ -3022,9 +3118,9 @@ const S: Record<string, CSSProperties> = {
     display: "grid",
     gap: 10,
     padding: "12px 14px",
-    background: PANEL_SURFACE_STRONG,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurfaceStrong,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
     minWidth: 0,
   },
   opsShellHeroFacts: {
@@ -3036,9 +3132,9 @@ const S: Record<string, CSSProperties> = {
     display: "grid",
     gap: 4,
     padding: "10px 12px",
-    background: PANEL_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurface,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
     minWidth: 0,
   },
   opsShellFactLabel: {
@@ -3092,9 +3188,9 @@ const S: Record<string, CSSProperties> = {
     display: "grid",
     gap: 10,
     padding: "12px 14px",
-    background: PANEL_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurface,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
     textAlign: "left",
     color: T.text,
     fontFamily: FONT,
@@ -3145,13 +3241,13 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: 12,
     padding: "12px 14px",
-    background: PANEL_SURFACE,
-    border: CONTROL_BORDER,
-    boxShadow: CONTROL_SHADOW,
+    background: T.panelSurface,
+    border: T.controlBorder,
+    boxShadow: T.controlShadow,
     minWidth: 0,
   },
   opsShellSectionWide: {
-    background: PANEL_SURFACE,
+    background: T.panelSurface,
   },
   opsShellSectionIntro: {
     display: "flex",
@@ -3198,7 +3294,7 @@ const S: Record<string, CSSProperties> = {
     letterSpacing: ".01em",
   },
   opsOverviewGrid: { display: "grid", gridTemplateColumns: "minmax(0,1.7fr) minmax(320px,.95fr)", gap: 12, alignItems: "stretch" },
-  opsHeroCard: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 0 },
+  opsHeroCard: { display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow, minHeight: 0 },
   opsHeroMain: { display: "flex", alignItems: "flex-start", gap: 16 },
   opsHeroMetricBlock: { display: "grid", gap: 4, minWidth: 108, flexShrink: 0 },
   opsHeroMetric: { fontSize: 42, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.04em", lineHeight: 0.95 },
@@ -3206,19 +3302,19 @@ const S: Record<string, CSSProperties> = {
   opsHeroCopy: { display: "grid", gap: 4, minWidth: 0, paddingTop: 2 },
   opsHeroTitle: { fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", color: T.text },
   opsBreakdownBar: { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 },
-  opsBreakdownSegment: { display: "grid", gap: 3, padding: "8px 12px", minWidth: 0, minHeight: 50, alignContent: "center", boxShadow: CONTROL_SHADOW },
+  opsBreakdownSegment: { display: "grid", gap: 3, padding: "8px 12px", minWidth: 0, minHeight: 50, alignContent: "center", boxShadow: T.controlShadow },
   opsBreakdownValue: { fontSize: 14, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
   opsBreakdownLabel: { fontSize: 9, fontWeight: 700, color: "currentColor", textTransform: "uppercase", letterSpacing: ".05em", opacity: 0.9 },
   opsMetaRow: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 },
-  opsMetaCard: { display: "grid", gap: 4, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  opsMetaCard: { display: "grid", gap: 4, padding: "10px 12px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow },
   opsMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   opsMetaValue: { fontSize: 18, fontWeight: 800, fontFamily: MONO, letterSpacing: "-.03em", lineHeight: 1 },
   opsStatusGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
-  opsStatusCard: { display: "grid", gap: 6, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minHeight: 92, alignContent: "space-between" },
+  opsStatusCard: { display: "grid", gap: 6, padding: "12px 14px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, minHeight: 92, alignContent: "space-between" },
   opsStatusValue: { fontSize: 26, fontWeight: 800, fontFamily: MONO, lineHeight: 1 },
   opsStatusLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   opsRoomGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 10 },
-  opsRoomCard: { width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", minHeight: 128 },
+  opsRoomCard: { width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "12px 14px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0, fontFamily: FONT, color: T.text, textAlign: "left", minHeight: 128 },
   opsRoomCardSelected: { border: `1px solid ${T.accent}`, background: T.accentBg, boxShadow: `0 0 0 1px ${T.accent}40` },
   opsRoomHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   opsRoomTitleRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
@@ -3229,15 +3325,15 @@ const S: Record<string, CSSProperties> = {
   opsRoomFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: "auto" },
   opsRoomDept: { fontSize: 11, color: T.muted, fontWeight: 500, minWidth: 0 },
   opsRoomSignal: { fontSize: 10, fontWeight: 700, color: T.accent, textTransform: "uppercase", letterSpacing: ".05em", flexShrink: 0 },
-  floatHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 12, borderBottom: CONTROL_BORDER_STRONG, background: PANEL_SURFACE_STRONG },
+  floatHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingBottom: 12, borderBottom: T.controlBorderStrong, background: T.panelSurfaceStrong },
   panelHeaderTight: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 8,
     padding: "14px 16px",
-    borderBottom: CONTROL_BORDER_STRONG,
-    background: PANEL_SURFACE_STRONG,
+    borderBottom: T.controlBorderStrong,
+    background: T.panelSurfaceStrong,
     flexShrink: 0,
   },
   sidePanelBody: {
@@ -3249,7 +3345,7 @@ const S: Record<string, CSSProperties> = {
     padding: "14px 16px",
     flex: "0 1 auto",
     maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE + 104}px)`,
-    background: PANEL_SURFACE_SOFT,
+    background: "transparent",
   },
   sidePanelBodyDetail: {
     paddingTop: 12,
@@ -3263,8 +3359,8 @@ const S: Record<string, CSSProperties> = {
     gap: 8,
     flexWrap: "wrap",
     padding: "14px 16px",
-    borderTop: CONTROL_BORDER_STRONG,
-    background: PANEL_SURFACE_STRONG,
+    borderTop: T.controlBorderStrong,
+    background: T.panelSurfaceStrong,
     flexShrink: 0,
   },
   sidePanelFooterColumn: {
@@ -3272,29 +3368,29 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     gap: 8,
     padding: "14px 16px",
-    borderTop: CONTROL_BORDER_STRONG,
-    background: PANEL_SURFACE_STRONG,
+    borderTop: T.controlBorderStrong,
+    background: T.panelSurfaceStrong,
     flexShrink: 0,
   },
   sidePanelTitle: { margin: 0, fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.15 },
   sidePanelSubline: { fontSize: 11, color: T.sec },
-  sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
-  sidePanelSectionCompact: { display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  sidePanelSection: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow },
+  sidePanelSectionCompact: { display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow },
   sidePanelSectionHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
   floatKicker: { fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: T.accent },
   floatTitle: { margin: 0, fontSize: 20, fontWeight: 800, letterSpacing: "-.03em", lineHeight: 1.15 },
   floatSubline: { fontSize: 12, color: T.sec },
-  panelInset: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0 },
+  panelInset: { display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0 },
   panelInsetAccent: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}1f`, borderRadius: 0 },
   panelInsetScroll: { overflowY: "auto", padding: "0 0 2px", minHeight: 0, flex: 1 },
   panelSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", fontFamily: MONO },
   panelMetaGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
-  panelMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, borderRadius: 0 },
+  panelMetaCell: { display: "flex", flexDirection: "column", gap: 3, padding: "10px 12px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, borderRadius: 0 },
   panelChipRow: { display: "flex", gap: 6, flexWrap: "wrap" },
   panelActionRow: { display: "flex", gap: 8, flexWrap: "wrap" },
   panelActionColumn: { display: "flex", flexDirection: "column", gap: 8 },
   infoChip: { ...microChipBase, padding: "0 10px", fontSize: 11, fontWeight: 600, color: T.sec },
-  detailHeroCard: { display: "grid", gap: 12, padding: "14px 16px", background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  detailHeroCard: { display: "grid", gap: 12, padding: "14px 16px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow },
   detailHeroMain: { display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 },
   detailHeroGlyph: { width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}16`, color: T.accent, fontSize: 11, fontWeight: 700, fontFamily: MONO, flexShrink: 0 },
   detailHeroText: { display: "grid", gap: 8, minWidth: 0, flex: 1 },
@@ -3302,13 +3398,19 @@ const S: Record<string, CSSProperties> = {
   detailHeroTitle: { fontSize: 16, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.2, color: T.text, minWidth: 0 },
   detailHeroSubline: { fontSize: 12, color: T.sec, lineHeight: 1.5 },
   detailMetaGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
-  detailMetaCell: { display: "flex", flexDirection: "column", gap: 4, padding: "12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
+  detailMetaCell: { display: "flex", flexDirection: "column", gap: 4, padding: "12px", background: T.panelSurfaceStrong, border: T.controlBorder, boxShadow: T.controlShadow, minWidth: 0 },
   detailMetaLabel: { fontSize: 9, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   detailMetaValue: { fontSize: 13, fontWeight: 650, color: T.text, lineHeight: 1.35 },
-  detailSectionCard: { display: "grid", gap: 8, padding: "12px 14px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
+  detailSectionCard: { display: "grid", gap: 8, padding: "12px 14px", background: T.panelSurface, border: T.controlBorder, boxShadow: T.controlShadow },
   detailSectionLabel: { fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em", fontFamily: MONO },
   detailSectionText: { fontSize: 13, color: T.text, lineHeight: 1.5, fontWeight: 600 },
   detailEquipmentRow: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  detailStatusBand: { display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", flexShrink: 0 },
+  detailStatusDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0 },
+  detailStatusLbl: { fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: ".07em" },
+  detailDescBlock: { display: "grid", gap: 6 },
+  detailDescText: { fontSize: 14, color: T.text, lineHeight: 1.65, fontWeight: 500 },
+  detailMetaCellAccent: { display: "flex", flexDirection: "column", gap: 4, padding: "12px", background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: T.controlShadow, minWidth: 0 },
 
   // Search empty state
   emptySearchBlock: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", gap: 8, textAlign: "center" },

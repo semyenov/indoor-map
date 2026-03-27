@@ -15,6 +15,7 @@ import maplibregl, {
   type FilterSpecification,
   type StyleSpecification,
 } from "maplibre-gl";
+import "./MapCanvas.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { buildRouteCollection, buildRouteMarkerCollection } from "../lib/routing";
 import type {
@@ -1274,6 +1275,7 @@ export interface MapCanvasProps {
   showControls?: boolean;
   themeVariant?: MapThemeVariant;
   selectedFeatureId: string | null;
+  hoveredStepIdx: number | null;
   route: RouteResult | null;
   routeRevision: number;
   selectableSpaceFeatures: OfficePolygonFeature[];
@@ -1294,6 +1296,7 @@ export function MapCanvas({
   levels,
   showControls = true,
   themeVariant = "light",
+  hoveredStepIdx,
   selectedFeatureId,
   route,
   routeRevision,
@@ -2353,6 +2356,33 @@ export function MapCanvas({
   }, [routeRevision]);
 
   useEffect(() => {
+    if (hoveredStepIdx === null || !route || route.legs.length === 0) {
+      return;
+    }
+
+    const map = mapRef.current;
+
+    if (!map) {
+      return;
+    }
+
+    const legIdx = Math.min(hoveredStepIdx, route.legs.length - 1);
+    const leg = route.legs[legIdx];
+
+    if (!leg || leg.path.length === 0) {
+      return;
+    }
+
+    const midpoint = leg.path[Math.floor(leg.path.length / 2)];
+
+    if (!midpoint) {
+      return;
+    }
+
+    map.flyTo({ center: [midpoint[0], midpoint[1]], zoom: Math.max(map.getZoom(), 19.5), duration: 400, essential: true });
+  }, [hoveredStepIdx]);
+
+  useEffect(() => {
     const map = mapRef.current;
 
     if (!map) {
@@ -2366,8 +2396,11 @@ export function MapCanvas({
   }, [activeLevel, palette, route]);
 
   return (
-    <div className="map-frame">
-      <div className="map-shell" ref={containerRef} />
+    <div
+      className="map-frame"
+      style={{ position: "relative", width: "100%", height: "100%", minWidth: 0, minHeight: 0 }}
+    >
+      <div className="map-shell" ref={containerRef} style={{ position: "absolute", inset: 0 }} />
       {showControls ? <div className={controlsHidden ? "map-toolbar map-toolbar-collapsed" : "map-toolbar"}>
         <div className="map-toolbar-header">
           <div className="map-toolbar-copy">
