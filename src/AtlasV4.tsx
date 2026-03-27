@@ -483,49 +483,49 @@ function RouteCandidateGrid({
         const groupOffset = offset;
         offset += items.length;
         return (
-        <div key={label} style={S.group}>
-          <div style={S.groupHeader}>
-            <span style={S.groupLabel}>{label}</span>
-            <span style={S.groupCount}>{items.length}</span>
-          </div>
-          <div style={S.routeChoiceGrid}>
-            {items.map((space, i) => {
-              const status = ST[space.status];
-              const isSelected = selectedFeatureId === space.featureId;
+          <div key={label} style={S.group}>
+            <div style={S.groupHeader}>
+              <span style={S.groupLabel}>{label}</span>
+              <span style={S.groupCount}>{items.length}</span>
+            </div>
+            <div style={S.routeChoiceGrid}>
+              {items.map((space, i) => {
+                const status = ST[space.status];
+                const isSelected = selectedFeatureId === space.featureId;
 
-              return (
-                <button
-                  key={space.id}
-                  style={{ ...S.routeChoiceCard, ...(isSelected ? S.routeChoiceCardSelected : {}), "--ci": groupOffset + i } as CSSProperties}
-                  className="hud-card card-anim"
-                  onClick={() => onSelect(space)}
-                  type="button"
-                >
-                  <div style={S.routeChoiceTop}>
-                    <div style={S.routeChoiceNameRow}>
-                      <span style={{ ...S.statusDot, background: status.c }} />
-                      <span style={S.routeChoiceName}>{space.name}</span>
+                return (
+                  <button
+                    key={space.id}
+                    style={{ ...S.routeChoiceCard, ...(isSelected ? S.routeChoiceCardSelected : {}), "--ci": groupOffset + i } as CSSProperties}
+                    className="hud-card card-anim"
+                    onClick={() => onSelect(space)}
+                    type="button"
+                  >
+                    <div style={S.routeChoiceTop}>
+                      <div style={S.routeChoiceNameRow}>
+                        <span style={{ ...S.statusDot, background: status.c }} />
+                        <span style={S.routeChoiceName}>{space.name}</span>
+                      </div>
+                      <span style={S.cardLevel}>{space.level}</span>
                     </div>
-                    <span style={S.cardLevel}>{space.level}</span>
-                  </div>
-                  <div style={S.routeChoiceMeta}>
-                    <span style={S.routeChoiceMetaText}>{space.kindLabel}</span>
-                    {space.cap > 0 ? (
-                      <span style={S.routeChoiceMetaText}>
-                        <Ic.Seats /> {space.cap}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div style={S.routeChoiceFooter}>
-                    <span style={S.routeChoiceDept}>{space.dept}</span>
-                    <span style={{ ...S.statusPill, ...S.routeChoiceStatus, color: status.c, background: status.bg }}>{status.label}</span>
-                  </div>
-                </button>
-              );
-            })}
+                    <div style={S.routeChoiceMeta}>
+                      <span style={S.routeChoiceMetaText}>{space.kindLabel}</span>
+                      {space.cap > 0 ? (
+                        <span style={S.routeChoiceMetaText}>
+                          <Ic.Seats /> {space.cap}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div style={S.routeChoiceFooter}>
+                      <span style={S.routeChoiceDept}>{space.dept}</span>
+                      <span style={{ ...S.statusPill, ...S.routeChoiceStatus, color: status.c, background: status.bg }}>{status.label}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      );
+        );
       })}
     </div>
   );
@@ -774,11 +774,16 @@ export default function AtlasV4() {
       ? "route-result"
       : lastInfoDrawerMode === "detail" && selectedFeature
         ? "detail"
-        : route
-          ? "route-result"
-          : selectedFeature
-            ? "detail"
-            : null;
+          : route
+            ? "route-result"
+            : selectedFeature
+              ? "detail"
+              : null;
+  const hasBottomActionPanel = drawerOpen
+    ? (drawerMode === "route")
+      || (drawerMode === "route-result" && Boolean(route))
+      || (drawerMode === "detail" && Boolean(selectedFeature))
+    : true;
   const activeViewModeLabel = VIEW_MODES.find((mode) => mode.id === viewMode)?.label ?? viewMode;
   const bottomHeadline = route
     ? `${routeFrom?.name ?? "Старт"} → ${routeTo?.name ?? "Точка назначения"}`
@@ -1299,9 +1304,9 @@ export default function AtlasV4() {
         </div>}
       </div>
 
-      <div style={S.bottomBar}>
+      <div style={{ ...S.bottomBar, ...(drawerOpen ? S.bottomBarDrawerOpen : null) }}>
         <button
-          style={S.bottomContextBlock}
+          style={{ ...S.bottomContextBlock, ...(hasBottomActionPanel ? null : S.bottomContextBlockSolo) }}
           className="hud-btn"
           aria-label="Открыть панель"
           onClick={openBottomContextDrawer}
@@ -1319,12 +1324,12 @@ export default function AtlasV4() {
                     : bottomPanelMode === "search"
                       ? "Поиск"
                       : bottomPanelMode === "ops"
-                      ? "Операции"
-                      : route
-                        ? "Активный маршрут"
+                        ? "Операции"
+                        : route
+                          ? "Активный маршрут"
                           : selectedFeature
                             ? "Выбранный объект"
-                          : "Пространство"}
+                            : "Пространство"}
             </div>
             <div style={S.bottomHeadline}>
               {bottomPanelMode === "route" ? (
@@ -1441,11 +1446,7 @@ export default function AtlasV4() {
               <BottomActionLabel accent icon={<Ic.RouteTo />} label="Построить сюда" />
             </button>
           </div>
-        ) : drawerOpen && drawerMode === "search" ? (
-          <div style={S.bottomRouteActions} />
-        ) : drawerOpen && drawerMode === "ops" ? (
-          <div style={S.bottomRouteActions} />
-        ) : (
+        ) : drawerOpen ? null : (
           <div style={S.bottomActionPrimary}>
             <button
               style={{ ...S.bottomPrimaryBtn, ...(drawerOpen && drawerMode === "route" ? S.fabActive : {}) }}
@@ -1488,168 +1489,135 @@ export default function AtlasV4() {
           >
             {drawerMode === "search" ? (
               <div style={S.browsePanel}>
-                <div style={S.bpHeader}>
-                  <div style={S.bpToolbar}>
-                    <div style={S.bpGroupRow}>
-                      <span style={S.bpGroupLabel}>Группировать</span>
-                      {GROUP_OPTIONS.map((group) => (
-                        <button
-                          key={group.key}
-                          style={{ ...S.pill, ...(browseGroup === group.key ? S.pillActive : {}) }}
-                          className="hud-btn"
-                          data-active={browseGroup === group.key ? "true" : undefined}
-                          onClick={() => setBrowseGroup(group.key)}
-                          type="button"
-                        >
-                          {group.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={S.bpToolbarMeta}>
-                      <span style={S.bpCount}>
-                        {browseQ.trim() ? `${matchedSearchResults.length} совпадений` : `${browseSpaces.length} помещений`}
-                        {browsePeople.length > 0 ? ` · ${browsePeople.length} человек` : ""}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div style={S.bpBody}>
-                  {browsePeople.length > 0 ? (
-                    <div style={S.bpPeopleSection}>
-                      <div style={S.bpSectionTitle}>
-                        <Ic.User /> Люди
-                      </div>
-                      <div style={S.bpPeopleGrid}>
-                        {browsePeople.slice(0, 6).map((person) => (
-                          <PersonRow
-                            key={person.featureId}
-                            person={person}
-                            onClick={(nextPerson) => {
-                              setBrowseQ("");
-                              onSelectFeature(nextPerson.featureId);
-                            }}
-                          />
+                <div style={S.rpFlowShell}>
+                  <div style={S.rpStage}>
+                    <div style={S.rpStageControls}>
+                      <div style={S.rpColToolbar}>
+                        <span style={{ fontSize: 10, color: T.muted, fontWeight: 700, letterSpacing: ".06em", fontFamily: MONO }}>ГРУППА</span>
+                        {GROUP_OPTIONS.map((group) => (
+                          <button
+                            key={group.key}
+                            style={{ ...S.pillSm, ...(browseGroup === group.key ? S.pillSmActive : {}) }}
+                            className="hud-btn"
+                            data-active={browseGroup === group.key ? "true" : undefined}
+                            onClick={() => setBrowseGroup(group.key)}
+                            type="button"
+                          >
+                            {group.label}
+                          </button>
                         ))}
                       </div>
+                      <span style={{ ...S.rpStageStat, marginLeft: "auto" }}>
+                        {browseQ.trim() ? `${matchedSearchResults.length} совп` : `${browseSpaces.length} пом`}
+                        {browsePeople.length > 0 ? ` · ${browsePeople.length} чел` : ""}
+                      </span>
                     </div>
-                  ) : null}
-                  {browseQ.trim() && matchedSearchResults.length === 0 && browsePeople.length === 0 ? (
-                    <div style={S.emptySearchBlock}>
-                      <div style={S.emptySearchIcon}><Ic.Search s={22} /></div>
-                      <div style={S.emptySearchTitle}>Ничего не найдено</div>
-                      <div style={S.emptySearchSub}>Нет совпадений для «{browseQ}»</div>
+                    <div style={{ ...S.rpStageBody, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {browsePeople.length > 0 ? (
+                        <div style={S.bpPeopleSection}>
+                          <div style={S.bpSectionTitle}>
+                            <Ic.User /> Люди
+                          </div>
+                          <div style={S.bpPeopleGrid}>
+                            {browsePeople.slice(0, 6).map((person) => (
+                              <PersonRow
+                                key={person.featureId}
+                                person={person}
+                                onClick={(nextPerson) => {
+                                  setBrowseQ("");
+                                  onSelectFeature(nextPerson.featureId);
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      {browseQ.trim() && matchedSearchResults.length === 0 && browsePeople.length === 0 ? (
+                        <div style={S.emptySearchBlock}>
+                          <div style={S.emptySearchIcon}><Ic.Search s={22} /></div>
+                          <div style={S.emptySearchTitle}>Ничего не найдено</div>
+                          <div style={S.emptySearchSub}>Нет совпадений для «{browseQ}»</div>
+                        </div>
+                      ) : (
+                        <GroupedGrid
+                          spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
+                          groupKey={browseGroup}
+                          onSelect={(space) => {
+                            setBrowseQ("");
+                            onSelectFeature(space.featureId);
+                          }}
+                          selectedFeatureId={selectedFeatureId}
+                        />
+                      )}
                     </div>
-                  ) : (
-                    <GroupedGrid
-                      spaces={browseQ.trim() ? matchedSearchResults : browseSpaces}
-                      groupKey={browseGroup}
-                      onSelect={(space) => {
-                        setBrowseQ("");
-                        onSelectFeature(space.featureId);
-                      }}
-                      selectedFeatureId={selectedFeatureId}
-                    />
-                  )}
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {drawerMode === "route" ? (
               <div style={S.routePanel}>
-                <div style={S.bpHeader}>
-                  <div style={S.rpTopToolbar}>
-                    <div style={S.rpPlannerBar}>
-                      {[
-                        { step: "from" as const, title: "Старт", point: routeFrom, helper: "Выберите, откуда начать маршрут." },
-                        { step: "to" as const, title: "Назначение", point: routeTo, helper: "Выберите, куда нужно попасть." },
-                      ].map(({ step, title, point, helper }, plannerIndex) => {
-                        const isActive = activeRouteStep === step;
-                        return (
-                          <Fragment key={step}>
-                            {plannerIndex === 1 ? (
-                              <div style={S.rpSwapDock}>
-                                <button style={S.rpSwapBtn} className="hud-btn" onClick={swapRouteEndpoints} type="button">
-                                  <Ic.Swap />
-                                </button>
-                              </div>
-                            ) : null}
-                            <div
-                              style={{ ...S.rpPlannerCard, ...(isActive ? S.rpPlannerCardActive : {}) }}
-                              onClick={() => setRouteBuilderStep(step)}
-                              onKeyDown={(event) => {
-                                if (event.key === "Enter" || event.key === " ") {
-                                  event.preventDefault();
-                                  setRouteBuilderStep(step);
-                                }
-                              }}
-                              role="button"
-                              tabIndex={0}
-                            >
-                              <div style={S.rpStepCard}>
-                                <div style={S.rpStepCardTop}>
-                                  <span style={S.panelSectionLabel}>{title}</span>
-                                  {point ? (
-                                    <button
-                                      style={S.rpStepClearBtn}
-                                      className="hud-btn"
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        clearRoutePoint(step);
-                                      }}
-                                      type="button"
-                                    >
-                                      <Ic.X s={10} />
-                                    </button>
-                                  ) : null}
-                                </div>
-                                {point ? (
-                                  <div style={S.rpStepCardBody}>
-                                    <div style={S.rpStepCardName}>{point.name}</div>
-                                    <div style={S.rpStepCardMeta}>
-                                      <span style={S.rpStepMiniChip}>{point.level}</span>
-                                      <span style={S.rpStepMiniChip}>{point.kindLabel}</span>
-                                      {point.cap > 0 ? <span style={S.rpStepMiniChip}>{point.cap} мест</span> : null}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div style={S.rpStepCardPlaceholder}>{helper}</div>
-                                )}
-                              </div>
-                            </div>
-                          </Fragment>
-                        );
-                      })}
-                    </div>
-                    <div style={S.rpTopActions}>
-                      <button
-                        type="button"
-                        style={{ ...S.rpTopToggle, opacity: hasRouteBuilderSelection ? 1 : 0.45, pointerEvents: hasRouteBuilderSelection ? "auto" : "none" }}
-                        className="hud-btn"
-                        onClick={clearRouteBuilder}
-                      >
-                        <Ic.ClearRoute />
-                        <span>Очистить</span>
-                      </button>
-                      <button
-                        type="button"
-                        title="Маршрут без барьеров"
-                        style={{ ...S.rpTopToggle, ...(accessibleOnly ? S.rpTopToggleActive : {}) }}
-                        className="hud-btn"
-                        data-active={accessibleOnly ? "true" : undefined}
-                        onClick={() => setAccessibleOnly((v) => !v)}
-                      >
-                        <Ic.Accessible />
-                        <span>{accessibleOnly ? "Без барьеров" : "Любой путь"}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
                 <div style={S.rpFlowShell}>
-                  {/* <div style={S.rpTopFlow}>
-                    <div style={S.rpTopFlowTitle}>{activeRouteTitle}</div>
-                    <div style={S.rpTopFlowSubline}>{activeRouteSubtitle}</div>
-                  </div> */}
-
+                  <div style={S.rpPlannerBar}>
+                    {[
+                      { step: "from" as const, point: routeFrom, placeholder: "Откуда", helper: "Выберите начальную точку" },
+                      { step: "to" as const, point: routeTo, placeholder: "Куда", helper: "Выберите конечную точку" },
+                    ].map(({ step, point, placeholder, helper }, plannerIndex) => {
+                      const isActive = activeRouteStep === step;
+                      return (
+                        <Fragment key={step}>
+                          {plannerIndex === 1 ? (
+                            <div style={S.rpSwapDock}>
+                              <button style={S.rpSwapBtn} className="hud-btn" onClick={swapRouteEndpoints} type="button">
+                                <Ic.Swap />
+                              </button>
+                            </div>
+                          ) : null}
+                          <div
+                            style={{ ...S.rpPlannerCard, ...(isActive ? S.rpPlannerCardActive : {}) }}
+                            onClick={() => setRouteBuilderStep(step)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                setRouteBuilderStep(step);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div style={S.rpPlannerRow}>
+                              <div style={{ ...S.rpPlannerGlyph, ...(isActive || point ? S.rpPlannerGlyphActive : {}) }}>
+                                {step === "from" ? <Ic.RouteFrom /> : <Ic.RouteTo />}
+                              </div>
+                              <div style={S.rpPlannerBody}>
+                                <div style={point ? S.rpPlannerName : S.rpPlannerNameEmpty}>
+                                  {point ? point.name : placeholder}
+                                </div>
+                                <div style={S.rpPlannerHint}>
+                                  {point
+                                    ? `${point.level} · ${point.kindLabel}${point.cap > 0 ? ` · ${point.cap} мест` : ""}`
+                                    : helper}
+                                </div>
+                              </div>
+                              {point ? (
+                                <button
+                                  style={S.rpStepClearBtn}
+                                  className="hud-btn"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    clearRoutePoint(step);
+                                  }}
+                                  type="button"
+                                >
+                                  <Ic.X s={10} />
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </Fragment>
+                      );
+                    })}
+                  </div>
                   <div style={S.rpStage}>
                     <div style={S.rpStageControls} className="hud-focus-shell">
                       <div style={S.rpColSearch}>
@@ -1939,40 +1907,39 @@ const SIDE_PANEL_TOP_INSET = 16;
 const ATLAS_THEME_VARS = {
   dark: {
     "--atlas-bg": "#0b1420",
-    "--atlas-glass": "rgba(13,22,38,.80)",
-    "--atlas-glass-heavy": "rgba(9,15,28,.95)",
-    "--atlas-chrome-surface": "rgba(255,255,255,.054)",
-    "--atlas-chrome-surface-soft": "rgba(255,255,255,.030)",
-    "--atlas-chrome-surface-strong": "rgba(255,255,255,.074)",
+    "--atlas-glass": "rgba(13,22,38,.84)",
+    "--atlas-glass-heavy": "rgba(9,15,28,.96)",
+    "--atlas-chrome-surface": "rgba(255,255,255,.068)",
+    "--atlas-chrome-surface-soft": "rgba(255,255,255,.040)",
+    "--atlas-chrome-surface-strong": "rgba(255,255,255,.092)",
     "--atlas-panel-surface": "rgba(255,255,255,.044)",
     "--atlas-panel-surface-soft": "rgba(255,255,255,.026)",
     "--atlas-panel-surface-strong": "rgba(255,255,255,.062)",
     "--atlas-border": "rgba(255,255,255,.09)",
-    "--atlas-border-strong": "rgba(255,255,255,.16)",
-    "--atlas-text": "#e6ecf2",
-    "--atlas-sec": "rgba(230,236,242,.58)",
-    "--atlas-muted": "rgba(230,236,242,.36)",
+    "--atlas-border-strong": "rgba(255,255,255,.15)",
+    "--atlas-text": "#eaf0f6",
+    "--atlas-sec": "rgba(230,236,242,.70)",
+    "--atlas-muted": "rgba(230,236,242,.48)",
     "--atlas-accent": "#36c2f6",
-    "--atlas-accent-bg": "rgba(54,194,246,.12)",
-    "--atlas-accent-border": "rgba(54,194,246,.26)",
-    "--atlas-hover-surface": "rgba(255,255,255,.07)",
-    "--atlas-focus-surface": "rgba(54,194,246,.10)",
-    "--atlas-btn-surface": "rgba(255,255,255,.062)",
-    "--atlas-btn-surface-hover": "rgba(255,255,255,.094)",
-    "--atlas-btn-surface-active": "rgba(54,194,246,.11)",
-    "--atlas-btn-surface-border": "rgba(255,255,255,.16)",
-    "--atlas-btn-primary-bg": "rgba(54,194,246,.14)",
-    "--atlas-btn-primary-bg-hover": "rgba(54,194,246,.22)",
-    "--atlas-btn-primary-text": "#80dcff",
-    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.046)",
-    "--atlas-elev-top": "0 4px 16px rgba(0,0,0,.22), 0 12px 36px rgba(0,0,0,.18)",
-    "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.20)",
-    "--atlas-elev-drawer": "0 8px 36px rgba(0,0,0,.28)",
-    "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.20)",
-    "--atlas-elev-floating": "0 4px 12px rgba(0,0,0,.20), 0 8px 24px rgba(0,0,0,.16)",
-    "--atlas-elev-accent": "inset 0 0 0 1px rgba(54,194,246,.12)",
-    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(54,194,246,.22)",
-    "--atlas-overlay": "rgba(0,0,0,.08)",
+    "--atlas-accent-bg": "rgba(54,194,246,.14)",
+    "--atlas-accent-border": "rgba(54,194,246,.32)",
+    "--atlas-hover-surface": "rgba(255,255,255,.082)",
+    "--atlas-focus-surface": "rgba(54,194,246,.12)",
+    "--atlas-btn-surface": "rgba(255,255,255,.074)",
+    "--atlas-btn-surface-hover": "rgba(255,255,255,.108)",
+    "--atlas-btn-surface-active": "rgba(54,194,246,.13)",
+    "--atlas-btn-primary-bg": "rgba(54,194,246,.16)",
+    "--atlas-btn-primary-bg-hover": "rgba(54,194,246,.25)",
+    "--atlas-btn-primary-text": "#8de0ff",
+    "--atlas-control-shadow": "inset 0 1px 0 rgba(255,255,255,.058)",
+    "--atlas-elev-top": "0 4px 16px rgba(0,0,0,.30), 0 12px 36px rgba(0,0,0,.22)",
+    "--atlas-elev-bottom": "0 -2px 28px rgba(0,0,0,.26)",
+    "--atlas-elev-drawer": "0 8px 36px rgba(0,0,0,.36)",
+    "--atlas-elev-side": "-8px 0 28px rgba(0,0,0,.26)",
+    "--atlas-elev-floating": "0 4px 12px rgba(0,0,0,.28), 0 8px 24px rgba(0,0,0,.20)",
+    "--atlas-elev-accent": "inset 0 0 0 1px rgba(54,194,246,.16)",
+    "--atlas-elev-accent-active": "inset 0 0 0 1px rgba(54,194,246,.28)",
+    "--atlas-overlay": "rgba(0,0,0,.10)",
   },
   light: {
     "--atlas-bg": "#f0f4f7",
@@ -1997,7 +1964,6 @@ const ATLAS_THEME_VARS = {
     "--atlas-btn-surface": "rgba(255,255,255,.96)",
     "--atlas-btn-surface-hover": "#ffffff",
     "--atlas-btn-surface-active": "rgba(7,117,181,.09)",
-    "--atlas-btn-surface-border": "rgba(16,44,66,.16)",
     "--atlas-btn-primary-bg": "rgba(7,117,181,.12)",
     "--atlas-btn-primary-bg-hover": "rgba(7,117,181,.20)",
     "--atlas-btn-primary-text": "#0775b5",
@@ -2027,7 +1993,7 @@ const T = {
   btnSurface: "var(--atlas-btn-surface)",
   btnSurfaceHover: "var(--atlas-btn-surface-hover)",
   btnSurfaceActive: "var(--atlas-btn-surface-active)",
-  btnSurfaceBorder: "var(--atlas-btn-surface-border)",
+  btnSurfaceBorder: "var(--atlas-border-strong)",
   btnPrimaryBg: "var(--atlas-btn-primary-bg)",
   btnPrimaryBgHover: "var(--atlas-btn-primary-bg-hover)",
   btnPrimaryText: "var(--atlas-btn-primary-text)",
@@ -2210,7 +2176,6 @@ const S: Record<string, CSSProperties> = {
     WebkitBackdropFilter: "blur(28px) saturate(150%)",
     borderBottom: CONTROL_BORDER_STRONG,
     borderRadius: 0,
-    boxShadow: T.elevTop,
     minHeight: TOP_BAR_CLEARANCE,
   },
   topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px", background: CHROME_SURFACE_SOFT },
@@ -2265,7 +2230,7 @@ const S: Record<string, CSSProperties> = {
   topActionBlock: { display: "grid", alignContent: "center", gap: 8, padding: "12px 14px", minWidth: 420, background: CHROME_SURFACE_SOFT },
   topActionRow: { display: "flex", alignItems: "stretch", justifyContent: "flex-end", gap: 8, flexWrap: "nowrap" },
   topFloorGroup: { ...segmentedFrame },
-  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: `1px solid ${T.border}` },
+  themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: "rgba(255,255,255,.03)", border: CONTROL_BORDER },
   themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
   themeBtnActive: { color: T.text, background: "rgba(255,255,255,.08)" },
   viewModes: { ...segmentedFrame, width: "100%" },
@@ -2296,7 +2261,12 @@ const S: Record<string, CSSProperties> = {
     boxShadow: T.elevBottom,
     minHeight: BOTTOM_BAR_CLEARANCE,
   },
-  bottomModuleLabel: { fontSize: 11, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
+  bottomBarDrawerOpen: {
+    background: T.glassH,
+    backdropFilter: "none",
+    WebkitBackdropFilter: "none",
+  },
+  bottomModuleLabel: { fontSize: 11, lineHeight: 1, fontWeight: 700, fontFamily: MONO, color: T.muted, textTransform: "uppercase", letterSpacing: ".06em" },
   bottomContextBlock: {
     display: "flex",
     alignItems: "stretch",
@@ -2309,6 +2279,9 @@ const S: Record<string, CSSProperties> = {
     borderRight: CONTROL_BORDER_STRONG,
     textAlign: "left",
     overflow: "hidden",
+  },
+  bottomContextBlockSolo: {
+    borderRight: "none",
   },
   bottomContextStrip: {
     display: "none",
@@ -2487,14 +2460,19 @@ const S: Record<string, CSSProperties> = {
   drawerSheetWorkspace: {
     height: "100%",
     maxHeight: "none",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
+    borderBottom: "none",
+    borderLeft: "none",
   },
   drawerSheetInfo: {
     height: "auto",
     maxHeight: `calc(100vh - ${TOP_BAR_CLEARANCE + BOTTOM_BAR_CLEARANCE}px)`,
     pointerEvents: "auto",
-    border: "none",
     borderTop: CONTROL_BORDER_STRONG,
+    borderRight: "none",
+    borderBottom: "none",
+    borderLeft: "none",
   },
   browsePanel: {
     width: "100%",
@@ -2505,7 +2483,7 @@ const S: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
-  bpHeader: { padding: "12px 16px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
+  bpHeader: { padding: "10px 12px", borderBottom: CONTROL_BORDER_STRONG, flexShrink: 0, background: PANEL_SURFACE_STRONG },
   bpToolbarMeta: { display: "flex", alignItems: "center", gap: 10, flexShrink: 0 },
   bpSearchRow: { display: "flex", alignItems: "center", gap: 10, color: T.sec },
   bpInput: { flex: 1, background: "none", border: "none", outline: "none", color: T.text, fontSize: 15, fontWeight: 500, fontFamily: FONT },
@@ -2565,7 +2543,7 @@ const S: Record<string, CSSProperties> = {
     padding: 0,
     background: PANEL_SURFACE_SOFT,
   },
-  rpTopToolbar: { display: "flex", alignItems: "stretch", gap: 10 },
+  rpTopToolbar: { display: "flex", alignItems: "stretch", gap: 10, flexWrap: "wrap" },
   rpTopFlow: { display: "grid", gap: 3, minWidth: 0 },
   rpTopFlowText: { display: "grid", gap: 4, minWidth: 0 },
   rpTopHeadlineRow: { display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" },
@@ -2593,11 +2571,11 @@ const S: Record<string, CSSProperties> = {
     border: `1px solid ${ST.occupied.c}2b`,
   },
   rpTopAside: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, minWidth: 0, flexWrap: "wrap" },
-  rpTopActions: { display: "flex", alignItems: "flex-start", gap: 8, flexShrink: 0, paddingTop: 2 },
+  rpTopActions: { display: "flex", alignItems: "stretch", justifyContent: "flex-end", gap: 8, flexShrink: 0, flexWrap: "wrap", minWidth: 0 },
   rpTopToggle: {
     ...secondaryActionBase,
-    minHeight: 28,
-    padding: "0 10px",
+    minHeight: 34,
+    padding: "0 11px",
     gap: 6,
     fontSize: 10,
     fontWeight: 700,
@@ -2613,9 +2591,36 @@ const S: Record<string, CSSProperties> = {
   rpFlowStepActive: { ...segmentedButtonActive },
   rpFlowStepReady: { color: ST.available.c, fontSize: 12, lineHeight: 1, marginTop: -1 },
   rpFlowShell: { flex: 1, display: "flex", flexDirection: "column", gap: 10, minHeight: 0, overflow: "hidden", padding: "10px 14px 14px" },
-  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 36px minmax(0,1fr)", gap: 10, alignItems: "stretch", flex: 1, minWidth: 0 },
-  rpPlannerCard: { display: "flex", flexDirection: "column", justifyContent: "center", padding: "10px 12px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0, cursor: "pointer" },
+  rpPlannerBar: { display: "grid", gridTemplateColumns: "minmax(0,1fr) 40px minmax(0,1fr)", gap: 10, alignItems: "stretch", flexShrink: 0, minWidth: 0 },
+  rpPlannerCard: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    minHeight: 68,
+    padding: "10px 12px",
+    background: PANEL_SURFACE,
+    border: CONTROL_BORDER,
+    boxShadow: CONTROL_SHADOW,
+    minWidth: 0,
+    cursor: "pointer",
+  },
   rpPlannerCardActive: { background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `0 0 0 1px ${T.accent}26` },
+  rpPlannerRow: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 },
+  rpPlannerGlyph: {
+    width: 28,
+    height: 28,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: T.muted,
+    flexShrink: 0,
+  },
+  rpPlannerGlyphActive: { color: T.accent },
+  rpPlannerBody: { display: "grid", gap: 2, minWidth: 0, flex: 1 },
+  rpPlannerName: { fontSize: 14, fontWeight: 700, letterSpacing: "-.018em", lineHeight: 1.2, color: T.text, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  rpPlannerNameEmpty: { fontSize: 14, fontWeight: 600, letterSpacing: "-.018em", lineHeight: 1.2, color: T.muted, minWidth: 0 },
+  rpPlannerHint: { fontSize: 11, color: T.muted, lineHeight: 1.4, minWidth: 0 },
+  rpPlannerMeta: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
   rpSummaryPanel: { display: "grid", gap: 10, alignContent: "start", minHeight: 152, padding: "14px 16px", background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW, minWidth: 0 },
   rpSwapDock: { display: "flex", alignItems: "center", justifyContent: "center" },
   rpStage: { display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, background: PANEL_SURFACE, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
@@ -2713,8 +2718,8 @@ const S: Record<string, CSSProperties> = {
     flexShrink: 0,
   },
   rpSwapBtn: {
-    width: 26,
-    height: 26,
+    width: 30,
+    height: 30,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2722,7 +2727,7 @@ const S: Record<string, CSSProperties> = {
     border: CONTROL_BORDER,
     boxShadow: `${CONTROL_SHADOW}, ${T.elevFloating}`,
     borderRadius: 0,
-    color: T.muted,
+    color: T.sec,
     position: "relative",
     zIndex: 1,
   },
@@ -2854,7 +2859,7 @@ const S: Record<string, CSSProperties> = {
     overflow: "hidden",
   },
   checkRow: { display: "flex", alignItems: "center", gap: 7, cursor: "pointer", userSelect: "none", fontSize: 12, color: T.sec, fontWeight: 500 },
-  checkBox: { width: 15, height: 15, borderRadius: 4, border: "1.5px solid rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
+  checkBox: { width: 15, height: 15, borderRadius: 4, border: `1.5px solid ${T.borderH}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s", color: "#0c1018", flexShrink: 0 },
   checkBoxOn: { background: T.accent, border: `1.5px solid ${T.accent}` },
   rrStatsPanel: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 },
   rrStatCard: { display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 0, background: PANEL_SURFACE_STRONG, border: CONTROL_BORDER, boxShadow: CONTROL_SHADOW },
