@@ -185,6 +185,7 @@ const pointInPolygon = (px: number, py: number, pts: [number, number][]): boolea
 
 const PORTAL_INSET = 0.45;
 const ROUTE_WALL_CLEARANCE = 0.8;
+const ROUTE_EPSILON = 0.000001;
 
 const roomAnchorNodeId = (roomId: string) => `node-room-${roomId}`;
 const poiNodeId = (featureId: string) => `node-poi-${featureId}`;
@@ -195,7 +196,7 @@ const derivedTargetId = (featureId: string) => `target-${featureId}`;
 const coordinateKey = (coordinate: Coordinate) => `${coordinate[0].toFixed(9)}:${coordinate[1].toFixed(9)}`;
 
 const coordinateDistance = (left: Coordinate, right: Coordinate) =>
-  Math.abs(right[0] - left[0]) + Math.abs(right[1] - left[1]);
+  Math.hypot(right[0] - left[0], right[1] - left[1]);
 
 const coordinatePathLength = (coordinates: Coordinate[]) =>
   coordinates.slice(1).reduce((total, coordinate, index) => {
@@ -237,6 +238,16 @@ const pointOnSegment = (point: Coordinate, a: Coordinate, b: Coordinate, toleran
   return t >= -tolerance && t <= 1 + tolerance;
 };
 
+const normalizeVector = (vector: Coordinate): Coordinate => {
+  const length = Math.hypot(vector[0], vector[1]);
+  if (length < 1e-9) {
+    return [1, 0];
+  }
+  return [vector[0] / length, vector[1] / length];
+};
+
+const axisProjection = (point: Coordinate, axis: Coordinate) => point[0] * axis[0] + point[1] * axis[1];
+
 const roomHasDiagonalEdge = (room: CanonicalRoom) =>
   room.polygon.some((point, index) => {
     const nextPoint = room.polygon[(index + 1) % room.polygon.length];
@@ -251,6 +262,24 @@ const nearestPointOnSegment = (point: Coordinate, a: Coordinate, b: Coordinate):
   if (lengthSquared < 1e-9) return a;
   const t = Math.max(0, Math.min(1, ((point[0] - a[0]) * dx + (point[1] - a[1]) * dy) / lengthSquared));
   return [a[0] + dx * t, a[1] + dy * t];
+};
+
+const lineIntersection = (
+  a1: Coordinate,
+  a2: Coordinate,
+  b1: Coordinate,
+  b2: Coordinate,
+): Coordinate | null => {
+  const ax = a2[0] - a1[0];
+  const ay = a2[1] - a1[1];
+  const bx = b2[0] - b1[0];
+  const by = b2[1] - b1[1];
+  const det = ax * by - ay * bx;
+  if (Math.abs(det) < 1e-9) return null;
+  const cx = b1[0] - a1[0];
+  const cy = b1[1] - a1[1];
+  const t = (cx * by - cy * bx) / det;
+  return [a1[0] + ax * t, a1[1] + ay * t];
 };
 
 const projectPointToRoomEdge = (room: CanonicalRoom, point: Coordinate) => {
@@ -348,53 +377,64 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
 
   const levelById = new Map(source.levels.map((level) => [level.id, level]));
   const roomById = new Map(source.rooms.map((room) => [room.id, room]));
+  const safeName = (value: string | undefined, fallback: string) => {
+    const normalized = value?.trim();
+    return normalized && normalized.length > 0 ? normalized : fallback;
+  };
+  const normalizedSearchTokens = (...tokens: Array<string | undefined>) =>
+    [...new Set(tokens.filter((token): token is string => Boolean(token && token.trim())).map((token) => token.toLowerCase()))];
 
   const polygon = (
     id: string,
     level: LevelId,
     kind: OfficeFeatureProperties["kind"],
-    name: string,
+    name: string | undefined,
     x1: number,
     y1: number,
     x2: number,
     y2: number,
-    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> & {
+    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "number" | "focusPoint" | "searchTokens"> & {
       focusPoint?: Coordinate;
       searchTokens?: string[];
     } = {},
-  ): OfficePolygonFeature => ({
-    id,
-    type: "Feature",
-    geometry: {
-      type: "Polygon",
-      coordinates: [ring(x1, y1, x2, y2)],
-    },
-    properties: {
-      featureId: id,
-      level,
-      kind,
-      name,
-      focusPoint: properties.focusPoint ?? point((x1 + x2) / 2, (y1 + y2) / 2),
-      searchTokens: properties.searchTokens ?? [name.toLowerCase()],
-      subtitle: properties.subtitle,
-      department: properties.department,
-      employee: properties.employee,
-      capacity: properties.capacity,
-      equipment: properties.equipment,
-      status: properties.status,
-      routeNodeId: properties.routeNodeId,
-      baseHeight: properties.baseHeight,
-      height: properties.height,
-    },
-  });
+  ): OfficePolygonFeature => {
+    const displayName = name?.trim() ?? "";
+    const resolvedName = safeName(name, id);
+    return {
+      id,
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [ring(x1, y1, x2, y2)],
+      },
+      properties: {
+        featureId: id,
+        level,
+        kind,
+        name: displayName,
+        number: properties.number,
+        focusPoint: properties.focusPoint ?? point((x1 + x2) / 2, (y1 + y2) / 2),
+        searchTokens: properties.searchTokens ?? normalizedSearchTokens(resolvedName),
+        subtitle: properties.subtitle,
+        department: properties.department,
+        employee: properties.employee,
+        capacity: properties.capacity,
+        equipment: properties.equipment,
+        status: properties.status,
+        routeNodeId: properties.routeNodeId,
+        baseHeight: properties.baseHeight,
+        height: properties.height,
+      },
+    };
+  };
 
   const arbitraryPolygonFeature = (
     id: string,
     level: LevelId,
     kind: OfficeFeatureProperties["kind"],
-    name: string,
+    name: string | undefined,
     localPts: [number, number][],
-    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> & {
+    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "number" | "focusPoint" | "searchTokens"> & {
       focusPoint?: Coordinate;
       searchTokens?: string[];
     } = {},
@@ -405,6 +445,8 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
       coords.push(first);
     }
     const center = safePolygonCenter(localPts);
+    const displayName = name?.trim() ?? "";
+    const resolvedName = safeName(name, id);
     return {
       id,
       type: "Feature",
@@ -413,9 +455,10 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
         featureId: id,
         level,
         kind,
-        name,
+        name: displayName,
+        number: properties.number,
         focusPoint: properties.focusPoint ?? point(center[0], center[1]),
-        searchTokens: properties.searchTokens ?? [name.toLowerCase()],
+        searchTokens: properties.searchTokens ?? normalizedSearchTokens(resolvedName),
         subtitle: properties.subtitle,
         department: properties.department,
         employee: properties.employee,
@@ -432,67 +475,76 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
   const marker = (
     poi: CanonicalPoi,
     properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> = {},
-  ): OfficePointFeature => ({
-    id: poi.id,
-    type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: point(poi.point[0], poi.point[1]),
-    },
-    properties: {
-      featureId: poi.id,
-      level: poi.level,
-      kind: poi.kind,
-      name: poi.name,
-      focusPoint: point(poi.point[0], poi.point[1]),
-      searchTokens: poi.searchTokens,
-      subtitle: poi.subtitle,
-      department: poi.department,
-      employee: poi.employee,
-      status: properties.status,
-      routeNodeId: properties.routeNodeId,
-      baseHeight: properties.baseHeight,
-      height: properties.height,
-      equipment: properties.equipment,
-      capacity: properties.capacity,
-    },
-  });
+  ): OfficePointFeature => {
+    const displayName = poi.name?.trim() ?? "";
+    const resolvedName = safeName(poi.name, poi.id);
+    return {
+      id: poi.id,
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: point(poi.point[0], poi.point[1]),
+      },
+      properties: {
+        featureId: poi.id,
+        level: poi.level,
+        kind: poi.kind,
+        name: displayName,
+        focusPoint: point(poi.point[0], poi.point[1]),
+        searchTokens: poi.searchTokens?.length ? poi.searchTokens : normalizedSearchTokens(resolvedName, poi.subtitle, poi.department, poi.employee),
+        subtitle: poi.subtitle,
+        department: poi.department,
+        employee: poi.employee,
+        status: properties.status,
+        routeNodeId: properties.routeNodeId,
+        baseHeight: properties.baseHeight,
+        height: properties.height,
+        equipment: properties.equipment,
+        capacity: properties.capacity,
+      },
+    };
+  };
 
   const lineFeature = (
     id: string,
     level: LevelId,
     kind: OfficeFeatureProperties["kind"],
-    name: string,
+    name: string | undefined,
     coordinates: Coordinate[],
-    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> & {
+    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "number" | "focusPoint" | "searchTokens"> & {
       focusPoint?: Coordinate;
       searchTokens?: string[];
     } = {},
-  ): OfficeLineFeature => ({
-    id,
-    type: "Feature",
-    geometry: {
-      type: "LineString",
-      coordinates: path(coordinates),
-    },
-    properties: {
-      featureId: id,
-      level,
-      kind,
-      name,
-      focusPoint: properties.focusPoint ?? point(coordinates[0]?.[0] ?? 0, coordinates[0]?.[1] ?? 0),
-      searchTokens: properties.searchTokens ?? [name.toLowerCase()],
-      subtitle: properties.subtitle,
-      department: properties.department,
-      employee: properties.employee,
-      capacity: properties.capacity,
-      equipment: properties.equipment,
-      status: properties.status,
-      routeNodeId: properties.routeNodeId,
-      baseHeight: properties.baseHeight,
-      height: properties.height,
-    },
-  });
+  ): OfficeLineFeature => {
+    const displayName = name?.trim() ?? "";
+    const resolvedName = safeName(name, id);
+    return {
+      id,
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: path(coordinates),
+      },
+      properties: {
+        featureId: id,
+        level,
+        kind,
+        name: displayName,
+        number: properties.number,
+        focusPoint: properties.focusPoint ?? point(coordinates[0]?.[0] ?? 0, coordinates[0]?.[1] ?? 0),
+        searchTokens: properties.searchTokens ?? normalizedSearchTokens(resolvedName),
+        subtitle: properties.subtitle,
+        department: properties.department,
+        employee: properties.employee,
+        capacity: properties.capacity,
+        equipment: properties.equipment,
+        status: properties.status,
+        routeNodeId: properties.routeNodeId,
+        baseHeight: properties.baseHeight,
+        height: properties.height,
+      },
+    };
+  };
 
   const labelPoint = (feature: OfficeFeature): OfficePointFeature => ({
     id: feature.id,
@@ -705,6 +757,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     const WALL_H = 3.1;
 
     const room = arbitraryPolygonFeature(spec.id, spec.level, spec.kind, spec.name, pts, {
+      number: spec.number,
       subtitle: spec.subtitle,
       department: spec.department,
       searchTokens: spec.searchTokens,
@@ -715,19 +768,73 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     });
 
     const GAP_TOL = 0.05;
+    const edgeData = pts.map((point, index) => {
+      const nextPoint = pts[(index + 1) % n]!;
+      const dx = nextPoint[0] - point[0];
+      const dy = nextPoint[1] - point[1];
+      const len = Math.hypot(dx, dy);
+      const ux = len > 1e-9 ? dx / len : 0;
+      const uy = len > 1e-9 ? dy / len : 0;
+      const nx = ccw ? -uy : uy;
+      const ny = ccw ? ux : -ux;
+      return {
+        start: point,
+        end: nextPoint,
+        len,
+        u: [ux, uy] as Coordinate,
+        n: [nx, ny] as Coordinate,
+      };
+    });
+
+    const offsetCornerPoint = (
+      edgeIndex: number,
+      atStart: boolean,
+      fallback: Coordinate,
+    ): Coordinate => {
+      const current = edgeData[edgeIndex];
+      if (!current || current.len < 1e-9) return fallback;
+      const neighborIndex = atStart ? (edgeIndex - 1 + n) % n : (edgeIndex + 1) % n;
+      const neighbor = edgeData[neighborIndex];
+      if (!neighbor || neighbor.len < 1e-9) return fallback;
+      const anchor = atStart ? current.start : current.end;
+      const currentOffsetStart: Coordinate = [
+        current.start[0] + current.n[0] * WALL_T,
+        current.start[1] + current.n[1] * WALL_T,
+      ];
+      const currentOffsetEnd: Coordinate = [
+        current.end[0] + current.n[0] * WALL_T,
+        current.end[1] + current.n[1] * WALL_T,
+      ];
+      const neighborOffsetStart: Coordinate = [
+        neighbor.start[0] + neighbor.n[0] * WALL_T,
+        neighbor.start[1] + neighbor.n[1] * WALL_T,
+      ];
+      const neighborOffsetEnd: Coordinate = [
+        neighbor.end[0] + neighbor.n[0] * WALL_T,
+        neighbor.end[1] + neighbor.n[1] * WALL_T,
+      ];
+      const intersection = atStart
+        ? lineIntersection(neighborOffsetStart, neighborOffsetEnd, currentOffsetStart, currentOffsetEnd)
+        : lineIntersection(currentOffsetStart, currentOffsetEnd, neighborOffsetStart, neighborOffsetEnd);
+      if (!intersection) return fallback;
+      const miterLength = Math.hypot(intersection[0] - anchor[0], intersection[1] - anchor[1]);
+      if (!Number.isFinite(miterLength) || miterLength > WALL_T * 4) {
+        return fallback;
+      }
+      return intersection;
+    };
 
     const walls: OfficePolygonFeature[] = [];
     for (let i = 0; i < n; i++) {
       if (wallEdgeSet && !wallEdgeSet.has(i)) continue;
       const j = (i + 1) % n;
       const pi = pts[i]!, pj = pts[j]!;
+      const edge = edgeData[i]!;
       const x0 = pi[0], y0 = pi[1], x1 = pj[0], y1 = pj[1];
-      const dx = x1 - x0, dy = y1 - y0;
-      const len = Math.hypot(dx, dy);
+      const len = edge.len;
       if (len < 1e-9) continue;
-      const ux = dx / len, uy = dy / len;
-      const nx = ccw ? -uy : uy;
-      const ny = ccw ? ux : -ux;
+      const [ux, uy] = edge.u;
+      const [nx, ny] = edge.n;
 
       // Find openings on this edge and compute gap intervals along [0, len]
       const gaps: [number, number][] = [];
@@ -757,10 +864,14 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
       const wallStrip = (tStart: number, tEnd: number, seg: number): OfficePolygonFeature => {
         const ax = x0 + tStart * ux, ay = y0 + tStart * uy;
         const bx = x0 + tEnd * ux, by = y0 + tEnd * uy;
+        const baseInnerStart: Coordinate = [ax + nx * WALL_T, ay + ny * WALL_T];
+        const baseInnerEnd: Coordinate = [bx + nx * WALL_T, by + ny * WALL_T];
+        const innerStart = tStart <= 0.001 ? offsetCornerPoint(i, true, baseInnerStart) : baseInnerStart;
+        const innerEnd = tEnd >= len - 0.001 ? offsetCornerPoint(i, false, baseInnerEnd) : baseInnerEnd;
         const strip: [number, number][] = [
           [ax, ay], [bx, by],
-          [bx + nx * WALL_T, by + ny * WALL_T],
-          [ax + nx * WALL_T, ay + ny * WALL_T],
+          innerEnd,
+          innerStart,
         ];
         return arbitraryPolygonFeature(
           `wall-${spec.id}-edge-${i}-seg-${seg}`, spec.level, "wall", `${spec.name} Wall ${i}`,
@@ -916,7 +1027,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
 
   const allFeatures = [...roomFeatures, ...structureFeatures, ...doorFeatures, ...poiFeatures] satisfies OfficeFeature[];
 
-  const routeAnchorPoint = (room: CanonicalRoom): Coordinate => room.focusPoint ?? safePolygonCenter(room.polygon);
+  const routeAnchorPoint = (room: CanonicalRoom): Coordinate => safePolygonCenter(room.polygon);
 
   const localOpeningBoundaryPoint = (opening: CanonicalOpening): Coordinate => opening.point;
 
@@ -936,6 +1047,128 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     Math.min(Math.max(coordinate[0], bounds[0] + inset), bounds[2] - inset),
     Math.min(Math.max(coordinate[1], bounds[1] + inset), bounds[3] - inset),
   ];
+
+  const roomPreferredClearance = (room: CanonicalRoom, bounds: LocalRectBounds) => {
+    const width = bounds[2] - bounds[0];
+    const height = bounds[3] - bounds[1];
+    const minDimension = Math.max(0.3, Math.min(width, height));
+    const baseClearance = room.department === "Коридоры" ? minDimension * 0.32 : minDimension * 0.24;
+    return Math.min(ROUTE_WALL_CLEARANCE, Math.max(0.18, baseClearance));
+  };
+
+  const segmentClearance = (room: CanonicalRoom, start: Coordinate, end: Coordinate, preferredClearance: number) => {
+    const length = coordinateDistance(start, end);
+    const samples = Math.max(4, Math.ceil(length / Math.max(0.25, preferredClearance * 0.6)));
+    let best = Number.POSITIVE_INFINITY;
+
+    for (let index = 0; index <= samples; index += 1) {
+      const progress = index / samples;
+      const point: Coordinate = [
+        start[0] + (end[0] - start[0]) * progress,
+        start[1] + (end[1] - start[1]) * progress,
+      ];
+      const clearance = polygonClearance(point, room.polygon);
+      const threshold = index === 0 || index === samples ? preferredClearance * 0.2 : preferredClearance * 0.35;
+      if (clearance < threshold) {
+        return -1;
+      }
+      best = Math.min(best, clearance);
+    }
+
+    return best;
+  };
+
+  const roomPrimaryAxis = (room: CanonicalRoom, bounds: LocalRectBounds): Coordinate => {
+    let bestVector: Coordinate | null = null;
+    let bestLength = 0;
+
+    for (let index = 0; index < room.polygon.length; index += 1) {
+      const current = room.polygon[index]!;
+      const next = room.polygon[(index + 1) % room.polygon.length]!;
+      const vector: Coordinate = [next[0] - current[0], next[1] - current[1]];
+      const length = Math.hypot(vector[0], vector[1]);
+      if (length > bestLength) {
+        bestLength = length;
+        bestVector = vector;
+      }
+    }
+
+    if (bestVector && bestLength > 1e-6) {
+      return normalizeVector(bestVector);
+    }
+
+    return bounds[2] - bounds[0] >= bounds[3] - bounds[1] ? [1, 0] : [0, 1];
+  };
+
+  const roomSpineCache = new Map<string, Coordinate[]>();
+
+  const roomSpinePoints = (room: CanonicalRoom, bounds: LocalRectBounds): Coordinate[] => {
+    const cached = roomSpineCache.get(room.id);
+    if (cached) {
+      return cached;
+    }
+
+    const preferredClearance = roomPreferredClearance(room, bounds);
+    const axis = roomPrimaryAxis(room, bounds);
+    const normal: Coordinate = [-axis[1], axis[0]];
+    const alongValues = room.polygon.map((point) => axisProjection(point, axis));
+    const normalValues = room.polygon.map((point) => axisProjection(point, normal));
+    const alongMin = Math.min(...alongValues);
+    const alongMax = Math.max(...alongValues);
+    const normalMin = Math.min(...normalValues);
+    const normalMax = Math.max(...normalValues);
+    const span = alongMax - alongMin;
+    const sampleCount = Math.max(3, Math.min(14, Math.ceil(span / Math.max(1, preferredClearance * 1.8))));
+    const scanCount = 28;
+    const candidates: Coordinate[] = [];
+    const addCandidate = (candidate: Coordinate | null) => {
+      if (!candidate) return;
+      const rounded: Coordinate = [Number(candidate[0].toFixed(3)), Number(candidate[1].toFixed(3))];
+      if (candidates.some((existing) => Math.hypot(existing[0] - rounded[0], existing[1] - rounded[1]) <= 0.08)) {
+        return;
+      }
+      candidates.push(rounded);
+    };
+
+    addCandidate(safePolygonCenter(room.polygon));
+
+    for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex += 1) {
+      const along =
+        sampleCount === 1
+          ? (alongMin + alongMax) / 2
+          : alongMin + ((alongMax - alongMin) * sampleIndex) / (sampleCount - 1);
+      let bestPoint: Coordinate | null = null;
+      let bestClearance = -1;
+
+      for (let scanIndex = 0; scanIndex <= scanCount; scanIndex += 1) {
+        const normalOffset =
+          normalMin + ((normalMax - normalMin) * scanIndex) / scanCount;
+        const point: Coordinate = [
+          axis[0] * along + normal[0] * normalOffset,
+          axis[1] * along + normal[1] * normalOffset,
+        ];
+        const clearance = polygonClearance(point, room.polygon);
+        if (clearance > bestClearance) {
+          bestClearance = clearance;
+          bestPoint = point;
+        }
+      }
+
+      if (bestPoint && bestClearance >= preferredClearance * 0.35) {
+        addCandidate(bestPoint);
+      }
+    }
+
+    const center = safePolygonCenter(room.polygon);
+    candidates.sort((left, right) => axisProjection(left, axis) - axisProjection(right, axis));
+    if (candidates.every((candidate) => Math.hypot(candidate[0] - center[0], candidate[1] - center[1]) > 0.08)) {
+      candidates.push(center);
+      candidates.sort((left, right) => axisProjection(left, axis) - axisProjection(right, axis));
+    }
+
+    roomSpineCache.set(room.id, candidates);
+    return candidates;
+  };
 
   const anchorSpineRoomPath = (room: CanonicalRoom, start: Coordinate, end: Coordinate, bounds: LocalRectBounds): Coordinate[] => {
     const anchor = clampToBounds(routeAnchorPoint(room), bounds, ROUTE_WALL_CLEARANCE);
@@ -1021,8 +1254,101 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     return points;
   };
 
+  const roomLocalNavPath = (room: CanonicalRoom, start: Coordinate, end: Coordinate, bounds: LocalRectBounds): Coordinate[] | null => {
+    if (coordinateDistance(start, end) <= ROUTE_EPSILON) {
+      return [start, end];
+    }
+
+    const preferredClearance = roomPreferredClearance(room, bounds);
+    const spine = roomSpinePoints(room, bounds);
+    const nodes: Coordinate[] = [start, ...spine, end];
+    const adjacency = nodes.map(() => [] as Array<{ to: number; weight: number }>);
+    const connect = (from: number, to: number) => {
+      const left = nodes[from];
+      const right = nodes[to];
+      if (!left || !right) return;
+      const clearance = segmentClearance(room, left, right, preferredClearance);
+      if (clearance < 0) return;
+      const distance = coordinateDistance(left, right);
+      const clearancePenalty = Math.max(0, preferredClearance - clearance) * 1.75;
+      const weight = distance + clearancePenalty;
+      adjacency[from]!.push({ to, weight });
+      adjacency[to]!.push({ to: from, weight });
+    };
+
+    const nearestSpineIndexes = (point: Coordinate) =>
+      nodes
+        .slice(1, -1)
+        .map((coordinate, offset) => ({
+          index: offset + 1,
+          distance: coordinateDistance(point, coordinate),
+        }))
+        .sort((left, right) => left.distance - right.distance)
+        .slice(0, 2)
+        .map((entry) => entry.index);
+
+    const spineIndexes = nodes.slice(1, -1).map((_, offset) => offset + 1);
+
+    if (spineIndexes.length === 0) {
+      connect(0, nodes.length - 1);
+    } else {
+      for (const index of nearestSpineIndexes(start)) {
+        connect(0, index);
+      }
+      for (const index of nearestSpineIndexes(end)) {
+        connect(index, nodes.length - 1);
+      }
+    }
+
+    for (let index = 1; index < nodes.length - 2; index += 1) {
+      connect(index, index + 1);
+    }
+
+    const distances = nodes.map(() => Number.POSITIVE_INFINITY);
+    const previous = nodes.map(() => -1);
+    const queue = [{ index: 0, distance: 0 }];
+    distances[0] = 0;
+
+    while (queue.length > 0) {
+      queue.sort((left, right) => left.distance - right.distance);
+      const current = queue.shift();
+      if (!current) break;
+      if (current.index === nodes.length - 1) break;
+      if (current.distance > distances[current.index]!) continue;
+
+      for (const edge of adjacency[current.index]!) {
+        const nextDistance = current.distance + edge.weight;
+        if (nextDistance >= distances[edge.to]!) continue;
+        distances[edge.to] = nextDistance;
+        previous[edge.to] = current.index;
+        queue.push({ index: edge.to, distance: nextDistance });
+      }
+    }
+
+    if (!Number.isFinite(distances[nodes.length - 1]!)) {
+      return null;
+    }
+
+    const path: Coordinate[] = [];
+    let cursor = nodes.length - 1;
+    while (cursor >= 0) {
+      const coordinate = nodes[cursor];
+      if (coordinate) {
+        path.unshift(coordinate);
+      }
+      cursor = previous[cursor] ?? -1;
+    }
+
+    return path;
+  };
+
   const roomTraversalPath = (room: CanonicalRoom, start: Coordinate, end: Coordinate): Coordinate[] => {
     const bounds = polygonBounds(room.polygon);
+    const navPath = roomLocalNavPath(room, start, end, bounds);
+    if (navPath && navPath.length >= 2) {
+      return navPath;
+    }
+
     if (room.department === "Коридоры") {
       const width = bounds[2] - bounds[0];
       const height = bounds[3] - bounds[1];
@@ -1192,7 +1518,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
           `edge-room-${room.id}-${portal.id}`,
           anchorNode,
           portal.id,
-          coordinateDistance(anchor, portal.point),
+          coordinatePathLength(portalPath),
           portalPath,
           { accessible: true },
         ),
@@ -1219,7 +1545,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
             `edge-room-pass-${room.id}-${leftPortal.id}-${rightPortal.id}`,
             leftPortal.id,
             rightPortal.id,
-            coordinateDistance(leftPortal.point, rightPortal.point),
+            coordinatePathLength(portalPath),
             portalPath,
             { accessible: true },
           ),
@@ -1319,7 +1645,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
         `edge-poi-${poi.id}`,
         nodeId,
         roomAnchorNodeId(containingRoom.id),
-        coordinateDistance(poi.point, anchor),
+        coordinatePathLength(poiPath),
         poiPath,
         { accessible: true },
       ),
@@ -1375,6 +1701,11 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
       return !previous || coordinate[0] === previous[0] || coordinate[1] === previous[1];
     });
 
+  const allowsDiagonalRouteEdge = (edgeId: string) =>
+    edgeId.startsWith("edge-portal-") ||
+    edgeId.startsWith("edge-room-") ||
+    edgeId.startsWith("edge-poi-");
+
   for (const room of source.rooms) {
     for (const opening of room.openings ?? []) {
       if (!opening.connectsTo) {
@@ -1427,7 +1758,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
       throw new Error(`Route edge ${edge.id} crosses levels without a connector type.`);
     }
 
-    if (!edge.connectorType && !pathIsOrthogonal(edge.path) && !edge.id.startsWith("edge-portal-")) {
+    if (!edge.connectorType && !pathIsOrthogonal(edge.path) && !allowsDiagonalRouteEdge(edge.id)) {
       throw new Error(`Route edge ${edge.id} contains a diagonal segment.`);
     }
   }
@@ -1449,29 +1780,23 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
 
       return {
         id: `search-${room.id}`,
-        label: room.name,
+        label: room.number ? `${room.number} · ${safeName(room.name, room.id)}` : safeName(room.name, room.id),
         description: `${roomLabel} · ${level?.label ?? room.level}`,
         level: room.level,
         featureId: room.id,
-        tokens: [...new Set([room.name, room.subtitle, room.department, ...(room.equipment ?? []), ...room.searchTokens].map((token) => token.toLowerCase()))],
+        tokens: normalizedSearchTokens(room.name, room.number, room.subtitle, room.department, ...(room.equipment ?? []), ...(room.searchTokens ?? [])),
       };
     }),
     ...source.pois.map((poi) => ({
       id: `search-${poi.id}`,
-      label: poi.employee ?? poi.name,
+      label: poi.employee ?? safeName(poi.name, poi.id),
       description:
         poi.kind === "workstation"
-          ? `${poi.name} · ${poi.department ?? "Рабочая зона"}`
+          ? `${safeName(poi.name, poi.id)} · ${poi.department ?? "Рабочая зона"}`
           : `${poi.kind === "connector" ? "Переход" : "Сервисная зона"} · ${levelById.get(poi.level)?.label ?? poi.level}`,
       level: poi.level,
       featureId: poi.id,
-      tokens: [
-        ...new Set(
-          [poi.name, poi.subtitle, poi.department, poi.employee, ...poi.searchTokens]
-            .filter((token): token is string => Boolean(token))
-            .map((token) => token.toLowerCase()),
-        ),
-      ],
+      tokens: normalizedSearchTokens(poi.name, poi.subtitle, poi.department, poi.employee, ...(poi.searchTokens ?? [])),
     })),
   ].sort((left, right) => left.label.localeCompare(right.label));
 
@@ -1484,7 +1809,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     return Boolean(room && (room.openings ?? []).some((opening) => opening.traversable !== false && opening.connectsTo));
   };
 
-  const routeTargetLabel = (feature: OfficeFeature) => feature.properties.employee ?? feature.properties.name;
+  const routeTargetLabel = (feature: OfficeFeature) => feature.properties.employee ?? safeName(feature.properties.name, feature.id);
   const routeTargets: RouteTarget[] = [...roomFeatures.filter(routeableRoomFeature), ...poiFeatures.filter((feature) => feature.properties.kind === "connector")]
     .map((feature) => {
       const routeNodeId = featureRouteNodeIdByFeatureId.get(feature.id);

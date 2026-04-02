@@ -7,6 +7,7 @@ const TOOLS: Array<{ id: NewEditorTool; label: string }> = [
   { id: "opening", label: "OPEN" },
   { id: "guide", label: "GUIDE" },
   { id: "reference", label: "REF" },
+  { id: "merge", label: "MERGE" },
   { id: "delete", label: "DEL" },
   { id: "pan", label: "PAN" },
 ];

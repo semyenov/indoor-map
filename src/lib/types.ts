@@ -29,6 +29,7 @@ export interface OfficeFeatureProperties {
   level: LevelId;
   kind: FeatureKind;
   name: string;
+  number?: string;
   subtitle?: string;
   department?: string;
   employee?: string;
@@ -189,8 +190,8 @@ export interface CanonicalOpening {
 
 export interface CanonicalGuide {
   id: string;
-  a: [number, number];
-  b: [number, number];
+  point: [number, number];
+  angle: number;
 }
 
 export interface CanonicalRoom {
@@ -198,6 +199,7 @@ export interface CanonicalRoom {
   level: LevelId;
   kind: "room" | "meeting_room" | "amenity";
   name: string;
+  number?: string;
   polygon: [number, number][];
   wallEdges?: number[];
   subtitle: string;

@@ -42,3 +42,79 @@ export const lineIntersection = (a0: Point, a1: Point, b0: Point, b1: Point): Po
   const t = (dx * by - dy * bx) / det;
   return [a0[0] + ax * t, a0[1] + ay * t];
 };
+
+const pointsEqual = (a: Point, b: Point, tolerance = 1e-6) =>
+  Math.abs(a[0] - b[0]) <= tolerance && Math.abs(a[1] - b[1]) <= tolerance;
+
+const signedTriangleArea = (a: Point, b: Point, c: Point) =>
+  (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+
+const stripDuplicateClosure = (polygon: Point[]) => {
+  if (polygon.length > 1 && pointsEqual(polygon[0]!, polygon[polygon.length - 1]!)) {
+    return polygon.slice(0, -1);
+  }
+  return polygon;
+};
+
+const simplifyClosedPolygon = (polygon: Point[]) => {
+  const points = stripDuplicateClosure(polygon);
+  if (points.length <= 3) return points;
+  let current = [...points];
+  let changed = true;
+  while (changed && current.length > 3) {
+    changed = false;
+    current = current.filter((point, index) => {
+      const prev = current[(index - 1 + current.length) % current.length]!;
+      const next = current[(index + 1) % current.length]!;
+      if (pointsEqual(prev, point) || pointsEqual(point, next)) {
+        changed = true;
+        return false;
+      }
+      if (Math.abs(signedTriangleArea(prev, point, next)) <= 1e-6) {
+        changed = true;
+        return false;
+      }
+      return true;
+    });
+  }
+  return current;
+};
+
+const pathWithoutSharedEdge = (polygon: Point[], edgeIndex: number) => {
+  const path: Point[] = [];
+  for (let offset = 0; offset < polygon.length; offset += 1) {
+    path.push(polygon[(edgeIndex + 1 + offset) % polygon.length]!);
+  }
+  return path;
+};
+
+export const mergePolygonsBySharedEdge = (primary: Point[], secondary: Point[]): Point[] | null => {
+  for (let primaryEdgeIndex = 0; primaryEdgeIndex < primary.length; primaryEdgeIndex += 1) {
+    const primaryA = primary[primaryEdgeIndex]!;
+    const primaryB = primary[(primaryEdgeIndex + 1) % primary.length]!;
+    for (let secondaryEdgeIndex = 0; secondaryEdgeIndex < secondary.length; secondaryEdgeIndex += 1) {
+      const secondaryA = secondary[secondaryEdgeIndex]!;
+      const secondaryB = secondary[(secondaryEdgeIndex + 1) % secondary.length]!;
+      if (!pointsEqual(primaryA, secondaryB) || !pointsEqual(primaryB, secondaryA)) {
+        continue;
+      }
+      const primaryPath = pathWithoutSharedEdge(primary, primaryEdgeIndex);
+      const secondaryPath = pathWithoutSharedEdge(secondary, secondaryEdgeIndex);
+      const merged = simplifyClosedPolygon([...primaryPath, ...secondaryPath.slice(1)]);
+      return merged.length >= 3 ? merged : null;
+    }
+  }
+  return null;
+};
+
+export const pointOnPolygonEdge = (point: Point, polygon: Point[], tolerance = 0.05) => {
+  for (let index = 0; index < polygon.length; index += 1) {
+    const a = polygon[index]!;
+    const b = polygon[(index + 1) % polygon.length]!;
+    const projection = nearestPointOnSegment(point, a, b);
+    if (distance(point, projection) <= tolerance) {
+      return true;
+    }
+  }
+  return false;
+};

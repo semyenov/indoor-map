@@ -4,12 +4,12 @@ import type { HoverSnap } from "./snapping";
 import type { Point } from "./geometry";
 import { distance } from "./geometry";
 
-export type NewEditorTool = "select" | "draw-room" | "opening" | "guide" | "reference" | "delete" | "pan";
+export type NewEditorTool = "select" | "draw-room" | "opening" | "guide" | "reference" | "merge" | "delete" | "pan";
 
 export interface EditorGuide {
   id: string;
-  a: Point;
-  b: Point;
+  point: Point;
+  angle: number;
 }
 
 export interface ViewportState {
@@ -87,6 +87,27 @@ export const screenPointToLocalPoint = (point: Point, viewport: ViewportState): 
 
 export const localUnitsFromScreenPixels = (pixels: number, viewport: ViewportState): number =>
   pixels / Math.max(viewport.zoom, 1e-6);
+
+export const normalizeAngle = (angle: number) => {
+  const normalized = angle % 360;
+  return normalized < 0 ? normalized + 360 : normalized;
+};
+
+export const guideAngleFromPoints = (point: Point, through: Point) =>
+  normalizeAngle((Math.atan2(through[1] - point[1], through[0] - point[0]) * 180) / Math.PI);
+
+export const guideDirection = (guide: Pick<EditorGuide, "angle">): Point => {
+  const radians = (guide.angle * Math.PI) / 180;
+  return [Math.cos(radians), Math.sin(radians)];
+};
+
+export const guideReferencePoints = (guide: Pick<EditorGuide, "point" | "angle">): { a: Point; b: Point } => {
+  const direction = guideDirection(guide);
+  return {
+    a: guide.point,
+    b: [guide.point[0] + direction[0], guide.point[1] + direction[1]],
+  };
+};
 
 export const shouldCloseDraftPolygon = (
   point: Point,

@@ -1,9 +1,9 @@
 import type { CanonicalRoom } from "../../lib/types";
-import type { EditorHoverSnap } from "../model/commands";
+import { guideReferencePoints, type EditorHoverSnap } from "../model/commands";
 import { polygonCentroid } from "../model/geometry";
 import { localPointToScreenPoint } from "../model/commands";
 import { useNewEditorStore } from "../state/editorStore";
-import { findOpeningEdge, pairIdFromOpeningId } from "../model/openings";
+import { findLinkedOpening, findOpeningEdge, pairIdFromOpeningId } from "../model/openings";
 
 interface Props {
   width: number;
@@ -19,6 +19,7 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
     viewport,
     selectedRoomId,
     selectedOpeningId,
+    selectedGuideId,
     draftRoomPoints,
     draftCursorPoint,
     tool,
@@ -33,6 +34,7 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
   });
   const baseRooms = orderedRooms.filter((room) => room.id !== selectedRoomId);
   const selectedRoom = selectedRoomId ? rooms.find((room) => room.id === selectedRoomId) ?? null : null;
+  const selectedGuide = selectedGuideId ? guides.find((guide) => guide.id === selectedGuideId) ?? null : null;
   const renderRoom = (room: CanonicalRoom, emphasizeSelection: boolean, showVertices: boolean) => {
     const polygon = room.polygon.map((point) => localPointToScreenPoint(point, viewport));
     const centroid = localPointToScreenPoint(polygonCentroid(room.polygon), viewport);
@@ -120,7 +122,7 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
 
     intersections.sort((left, right) => left.t - right.t);
     const start = intersections[0];
-    const end = intersections.at(-1);
+    const end = intersections[intersections.length - 1];
     if (!start || !end) {
       return null;
     }
@@ -135,6 +137,29 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
       by: bScreen[1],
     };
   };
+  const selectedGuideLinkedVertices =
+    selectedGuide
+      ? (() => {
+          const guideReference = guideReferencePoints(selectedGuide);
+          const dx = guideReference.b[0] - guideReference.a[0];
+          const dy = guideReference.b[1] - guideReference.a[1];
+          const len = Math.hypot(dx, dy);
+          if (len < 1e-6) return [];
+          return rooms.flatMap((room) =>
+            room.polygon.flatMap((point, vertexIndex) => {
+              const cross = Math.abs((point[0] - guideReference.a[0]) * dy - (point[1] - guideReference.a[1]) * dx);
+              const lineDistance = cross / len;
+              if (lineDistance > 0.08) return [];
+              const screenPoint = localPointToScreenPoint(point, viewport);
+              return [{
+                key: `${room.id}:${vertexIndex}`,
+                x: screenPoint[0],
+                y: screenPoint[1],
+              }];
+            }),
+          );
+        })()
+      : [];
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} aria-label="New floor plan editor canvas">
@@ -198,8 +223,10 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
       )}
       {baseRooms.map((room) => renderRoom(room, false, false))}
       {guides.map((guide) => {
-        const line = screenGuide(guide.a, guide.b);
+        const guideReference = guideReferencePoints(guide);
+        const line = screenGuide(guideReference.a, guideReference.b);
         if (!line) return null;
+        const isSelectedGuide = guide.id === selectedGuideId;
         return (
           <g key={guide.id}>
             <line
@@ -207,15 +234,38 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
               y1={line.y1}
               x2={line.x2}
               y2={line.y2}
-              stroke="rgba(37, 99, 235, 0.62)"
-              strokeWidth={2}
-              strokeDasharray="10 6"
+              stroke={isSelectedGuide ? "rgba(29, 78, 216, 0.92)" : "rgba(37, 99, 235, 0.62)"}
+              strokeWidth={isSelectedGuide ? 3 : 2}
+              strokeDasharray={isSelectedGuide ? "12 5" : "10 6"}
             />
-            <circle cx={line.ax} cy={line.ay} r={tool === "select" ? 5.5 : 4.5} fill="#eff6ff" stroke="rgba(37, 99, 235, 0.82)" strokeWidth={1.5} />
-            <circle cx={line.bx} cy={line.by} r={tool === "select" ? 5.5 : 4.5} fill="#eff6ff" stroke="rgba(37, 99, 235, 0.82)" strokeWidth={1.5} />
+            {isSelectedGuide && (
+              <circle
+                cx={line.ax}
+                cy={line.ay}
+                r={7}
+                fill="#dbeafe"
+                stroke="rgba(29, 78, 216, 0.98)"
+                strokeWidth={2}
+              />
+            )}
           </g>
         );
       })}
+      {selectedGuideLinkedVertices.length > 0 && (
+        <g>
+          {selectedGuideLinkedVertices.map((vertex) => (
+            <circle
+              key={vertex.key}
+              cx={vertex.x}
+              cy={vertex.y}
+              r={4.5}
+              fill="rgba(59, 130, 246, 0.22)"
+              stroke="rgba(29, 78, 216, 0.95)"
+              strokeWidth={2}
+            />
+          ))}
+        </g>
+      )}
       {guidePreview &&
         (() => {
           const line = screenGuide(guidePreview.a, guidePreview.b);
@@ -232,7 +282,6 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
                 strokeDasharray="12 6"
               />
               <circle cx={line.ax} cy={line.ay} r={5} fill="#dbeafe" stroke="rgba(37, 99, 235, 0.95)" strokeWidth={1.5} />
-              <circle cx={line.bx} cy={line.by} r={5} fill="#dbeafe" stroke="rgba(37, 99, 235, 0.95)" strokeWidth={1.5} />
             </g>
           );
         })()}
@@ -264,8 +313,31 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
           const isSelectedOpening =
             room.id === selectedRoomId && opening.id === selectedOpeningId;
           const isConnectedOpening = Boolean(opening.connectsTo);
+          const hasSingleConnection = Boolean(opening.connectsTo && !findLinkedOpening(rooms, room.id, opening.id));
           return (
             <g key={opening.id}>
+              {hasSingleConnection && (
+                <>
+                  <circle
+                    cx={screenPoint[0]}
+                    cy={screenPoint[1]}
+                    r={14}
+                    fill="rgba(245, 158, 11, 0.12)"
+                    stroke="rgba(217, 119, 6, 0.95)"
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                  />
+                  <line
+                    x1={screenPoint[0] - nx * 12}
+                    y1={screenPoint[1] - ny * 12}
+                    x2={screenPoint[0] + nx * 12}
+                    y2={screenPoint[1] + ny * 12}
+                    stroke="rgba(217, 119, 6, 0.95)"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
+                </>
+              )}
               {isConnectedOpening && (
                 <>
                   <line
@@ -384,7 +456,8 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
           {hoveredSnap.kind === "guide" &&
             (() => {
               const guide = guides.find((entry) => entry.id === hoveredSnap.guideId);
-              const line = guide ? screenGuide(guide.a, guide.b) : null;
+              const guideReference = guide ? guideReferencePoints(guide) : null;
+              const line = guideReference ? screenGuide(guideReference.a, guideReference.b) : null;
               if (!line) return null;
               return (
                 <line

@@ -1,5 +1,5 @@
 import type { CanonicalRoom } from "../../lib/types";
-import type { EditorGuide } from "./commands";
+import { guideReferencePoints, type EditorGuide } from "./commands";
 import type { Point } from "./geometry";
 import { distance, lineIntersection, nearestPointOnLine, nearestPointOnSegment } from "./geometry";
 
@@ -98,10 +98,7 @@ export const findHoverSnap = (
 
   if (includeGuideEndpoints) {
     for (const guide of guides) {
-      const endpoints: Array<{ point: Point; endpoint: "a" | "b" }> = [
-        { point: guide.a, endpoint: "a" },
-        { point: guide.b, endpoint: "b" },
-      ];
+      const endpoints: Array<{ point: Point; endpoint: "a" | "b" }> = [{ point: guide.point, endpoint: "a" }];
       for (const endpoint of endpoints) {
         const endpointDistance = distance(point, endpoint.point);
         if (endpointDistance < bestVertexDistance) {
@@ -127,9 +124,11 @@ export const findHoverSnap = (
   if (includeGuideIntersections) {
     for (let i = 0; i < guides.length; i++) {
       const leftGuide = guides[i]!;
+      const leftReference = guideReferencePoints(leftGuide);
       for (let j = i + 1; j < guides.length; j++) {
         const rightGuide = guides[j]!;
-        const intersection = lineIntersection(leftGuide.a, leftGuide.b, rightGuide.a, rightGuide.b);
+        const rightReference = guideReferencePoints(rightGuide);
+        const intersection = lineIntersection(leftReference.a, leftReference.b, rightReference.a, rightReference.b);
         if (!intersection) continue;
         const intersectionDistance = distance(point, intersection);
         if (intersectionDistance < bestGuideIntersectionDistance) {
@@ -153,11 +152,12 @@ export const findHoverSnap = (
 
   if (includeGuideWallIntersections) {
     for (const guide of guides) {
+      const guideReference = guideReferencePoints(guide);
       for (const room of rooms) {
         for (let i = 0; i < room.polygon.length; i++) {
           const a = room.polygon[i]!;
           const b = room.polygon[(i + 1) % room.polygon.length]!;
-          const intersection = lineIntersection(guide.a, guide.b, a, b);
+          const intersection = lineIntersection(guideReference.a, guideReference.b, a, b);
           if (!intersection || !pointOnSegment(intersection, a, b)) continue;
           const intersectionDistance = distance(point, intersection);
           if (intersectionDistance < bestGuideWallIntersectionDistance) {
@@ -184,7 +184,8 @@ export const findHoverSnap = (
 
   if (includeGuides) {
     for (const guide of guides) {
-      const guidePoint = nearestPointOnLine(point, guide.a, guide.b);
+      const guideReference = guideReferencePoints(guide);
+      const guidePoint = nearestPointOnLine(point, guideReference.a, guideReference.b);
       const guideDistance = distance(point, guidePoint);
       if (guideDistance < bestGuideDistance) {
         bestGuideDistance = guideDistance;

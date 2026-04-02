@@ -21,90 +21,2150 @@
   ],
   "rooms": [
     {
-      "id": "demo-room-1",
+      "id": "room-l1-8wLVqC",
       "level": "L1",
       "kind": "room",
-      "name": "North Studio",
+      "name": "206",
       "polygon": [
         [
-          20.52494103230085,
-          43.790937627666736
+          24.468,
+          135.536
         ],
         [
-          47.89252923927182,
-          43.84653577220391
+          24.472,
+          127.431
         ],
         [
-          47.83136370606037,
-          48.90029914318243
+          30.591,
+          127.431
         ],
         [
-          42.72526695753351,
-          48.92210891046737
-        ],
-        [
-          42.70671516731567,
-          50.92209899916594
-        ],
-        [
-          20.98006637112824,
-          50.96835439855002
+          30.585,
+          135.536
         ]
       ],
       "subtitle": "",
-      "department": "Design",
+      "department": "",
       "searchTokens": [],
-      "openings": []
+      "openings": [
+        {
+          "id": "opening-rOzlME-a",
+          "point": [
+            29.031590901067066,
+            127.431
+          ],
+          "width": 1.111,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-zNPRrH"
+        }
+      ]
     },
     {
-      "id": "demo-room-2",
+      "id": "room-l1-ReOKiK",
+      "level": "L1",
+      "kind": "room",
+      "name": "205",
+      "polygon": [
+        [
+          30.585,
+          135.536
+        ],
+        [
+          30.591,
+          127.431
+        ],
+        [
+          35.53,
+          127.424
+        ],
+        [
+          35.526,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-ReOKiK-VE_JP",
+          "point": [
+            33.77240294075841,
+            127.42649102640509
+          ],
+          "width": 1.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-t1PNL2"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-uZ61WZ",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          24.472,
+          127.431
+        ],
+        [
+          24.473,
+          123.923
+        ],
+        [
+          28.294,
+          123.923
+        ],
+        [
+          28.295,
+          127.431
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-PrvWwc-a",
+          "point": [
+            28.294475765659215,
+            125.59198593251634
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-zNPRrH"
+        },
+        {
+          "id": "opening-hDdRCa-a",
+          "point": [
+            25.51713596721987,
+            123.923
+          ],
+          "width": 1.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-hQNa4h"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-zNPRrH",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          28.295,
+          127.431
+        ],
+        [
+          28.294,
+          123.923
+        ],
+        [
+          30.594,
+          123.922
+        ],
+        [
+          30.591,
+          127.431
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-r_Bk7W-a",
+          "point": [
+            29.398830940188315,
+            123.92251963872165
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Uc3pwK"
+        },
+        {
+          "id": "opening-PrvWwc-b",
+          "point": [
+            28.294475765659215,
+            125.59198593251634
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uZ61WZ"
+        },
+        {
+          "id": "opening-gfOeKh-a",
+          "point": [
+            30.59252484181016,
+            125.64744336271916
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-t1PNL2"
+        },
+        {
+          "id": "opening-room-l1-zNPRrH-GDYjR",
+          "point": [
+            29.031590901067066,
+            127.431
+          ],
+          "width": 1.111,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8wLVqC"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-6TDMyg",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          24.474,
+          122.977
+        ],
+        [
+          24.477,
+          116.302
+        ],
+        [
+          30.6,
+          116.3
+        ],
+        [
+          30.595,
+          122.958
+        ],
+        [
+          28.294,
+          122.952
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-6TDMyg-gSRu6",
+          "point": [
+            29.25808257224263,
+            122.95451390501236
+          ],
+          "width": 1.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Uc3pwK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-wJ9zs3",
+      "level": "L1",
+      "kind": "room",
+      "name": "208",
+      "polygon": [
+        [
+          35.093,
+          116.299
+        ],
+        [
+          40.236,
+          116.297
+        ],
+        [
+          40.202,
+          120.803
+        ],
+        [
+          35.015,
+          120.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-wJ9zs3-ou067",
+          "point": [
+            38.595565184897104,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-nNkFX3"
+        },
+        {
+          "id": "opening-room-l1-wJ9zs3-qecLi",
+          "point": [
+            35.07151711967274,
+            117.539498628128
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-t1PNL2"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Dmr5ni",
+      "level": "L1",
+      "kind": "room",
+      "name": "207",
+      "polygon": [
+        [
+          34.959,
+          123.922
+        ],
+        [
+          35.015,
+          120.803
+        ],
+        [
+          37.483,
+          120.803
+        ],
+        [
+          37.497,
+          123.922
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-Dmr5ni-eqOgC",
+          "point": [
+            34.99288353199541,
+            122.0348082804699
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-t1PNL2"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-nNkFX3",
+      "level": "L1",
+      "kind": "room",
+      "name": "204",
+      "polygon": [
+        [
+          37.497,
+          123.922
+        ],
+        [
+          37.483,
+          120.803
+        ],
+        [
+          40.202,
+          120.803
+        ],
+        [
+          40.225,
+          123.921
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-nNkFX3--cG2k",
+          "point": [
+            38.595565184897104,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-wJ9zs3"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-2nqPbk",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          35.53,
+          127.424
+        ],
+        [
+          35.531,
+          123.923
+        ],
+        [
+          58.085,
+          123.919
+        ],
+        [
+          58.085,
+          127.433
+        ],
+        [
+          40.559,
+          127.432
+        ],
+        [
+          40.577,
+          135.536
+        ],
+        [
+          35.526,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-ZFOZCL-a",
+          "point": [
+            53.47482920345439,
+            127.43273695248223
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-4t5gyZ"
+        },
+        {
+          "id": "opening-xpN5-2-a",
+          "point": [
+            55.14996453314489,
+            123.91952053479947
+          ],
+          "width": 2.322,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-a9nwx_"
+        },
+        {
+          "id": "opening-hEtWl9-a",
+          "point": [
+            46.413481082697146,
+            123.92106996877136
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-fiOnFF"
+        },
+        {
+          "id": "opening-UtZruF-a",
+          "point": [
+            43.817669341810166,
+            123.92153034151958
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-AO3SRK"
+        },
+        {
+          "id": "opening-vOsQRs-a",
+          "point": [
+            50.426526760431855,
+            123.92035824656195
+          ],
+          "width": 3.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-U9u7mI"
+        },
+        {
+          "id": "opening-room-l1-2nqPbk-k1MC0",
+          "point": [
+            35.53059733408866,
+            125.3327333555926
+          ],
+          "width": 2.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-t1PNL2"
+        },
+        {
+          "id": "opening-room-l1-2nqPbk-gvsqa",
+          "point": [
+            40.57174169780904,
+            133.1685955024708
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-WpJ6ZN"
+        },
+        {
+          "id": "opening-room-l1-2nqPbk-6Rl06",
+          "point": [
+            48.994734203552184,
+            127.43248132684033
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Ag-XF7"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-WpJ6ZN",
+      "level": "L1",
+      "kind": "room",
+      "name": "203",
+      "polygon": [
+        [
+          40.577,
+          135.536
+        ],
+        [
+          40.559,
+          127.432
+        ],
+        [
+          46.538,
+          127.433
+        ],
+        [
+          46.514,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-tiwbfr-b",
+          "point": [
+            40.57174169780904,
+            133.1685955024708
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Ag-XF7",
+      "level": "L1",
+      "kind": "room",
+      "name": "202",
+      "polygon": [
+        [
+          46.514,
+          135.536
+        ],
+        [
+          46.538,
+          127.433
+        ],
+        [
+          50.573,
+          127.433
+        ],
+        [
+          50.52,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-oKUmue-b",
+          "point": [
+            48.994734203552184,
+            127.433
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-4t5gyZ",
+      "level": "L1",
+      "kind": "room",
+      "name": "201",
+      "polygon": [
+        [
+          50.52,
+          135.536
+        ],
+        [
+          50.573,
+          127.433
+        ],
+        [
+          58.085,
+          127.433
+        ],
+        [
+          58.085,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-4t5gyZ-Ci8q8",
+          "point": [
+            53.47482920345439,
+            127.433
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-jDPZZf",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          40.225,
+          123.921
+        ],
+        [
+          40.204729776826376,
+          121.1510299376221
+        ],
+        [
+          43.008,
+          121.171
+        ],
+        [
+          43.008,
+          123.921
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-H6KktU-b",
+          "point": [
+            43.008,
+            122.94837142019956
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-AO3SRK"
+        },
+        {
+          "id": "opening-room-l1-jDPZZf-2NU9w",
+          "point": [
+            41.4629973516842,
+            121.15999364071082
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IObo_P"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-IObo_P",
+      "level": "L1",
+      "kind": "room",
+      "name": "204а",
+      "polygon": [
+        [
+          40.204729776826376,
+          121.1510299376221
+        ],
+        [
+          40.236,
+          116.297
+        ],
+        [
+          43.008,
+          116.297
+        ],
+        [
+          43.008,
+          121.171
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-NnIg73-b",
+          "point": [
+            41.4629973516842,
+            121.15999364071082
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-jDPZZf"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-AO3SRK",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          43.008,
+          123.921
+        ],
+        [
+          43.008,
+          120.803
+        ],
+        [
+          45.594,
+          120.803
+        ],
+        [
+          45.6,
+          123.921
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-p4TYAf-a",
+          "point": [
+            43.851666896144714,
+            120.803
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-ZIO_SH"
+        },
+        {
+          "id": "opening-room-l1-AO3SRK-b7pod",
+          "point": [
+            43.008,
+            122.94837142019956
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-jDPZZf"
+        },
+        {
+          "id": "opening-room-l1-AO3SRK-1ZHvj",
+          "point": [
+            43.817669341810166,
+            123.921
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-ZIO_SH",
+      "level": "L1",
+      "kind": "room",
+      "name": "22М",
+      "polygon": [
+        [
+          43.008,
+          120.803
+        ],
+        [
+          43.008,
+          116.297
+        ],
+        [
+          45.567,
+          116.296
+        ],
+        [
+          45.594,
+          120.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-p4TYAf-b",
+          "point": [
+            43.851666896144714,
+            120.803
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-AO3SRK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-fiOnFF",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          45.6,
+          123.921
+        ],
+        [
+          45.594,
+          120.803
+        ],
+        [
+          47.846,
+          120.803
+        ],
+        [
+          47.846,
+          123.92
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-4JHpga-a",
+          "point": [
+            47.2,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-ftIAZ6"
+        },
+        {
+          "id": "opening-room-l1-fiOnFF-p3qfU",
+          "point": [
+            46.413480890284085,
+            123.92063780904262
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-ftIAZ6",
+      "level": "L1",
+      "kind": "room",
+      "name": "21Ж",
+      "polygon": [
+        [
+          45.594,
+          120.803
+        ],
+        [
+          45.567,
+          116.296
+        ],
+        [
+          47.846,
+          116.295
+        ],
+        [
+          47.846,
+          120.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-4JHpga-b",
+          "point": [
+            47.2,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-fiOnFF"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-a9nwx_",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          58.085,
+          123.919
+        ],
+        [
+          52.199,
+          123.92
+        ],
+        [
+          52.204,
+          116.294
+        ],
+        [
+          58.085,
+          116.292
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-bL62Wx-a",
+          "point": [
+            52.20340542896457,
+            117.20083974323468
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-fJbIrA"
+        },
+        {
+          "id": "opening-room-l1-a9nwx_-c9MXl",
+          "point": [
+            55.14996452942625,
+            123.91949864686895
+          ],
+          "width": 2.322,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-U9u7mI",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          47.846,
+          123.92
+        ],
+        [
+          47.846,
+          123.082
+        ],
+        [
+          52.2,
+          123.082
+        ],
+        [
+          52.199,
+          123.92
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-TOroIY-a",
+          "point": [
+            50.3268580063362,
+            123.082
+          ],
+          "width": 2.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-fJbIrA"
+        },
+        {
+          "id": "opening-room-l1-U9u7mI--Frqc",
+          "point": [
+            50.426526760431855,
+            123.92
+          ],
+          "width": 3.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-fJbIrA",
+      "level": "L1",
+      "kind": "room",
+      "name": "1лк2",
+      "polygon": [
+        [
+          47.846,
+          123.082
+        ],
+        [
+          47.846,
+          116.295
+        ],
+        [
+          52.204,
+          116.294
+        ],
+        [
+          52.2,
+          123.082
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-TOroIY-b",
+          "point": [
+            50.3268580063362,
+            123.082
+          ],
+          "width": 2.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-U9u7mI"
+        },
+        {
+          "id": "opening-bL62Wx-b",
+          "point": [
+            52.20346562181338,
+            117.20083978270023
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-a9nwx_"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-hQNa4h",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          24.473,
+          123.923
+        ],
+        [
+          24.474,
+          122.977
+        ],
+        [
+          28.294,
+          122.952
+        ],
+        [
+          28.294,
+          123.923
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-hDdRCa-b",
+          "point": [
+            25.51713596721987,
+            123.923
+          ],
+          "width": 1.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uZ61WZ"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Uc3pwK",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          28.294,
+          123.923
+        ],
+        [
+          28.294,
+          122.952
+        ],
+        [
+          30.595,
+          122.958
+        ],
+        [
+          30.594,
+          123.922
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-Uc3pwK-vwulG",
+          "point": [
+            29.398830940188315,
+            123.92251963872165
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-zNPRrH"
+        },
+        {
+          "id": "opening-room-l1-Uc3pwK-waDd8",
+          "point": [
+            29.25808257224263,
+            122.95451390501236
+          ],
+          "width": 1.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-6TDMyg"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-zetWIZ",
+      "level": "L1",
+      "kind": "room",
+      "name": "210",
+      "polygon": [
+        [
+          24.477,
+          116.302
+        ],
+        [
+          23.945,
+          106.187
+        ],
+        [
+          31.128,
+          105.819
+        ],
+        [
+          31.674,
+          116.3
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-uNTg5G-a",
+          "point": [
+            31.276076636947042,
+            108.66147478359333
+          ],
+          "width": 1.61515,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-8PYnQq",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          31.674,
+          116.3
+        ],
+        [
+          35.093,
+          116.299
+        ],
+        [
+          34.794,
+          110.888
+        ],
+        [
+          31.401,
+          111.065
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-RKXJ3c-b",
+          "point": [
+            33.20491681929033,
+            116.29955223257699
+          ],
+          "width": 2.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-t1PNL2"
+        },
+        {
+          "id": "opening-room-l1-8PYnQq-6t_Dy",
+          "point": [
+            34.9263245827898,
+            113.28267664707572
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-VdYP5U"
+        },
+        {
+          "id": "opening-IxsNrN-a",
+          "point": [
+            33.086385670328276,
+            110.97707979261772
+          ],
+          "width": 1.61717,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-t1PNL2",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          30.591,
+          127.431
+        ],
+        [
+          30.6,
+          116.3
+        ],
+        [
+          35.093,
+          116.299
+        ],
+        [
+          34.959,
+          123.922
+        ],
+        [
+          35.531,
+          123.923
+        ],
+        [
+          35.53,
+          127.424
+        ]
+      ],
+      "subtitle": "",
+      "department": "1.81.81.81.8",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-RKXJ3c-a",
+          "point": [
+            33.20491678068114,
+            116.29942022773633
+          ],
+          "width": 2.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8PYnQq"
+        },
+        {
+          "id": "opening-room-l1-t1PNL2-Z3f8S",
+          "point": [
+            30.59244209957526,
+            125.64744329197914
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-zNPRrH"
+        },
+        {
+          "id": "opening-room-l1-t1PNL2-Uacng",
+          "point": [
+            35.53059733408866,
+            125.3327333555926
+          ],
+          "width": 2.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2nqPbk"
+        },
+        {
+          "id": "opening-room-l1-t1PNL2-RKZUz",
+          "point": [
+            35.07119414054014,
+            117.53949303479489
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-wJ9zs3"
+        },
+        {
+          "id": "opening-room-l1-t1PNL2-ZEHAh",
+          "point": [
+            34.99217399940719,
+            122.0347955411865
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Dmr5ni"
+        },
+        {
+          "id": "opening-room-l1-t1PNL2-DZuFg",
+          "point": [
+            33.77240294075841,
+            127.42649102640509
+          ],
+          "width": 1.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-ReOKiK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-VdYP5U",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          35.093,
+          116.299
+        ],
+        [
+          34.794,
+          110.888
+        ],
+        [
+          37.402,
+          110.752
+        ],
+        [
+          37.704,
+          116.298
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-VdYP5U-P-0N6",
+          "point": [
+            34.9263245827898,
+            113.28267664707572
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8PYnQq"
+        },
+        {
+          "id": "opening-6FqG_d-a",
+          "point": [
+            37.53189766493719,
+            113.13747168788629
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-bAzNbQ"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-bAzNbQ",
+      "level": "L1",
+      "kind": "room",
+      "name": "209",
+      "polygon": [
+        [
+          37.704,
+          116.298
+        ],
+        [
+          37.402,
+          110.752
+        ],
+        [
+          42.019,
+          110.511
+        ],
+        [
+          42.326,
+          116.297
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-6FqG_d-b",
+          "point": [
+            37.53189766493719,
+            113.13747168788629
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-VdYP5U"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-uwNtQK",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          31.401,
+          111.065
+        ],
+        [
+          30.36,
+          91.093
+        ],
+        [
+          33.686,
+          90.922
+        ],
+        [
+          34.794,
+          110.888
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-o_aGVH-b",
+          "point": [
+            34.69228594042162,
+            109.05512733434846
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-UjgMHb"
+        },
+        {
+          "id": "opening-uNTg5G-b",
+          "point": [
+            31.27572208477525,
+            108.66149325372842
+          ],
+          "width": 1.61515,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-zetWIZ"
+        },
+        {
+          "id": "opening-wZ66Ys-b",
+          "point": [
+            31.037401653321872,
+            104.08922076863057
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-UNaMSg"
+        },
+        {
+          "id": "opening-kysrID-a",
+          "point": [
+            34.10230164886542,
+            98.42369559679335
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-3HZSZA"
+        },
+        {
+          "id": "opening-iLXPCf-a",
+          "point": [
+            30.762894475187665,
+            98.82269112242845
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-S60XNk"
+        },
+        {
+          "id": "opening-e5Dr2B-b",
+          "point": [
+            30.486226488916316,
+            93.51470551069806
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IauPcs"
+        },
+        {
+          "id": "opening-R052Cx-a",
+          "point": [
+            33.803045935545285,
+            93.03115085658594
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2Ik8A_"
+        },
+        {
+          "id": "opening-oOcMqc-b",
+          "point": [
+            34.000249631083726,
+            96.58473297312062
+          ],
+          "width": 0.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-XuKJ6R"
+        },
+        {
+          "id": "opening-MJVkKX-a",
+          "point": [
+            34.272364153302625,
+            101.4881973689894
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-vJnJdK"
+        },
+        {
+          "id": "opening-IxsNrN-b",
+          "point": [
+            33.086385670328276,
+            110.97707979261772
+          ],
+          "width": 1.61717,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8PYnQq"
+        },
+        {
+          "id": "opening-aLnVzv-a",
+          "point": [
+            32.00530946611825,
+            91.0084095253439
+          ],
+          "width": 2.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-UjgMHb",
+      "level": "L1",
+      "kind": "room",
+      "name": "211",
+      "polygon": [
+        [
+          34.794,
+          110.888
+        ],
+        [
+          34.423,
+          104.205
+        ],
+        [
+          41.658,
+          103.829
+        ],
+        [
+          42.019,
+          110.511
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-o_aGVH-a",
+          "point": [
+            34.692250034459015,
+            109.05512932692616
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-vJnJdK",
+      "level": "L1",
+      "kind": "room",
+      "name": "211а",
+      "polygon": [
+        [
+          34.423,
+          104.205
+        ],
+        [
+          34.213,
+          100.421
+        ],
+        [
+          41.455,
+          100.037
+        ],
+        [
+          41.658,
+          103.829
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-MJVkKX-b",
+          "point": [
+            34.27222649360989,
+            101.4882050086658
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-UNaMSg",
+      "level": "L1",
+      "kind": "room",
+      "name": "212",
+      "polygon": [
+        [
+          23.945,
+          106.187
+        ],
+        [
+          23.671,
+          100.981
+        ],
+        [
+          30.855,
+          100.6
+        ],
+        [
+          31.128,
+          105.819
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-wZ66Ys-a",
+          "point": [
+            31.03751688528198,
+            104.08921474097679
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-S60XNk",
+      "level": "L1",
+      "kind": "room",
+      "name": "215а",
+      "polygon": [
+        [
+          23.671,
+          100.981
+        ],
+        [
+          23.473,
+          97.217
+        ],
+        [
+          30.657,
+          96.803
+        ],
+        [
+          30.855,
+          100.6
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-iLXPCf-b",
+          "point": [
+            30.762321243312133,
+            98.82272101442513
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-IauPcs",
+      "level": "L1",
+      "kind": "room",
+      "name": "215",
+      "polygon": [
+        [
+          23.473,
+          97.217
+        ],
+        [
+          23.169,
+          91.461
+        ],
+        [
+          30.36,
+          91.093
+        ],
+        [
+          30.657,
+          96.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-e5Dr2B-a",
+          "point": [
+            30.48596332785146,
+            93.51471919876046
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-YinLOR",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          23.169,
+          91.461
+        ],
+        [
+          22.899,
+          86.312
+        ],
+        [
+          30.088,
+          85.883
+        ],
+        [
+          30.36,
+          91.093
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-JfGUAf-a",
+          "point": [
+            28.747611937915813,
+            85.9629869910466
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-9n4fyE"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-9n4fyE",
+      "level": "L1",
+      "kind": "room",
+      "name": "214б1",
+      "polygon": [
+        [
+          22.899,
+          86.312
+        ],
+        [
+          22.399,
+          76.806
+        ],
+        [
+          29.593,
+          76.387
+        ],
+        [
+          30.088,
+          85.883
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-cozqV6-b",
+          "point": [
+            30.00072374450439,
+            84.20870641982566
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        },
+        {
+          "id": "opening-JfGUAf-b",
+          "point": [
+            28.747611937915813,
+            85.9629869910466
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-YinLOR"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-kIk8u9",
+      "level": "L1",
+      "kind": "room",
+      "name": "214б2",
+      "polygon": [
+        [
+          22.399,
+          76.806
+        ],
+        [
+          21.929,
+          67.883
+        ],
+        [
+          29.131,
+          67.511
+        ],
+        [
+          29.593,
+          76.387
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-M85Q0v-a",
+          "point": [
+            29.474094871284564,
+            74.10258025437616
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-eZKdJX",
+      "level": "L1",
+      "kind": "room",
+      "name": "214в",
+      "polygon": [
+        [
+          21.929,
+          67.883
+        ],
+        [
+          21.627,
+          62.131
+        ],
+        [
+          29.659,
+          62.128
+        ],
+        [
+          29.884,
+          66.859
+        ],
+        [
+          29.099,
+          66.9
+        ],
+        [
+          29.131,
+          67.511
+        ],
+        [
+          29.131,
+          67.511
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-eZKdJX--yZlZ",
+          "point": [
+            29.805638820665322,
+            65.21132560252286
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-c_TEYk",
       "level": "L1",
       "kind": "meeting_room",
-      "name": "Forum",
+      "name": "218а",
       "polygon": [
         [
-          12,
-          3.5
+          21.627,
+          62.131
         ],
         [
-          18.5,
-          3.5
+          21.222,
+          54.353
         ],
         [
-          18.5,
-          9
+          27.754,
+          54.353
         ],
         [
-          12,
-          9
+          27.751,
+          62.129
         ]
       ],
       "subtitle": "",
-      "department": "Ops",
+      "department": "",
       "searchTokens": [],
-      "openings": []
+      "openings": [
+        {
+          "id": "opening-room-l1-c_TEYk-kqQmg",
+          "point": [
+            27.752666510034494,
+            57.80940599059464
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        }
+      ]
     },
     {
-      "id": "room-l1-KLIHMk",
+      "id": "room-l1-P4ExJr",
       "level": "L1",
-      "kind": "room",
-      "name": "New Room",
+      "kind": "meeting_room",
+      "name": "218б",
       "polygon": [
         [
-          20.98006637112824,
-          50.96835439855002
+          21.222,
+          54.353
         ],
         [
-          21.192685456083538,
-          54.15875509822898
+          21.037,
+          50.922
         ],
         [
-          27.677410288912796,
-          54.395920279852234
+          27.755,
+          50.921
         ],
         [
-          27.657232232630264,
-          50.8740140695203
+          27.754,
+          54.353
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-P4ExJr-uNlFZ",
+          "point": [
+            27.75447804043576,
+            52.71236522447441
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-NCBh9O",
+      "level": "L1",
+      "kind": "amenity",
+      "name": "Выставочный зал",
+      "polygon": [
+        [
+          21.037,
+          50.922
+        ],
+        [
+          20.67,
+          43.945
+        ],
+        [
+          47.846,
+          43.925
+        ],
+        [
+          47.846,
+          48.987
+        ],
+        [
+          42.774,
+          48.92
+        ],
+        [
+          42.772,
+          50.92
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-0F4pso-a",
+          "point": [
+            35.35126380374283,
+            50.92068283746917
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        },
+        {
+          "id": "opening-9Wljub-a",
+          "point": [
+            46.19352431502336,
+            48.96517116110145
+          ],
+          "width": 1.413,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-3i61wv"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Tz50o8",
+      "level": "L1",
+      "kind": "room",
+      "name": "221",
+      "polygon": [
+        [
+          47.846,
+          50.919
+        ],
+        [
+          47.846,
+          43.925
+        ],
+        [
+          52.708,
+          43.925
+        ],
+        [
+          52.716,
+          50.919
         ]
       ],
       "subtitle": "",
@@ -113,26 +2173,155 @@
       "openings": []
     },
     {
-      "id": "room-l1-70bCWI",
+      "id": "room-l1-k89CBE",
+      "level": "L1",
+      "kind": "room",
+      "name": "222",
+      "polygon": [
+        [
+          52.716,
+          50.919
+        ],
+        [
+          52.708,
+          43.925
+        ],
+        [
+          60.412,
+          43.925
+        ],
+        [
+          60.718,
+          54.353
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Rjjda0-b",
+          "point": [
+            54.46186089681317,
+            51.66822348408603
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true
+        }
+      ]
+    },
+    {
+      "id": "room-l1-3HZSZA",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          21.192685456083538,
-          54.15875509822898
+          34.213,
+          100.421
         ],
         [
-          21.67217730736326,
-          61.903029509438404
+          34.025,
+          97.023
         ],
         [
-          27.72177557592114,
-          62.13949962416821
+          35.544,
+          96.884
         ],
         [
-          27.677410288912796,
-          54.395920279852234
+          35.759,
+          100.339
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-kysrID-b",
+          "point": [
+            34.10249521856881,
+            98.42368485477034
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        },
+        {
+          "id": "opening-u2uXpN-a",
+          "point": [
+            35.6324351817659,
+            98.30513280465672
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true
+        }
+      ]
+    },
+    {
+      "id": "room-l1-XuKJ6R",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          34.025,
+          97.023
+        ],
+        [
+          33.893,
+          94.652
+        ],
+        [
+          35.545,
+          94.597
+        ],
+        [
+          35.544,
+          96.884
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-oOcMqc-a",
+          "point": [
+            34.00059940542657,
+            96.58471356262419
+          ],
+          "width": 0.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-qC-VHk",
+      "level": "L1",
+      "kind": "room",
+      "name": "213",
+      "polygon": [
+        [
+          35.759,
+          100.339
+        ],
+        [
+          35.545,
+          94.597
+        ],
+        [
+          41.148,
+          94.306
+        ],
+        [
+          41.455,
+          100.037
         ]
       ],
       "subtitle": "",
@@ -141,34 +2330,418 @@
       "openings": []
     },
     {
-      "id": "room-l1-e_kvhi",
+      "id": "room-l1-2Ik8A_",
+      "level": "L1",
+      "kind": "room",
+      "name": "214",
+      "polygon": [
+        [
+          33.893,
+          94.652
+        ],
+        [
+          33.686,
+          90.922
+        ],
+        [
+          40.948,
+          90.55
+        ],
+        [
+          41.148,
+          94.306
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-R052Cx-b",
+          "point": [
+            33.803049380092084,
+            93.03115066542745
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-gaGVBS",
+      "level": "L1",
+      "kind": "room",
+      "name": "214а",
+      "polygon": [
+        [
+          33.686,
+          90.922
+        ],
+        [
+          32.824,
+          75.353
+        ],
+        [
+          40.113,
+          74.971
+        ],
+        [
+          40.948,
+          90.55
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Z111CU-a",
+          "point": [
+            33.21707337228723,
+            82.45248878554511
+          ],
+          "width": 1.6151515,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-J_ELld",
+      "level": "L1",
+      "kind": "room",
+      "name": "223",
+      "polygon": [
+        [
+          53.138,
+          62.121
+        ],
+        [
+          53.091,
+          54.353
+        ],
+        [
+          60.412,
+          54.353
+        ],
+        [
+          60.412,
+          62.118
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-oTHUJG-a",
+          "point": [
+            53.09997309910316,
+            55.83604327305039
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        },
+        {
+          "id": "opening-HbgDUA-a",
+          "point": [
+            53.091,
+            54.353
+          ],
+          "width": 2.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        },
+        {
+          "id": "opening-80KESN-a",
+          "point": [
+            53.113684327666576,
+            58.102188453488694
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-CuRfIv",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          42.72526695753351,
-          48.92210891046737
+          60.412,
+          64.468
         ],
         [
-          42.67489840219381,
-          54.35212996388419
+          60.412,
+          56.019
         ],
         [
-          60.45556664420827,
-          54.223910600660936
+          65.344,
+          56.02
         ],
         [
-          60.45006739386687,
-          51.054461081527265
+          65.34,
+          64.469
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-8eloDA-a",
+          "point": [
+            62.97025601865931,
+            56.01951870559989
+          ],
+          "width": 1.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IoYHX5"
+        },
+        {
+          "id": "opening-FxYLaE-a",
+          "point": [
+            65.34053533378064,
+            63.338241221847106
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-yGTRIv"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-yGTRIv",
+      "level": "L1",
+      "kind": "room",
+      "name": "2лкб",
+      "polygon": [
+        [
+          65.34,
+          64.469
         ],
         [
-          47.80700142475157,
-          50.91321717802174
+          65.342,
+          60.351
         ],
         [
-          47.83136370606037,
-          48.90029914318243
+          69.911,
+          60.352
+        ],
+        [
+          69.911,
+          64.469
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-FxYLaE-b",
+          "point": [
+            65.34054917861653,
+            63.338241228571164
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-CuRfIv"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-EA4aQI",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          65.342,
+          60.351
+        ],
+        [
+          65.344,
+          56.761
+        ],
+        [
+          69.911,
+          56.73
+        ],
+        [
+          69.911,
+          60.352
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-yM8Pqf-a",
+          "point": [
+            67.56888008117147,
+            56.74589790179191
+          ],
+          "width": 2.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IoYHX5"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-9RaZrU",
+      "level": "L1",
+      "kind": "room",
+      "name": "224",
+      "polygon": [
+        [
+          60.718,
+          54.353
+        ],
+        [
+          60.412,
+          45.412
+        ],
+        [
+          65.35,
+          45.413
+        ],
+        [
+          65.347,
+          50.969
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-pdIgUj-a",
+          "point": [
+            60.60277075874155,
+            50.986122071595354
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        }
+      ]
+    },
+    {
+      "id": "room-l1-AUt3ba",
+      "level": "L1",
+      "kind": "room",
+      "name": "23Ж",
+      "polygon": [
+        [
+          69.911,
+          62.962
+        ],
+        [
+          69.911,
+          59.284
+        ],
+        [
+          75.137,
+          59.295
+        ],
+        [
+          75.137,
+          62.96
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-3mj5oe-a",
+          "point": [
+            71.97419396771295,
+            59.28834273510234
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-l3dJjg"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-l3dJjg",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          75.137,
+          59.295
+        ],
+        [
+          69.911,
+          59.284
+        ],
+        [
+          69.911,
+          56.021
+        ],
+        [
+          75.137,
+          56.022
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-3mj5oe-b",
+          "point": [
+            71.97419396771295,
+            59.28834273510234
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-AUt3ba"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-veYQIh",
+      "level": "L1",
+      "kind": "room",
+      "name": "228",
+      "polygon": [
+        [
+          75.137,
+          62.96
+        ],
+        [
+          75.137,
+          56.022
+        ],
+        [
+          80.607,
+          56.023
+        ],
+        [
+          80.607,
+          62.957
         ]
       ],
       "subtitle": "",
@@ -177,26 +2750,923 @@
       "openings": []
     },
     {
-      "id": "room-l1-eUxkD-",
+      "id": "room-l1-36BPGF",
+      "level": "L1",
+      "kind": "room",
+      "name": "227",
+      "polygon": [
+        [
+          80.607,
+          52.503
+        ],
+        [
+          80.607,
+          45.415
+        ],
+        [
+          75.735,
+          45.415
+        ],
+        [
+          75.7,
+          52.504
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-36BPGF-JtZH0",
+          "point": [
+            77.58680373375365,
+            52.50361548731735
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-36BPGF-ox7eW",
+          "point": [
+            78.28343111378688,
+            52.503473521272916
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-MHZw1J",
+      "level": "L1",
+      "kind": "room",
+      "name": "226",
+      "polygon": [
+        [
+          71.042,
+          52.506
+        ],
+        [
+          71.042,
+          45.414
+        ],
+        [
+          75.735,
+          45.415
+        ],
+        [
+          75.7,
+          52.504
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-MHZw1J-FdBiE",
+          "point": [
+            73.48364253196671,
+            52.50495163480809
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-room-l1-MHZw1J-9cp2X",
+          "point": [
+            71.042,
+            52.506
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true
+        }
+      ]
+    },
+    {
+      "id": "room-l1-NVytyk",
+      "level": "L1",
+      "kind": "room",
+      "name": "225",
+      "polygon": [
+        [
+          65.346,
+          52.507
+        ],
+        [
+          65.35,
+          45.413
+        ],
+        [
+          71.042,
+          45.414
+        ],
+        [
+          71.042,
+          52.506
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Vy4n3r-a",
+          "point": [
+            68.11343157756683,
+            52.50651414473708
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IoYHX5"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-IoYHX5",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          47.80700142475157,
-          50.91321717802174
+          60.412,
+          56.019
         ],
         [
-          47.89252923927182,
-          43.84653577220391
+          60.718,
+          54.353
         ],
         [
-          52.777165996466415,
-          43.87026937894049
+          65.347,
+          50.969
         ],
         [
-          52.707569970826164,
-          50.974408702088034
+          65.346,
+          52.507
+        ],
+        [
+          71.042,
+          52.506
+        ],
+        [
+          71.042,
+          56.021
+        ],
+        [
+          69.911,
+          56.021
+        ],
+        [
+          69.911,
+          56.73
+        ],
+        [
+          65.344,
+          56.761
+        ],
+        [
+          65.344,
+          56.02
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-8eloDA-b",
+          "point": [
+            62.97025601865931,
+            56.01951870559989
+          ],
+          "width": 1.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-CuRfIv"
+        },
+        {
+          "id": "opening-Vy4n3r-b",
+          "point": [
+            68.11343157756683,
+            52.50651414473708
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-NVytyk"
+        },
+        {
+          "id": "opening-room-l1-IoYHX5-q1mm6",
+          "point": [
+            67.56888008117147,
+            56.74589790179191
+          ],
+          "width": 2.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-EA4aQI"
+        },
+        {
+          "id": "opening-room-l1-IoYHX5-QYhVw",
+          "point": [
+            71.042,
+            52.506
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-MHZw1J"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-C4R5SI",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          182.088,
+          56.043
+        ],
+        [
+          182.092,
+          52.476
+        ],
+        [
+          71.042,
+          52.506
+        ],
+        [
+          71.042,
+          56.021
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-C4R5SI-ZaP3x",
+          "point": [
+            84.09656836463932,
+            52.502473326871325
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-MTUgYK"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-ChX9x",
+          "point": [
+            89.1746734018624,
+            52.501101483997694
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-oOBrYY"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-l1C96",
+          "point": [
+            93.0016373018299,
+            52.50006763512783
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-oOBrYY"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-u-XeD",
+          "point": [
+            98.32382626084888,
+            52.4986298533289
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-o20nzQ"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-FH6KY",
+          "point": [
+            114.36550285198578,
+            52.4942962171494
+          ],
+          "width": 1.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-h7Ti0i"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-kaAAv",
+          "point": [
+            114.19991402161375,
+            52.49434095073707
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-h7Ti0i"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-j-CDx",
+          "point": [
+            97.99991821771361,
+            52.49871735662736
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-o20nzQ"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-Wdukf",
+          "point": [
+            88.42326910782589,
+            52.501304474802026
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-oOBrYY"
+        },
+        {
+          "id": "opening-QFnWUX-b",
+          "point": [
+            74.18210057262125,
+            52.50515170628385
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-QhcNK5-a",
+          "point": [
+            77.58680385937893,
+            52.50423193051975
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-36BPGF"
+        },
+        {
+          "id": "opening-LOPu7e-a",
+          "point": [
+            118.20415199102132,
+            52.493259211528766
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-h7Ti0i"
+        },
+        {
+          "id": "opening-yG1EuP-a",
+          "point": [
+            126.71897538584736,
+            52.490958944065056
+          ],
+          "width": 3.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Xv-QbU"
+        },
+        {
+          "id": "opening-VieCLs-b",
+          "point": [
+            126.58578874662462,
+            52.49099492424675
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Xv-QbU"
+        },
+        {
+          "id": "opening-ABsZ2l-a",
+          "point": [
+            145.45098547639128,
+            52.48589851810633
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-75YQDS"
+        },
+        {
+          "id": "opening-1wVeuQ-a",
+          "point": [
+            149.94406491010056,
+            52.48468471906976
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H_06f"
+        },
+        {
+          "id": "opening-b-TR1D-a",
+          "point": [
+            154.37736173027616,
+            52.48348707022144
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Qqry_5"
+        },
+        {
+          "id": "opening-qgBLcL-b",
+          "point": [
+            149.9550663024175,
+            56.03663394862177
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_t5sMy"
+        },
+        {
+          "id": "opening-dmSYnv-b",
+          "point": [
+            165.02479286632035,
+            56.03961950401688
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-DY0c8e"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-V-DkT",
+          "point": [
+            164.8768363212641,
+            52.480650652051885
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-qqbdlB-b",
+          "point": [
+            170.21321922997643,
+            52.479209035777586
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-bZpMT3"
+        },
+        {
+          "id": "opening-EeQvXI-a",
+          "point": [
+            174.80615169478895,
+            52.47796826158628
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qmG5w9"
+        },
+        {
+          "id": "opening-aizKG0-a",
+          "point": [
+            174.16685858583202,
+            56.041430694386904
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-TY8OL3"
+        },
+        {
+          "id": "opening-OONt22-b",
+          "point": [
+            180.9517391765095,
+            56.04277488844158
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1--ltf_P"
+        },
+        {
+          "id": "opening-_1YKPm-b",
+          "point": [
+            182.09010813584862,
+            54.16306985699215
+          ],
+          "width": 2.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-z3jYuy-a",
+          "point": [
+            111.75287911980597,
+            52.495002013745214
+          ],
+          "width": 1.4131313,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-19X_vC"
+        },
+        {
+          "id": "opening-XLjb7c-b",
+          "point": [
+            135.10141231491224,
+            52.488694440617316
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-GxuULL"
+        },
+        {
+          "id": "opening-brjcnt-a",
+          "point": [
+            139.9360427440045,
+            52.487388372063755
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-U4iAPH"
+        },
+        {
+          "id": "opening-UJGmtP-a",
+          "point": [
+            141.1218268172512,
+            56.034883941699654
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-weHEc3"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-BjnLQ",
+          "point": [
+            182.092,
+            52.476
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-c2Qnwd-b",
+          "point": [
+            182.092,
+            52.476
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-ie4hy8-b",
+          "point": [
+            182.088008542169,
+            56.03538252077711
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-2cf3Bd-b",
+          "point": [
+            182.092,
+            52.476
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-kbo32n-b",
+          "point": [
+            182.088008513338,
+            56.03540823082946
+          ],
+          "width": 1.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-eG53o",
+          "point": [
+            78.28343122999154,
+            52.5040437376236
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-36BPGF"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-KkM-0",
+          "point": [
+            84.71275835156334,
+            52.50230686402029
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-MTUgYK"
+        },
+        {
+          "id": "opening-room-l1-C4R5SI-Ml-6z",
+          "point": [
+            100.88269929575094,
+            52.49793857740772
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-N48Uoe"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-MTUgYK",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          80.607,
+          52.503
+        ],
+        [
+          80.607,
+          45.415
+        ],
+        [
+          85.542,
+          45.416
+        ],
+        [
+          85.542,
+          52.502
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-MTUgYK-7RxTH",
+          "point": [
+            85.542,
+            50.66998188097682
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-oOBrYY"
+        },
+        {
+          "id": "opening-room-l1-MTUgYK-Saz5m",
+          "point": [
+            84.09656832807744,
+            52.50229289395581
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-MTUgYK-bLDHs",
+          "point": [
+            84.71275832343137,
+            52.50216803276121
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-oOBrYY",
+      "level": "L1",
+      "kind": "room",
+      "name": "232",
+      "polygon": [
+        [
+          85.542,
+          52.502
+        ],
+        [
+          85.542,
+          45.416
+        ],
+        [
+          95.526,
+          45.418
+        ],
+        [
+          95.53,
+          52.499
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-oOBrYY-T3L_t",
+          "point": [
+            85.542,
+            50.66998188097682
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-MTUgYK"
+        },
+        {
+          "id": "opening-room-l1-oOBrYY-Y-zZJ",
+          "point": [
+            89.1746733440144,
+            52.5009088886632
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-oOBrYY-AYbzZ",
+          "point": [
+            93.00163720925431,
+            52.499759420141395
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-oOBrYY-f9JyC",
+          "point": [
+            88.42326905679644,
+            52.5011345807799
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-o20nzQ",
+      "level": "L1",
+      "kind": "room",
+      "name": "232а",
+      "polygon": [
+        [
+          95.53,
+          52.499
+        ],
+        [
+          95.526,
+          45.418
+        ],
+        [
+          99.582,
+          45.419
+        ],
+        [
+          99.551,
+          52.498
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-o20nzQ-UcNis",
+          "point": [
+            98.32382618010723,
+            52.49830519120117
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-o20nzQ-jomEk",
+          "point": [
+            97.99991813524375,
+            52.498385745303345
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-N48Uoe",
+      "level": "L1",
+      "kind": "room",
+      "name": "232б",
+      "polygon": [
+        [
+          99.551,
+          52.498
+        ],
+        [
+          99.582,
+          45.419
+        ],
+        [
+          105.472,
+          43.626
+        ],
+        [
+          105.48,
+          52.497
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-N48Uoe-pIhvR",
+          "point": [
+            100.88269925166671,
+            52.49777539226654
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-N48Uoe-jjixh",
+          "point": [
+            105.47583883617801,
+            47.88278946689555
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-cb92f2"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-JRI5oT",
+      "level": "L1",
+      "kind": "room",
+      "name": "229",
+      "polygon": [
+        [
+          80.607,
+          62.957
+        ],
+        [
+          80.607,
+          56.023
+        ],
+        [
+          85.542,
+          56.024
+        ],
+        [
+          85.542,
+          62.955
         ]
       ],
       "subtitle": "",
@@ -205,26 +3675,380 @@
       "openings": []
     },
     {
-      "id": "room-l1-r6nkvf",
+      "id": "room-l1-KoBeyk",
+      "level": "L1",
+      "kind": "room",
+      "name": "230а",
+      "polygon": [
+        [
+          85.542,
+          62.955
+        ],
+        [
+          85.542,
+          59.224
+        ],
+        [
+          88.025,
+          59.2
+        ],
+        [
+          88.056,
+          56.025
+        ],
+        [
+          90.55,
+          56.025
+        ],
+        [
+          90.567,
+          62.953
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-_gR9mL-a",
+          "point": [
+            90.55300333218331,
+            57.24894619799808
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-LtgP6Q"
+        },
+        {
+          "id": "opening-sfZcka-a",
+          "point": [
+            88.04869059851757,
+            56.77362418408849
+          ],
+          "width": 0.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-hUdFLA"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-hUdFLA",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          52.777165996466415,
-          43.87026937894049
+          85.542,
+          59.224
         ],
         [
-          52.707569970826164,
-          50.974408702088034
+          85.542,
+          56.024
         ],
         [
-          60.45006739386687,
-          51.054461081527265
+          88.056,
+          56.025
         ],
         [
-          60.47174381291042,
-          43.921204624301836
+          88.025,
+          59.2
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-sfZcka-b",
+          "point": [
+            88.04869059851757,
+            56.77362418408849
+          ],
+          "width": 0.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-KoBeyk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-LtgP6Q",
+      "level": "L1",
+      "kind": "room",
+      "name": "230",
+      "polygon": [
+        [
+          90.567,
+          62.953
+        ],
+        [
+          90.55,
+          56.025
+        ],
+        [
+          96.494,
+          56.026
+        ],
+        [
+          96.507,
+          62.95
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-_gR9mL-b",
+          "point": [
+            90.55300333218331,
+            57.24894619799808
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-KoBeyk"
+        },
+        {
+          "id": "opening-uc1t4X-a",
+          "point": [
+            96.49710387739151,
+            57.67917285067401
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_n4MGR"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-_n4MGR",
+      "level": "L1",
+      "kind": "room",
+      "name": "231а",
+      "polygon": [
+        [
+          96.507,
+          62.95
+        ],
+        [
+          96.494,
+          56.026
+        ],
+        [
+          100.535,
+          56.027
+        ],
+        [
+          100.511,
+          62.948
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-uc1t4X-b",
+          "point": [
+            96.49710387739151,
+            57.67917285067401
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-LtgP6Q"
+        },
+        {
+          "id": "opening-KsrfOH-a",
+          "point": [
+            100.52948727395408,
+            57.61673237349312
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-jC3RjS"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-jC3RjS",
+      "level": "L1",
+      "kind": "room",
+      "name": "231",
+      "polygon": [
+        [
+          100.511,
+          62.948
+        ],
+        [
+          100.535,
+          56.027
+        ],
+        [
+          105.484,
+          56.925
+        ],
+        [
+          105.492,
+          65.601
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-jC3RjS-Rawbz",
+          "point": [
+            105.48632195736158,
+            59.44316275863703
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-S11ler"
+        },
+        {
+          "id": "opening-KsrfOH-b",
+          "point": [
+            100.52948727395408,
+            57.61673237349312
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_n4MGR"
+        },
+        {
+          "id": "opening-room-l1-jC3RjS-UsHV-",
+          "point": [
+            105.48632224364673,
+            59.443473234876514
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-S11ler"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-S11ler",
+      "level": "L1",
+      "kind": "room",
+      "name": "233",
+      "polygon": [
+        [
+          105.492,
+          65.601
+        ],
+        [
+          105.484,
+          56.925
+        ],
+        [
+          110.538,
+          56.029
+        ],
+        [
+          110.538,
+          62.943
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-S11ler-vfppW",
+          "point": [
+            105.48632224364673,
+            59.443473234876514
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-jC3RjS"
+        },
+        {
+          "id": "opening-room-l1-S11ler-Qh9Mv",
+          "point": [
+            105.48632224364673,
+            59.443473234876514
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-jC3RjS"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-cb92f2",
+      "level": "L1",
+      "kind": "room",
+      "name": "234",
+      "polygon": [
+        [
+          110.538,
+          52.495
+        ],
+        [
+          110.538,
+          45.42
+        ],
+        [
+          105.472,
+          43.626
+        ],
+        [
+          105.48,
+          52.497
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-cb92f2-Uw0CP",
+          "point": [
+            105.47583883617801,
+            47.88278946689555
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-N48Uoe"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-zLE-nU",
+      "level": "L1",
+      "kind": "room",
+      "name": "238а",
+      "polygon": [
+        [
+          110.538,
+          62.943
+        ],
+        [
+          110.538,
+          56.029
+        ],
+        [
+          116.315,
+          56.03
+        ],
+        [
+          116.291,
+          62.941
         ]
       ],
       "subtitle": "",
@@ -233,38 +4057,26 @@
       "openings": []
     },
     {
-      "id": "room-l1-4OA2Nn",
+      "id": "room-l1-5UmDc_",
       "level": "L1",
       "kind": "room",
-      "name": "New Room",
+      "name": "238",
       "polygon": [
         [
-          27.72177557592114,
-          62.13949962416821
+          116.291,
+          62.941
         ],
         [
-          37.19477302195869,
-          62.03701652155431
+          116.315,
+          56.03
         ],
         [
-          53.083830983256085,
-          62.067873235756906
+          122.215,
+          56.031
         ],
         [
-          53.10976077423199,
-          54.27688243153872
-        ],
-        [
-          42.67489840219381,
-          54.35212996388419
-        ],
-        [
-          42.70671516731567,
-          50.92209899916594
-        ],
-        [
-          27.657232232630264,
-          50.8740140695203
+          122.215,
+          62.938
         ]
       ],
       "subtitle": "",
@@ -273,26 +4085,26 @@
       "openings": []
     },
     {
-      "id": "room-l1-TzI_r3",
+      "id": "room-l1-Q5oqO8",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          53.10976077423199,
-          54.27688243153872
+          122.215,
+          64.477
         ],
         [
-          53.083830983256085,
-          62.067873235756906
+          122.215,
+          56.031
         ],
         [
-          60.30566344489247,
-          62.07976894312855
+          130.968,
+          56.033
         ],
         [
-          60.45556664420827,
-          54.223910600660936
+          130.968,
+          64.478
         ]
       ],
       "subtitle": "",
@@ -301,34 +4113,3579 @@
       "openings": []
     },
     {
-      "id": "room-l1-bBXYy8",
+      "id": "room-l1-Xv-QbU",
+      "level": "L1",
+      "kind": "room",
+      "name": "239",
+      "polygon": [
+        [
+          122.215,
+          52.492
+        ],
+        [
+          122.215,
+          45.422
+        ],
+        [
+          130.968,
+          45.424
+        ],
+        [
+          130.968,
+          52.49
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-Xv-QbU-JiPKM",
+          "point": [
+            126.71897538857299,
+            52.49097087275481
+          ],
+          "width": 3.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-Xv-QbU-D_q7C",
+          "point": [
+            126.58578874808256,
+            52.49100130498159
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-h7Ti0i",
+      "level": "L1",
+      "kind": "room",
+      "name": "236",
+      "polygon": [
+        [
+          112.934,
+          52.495
+        ],
+        [
+          112.963,
+          45.421
+        ],
+        [
+          122.215,
+          45.422
+        ],
+        [
+          122.215,
+          52.492
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-h7Ti0i-Zi-4r",
+          "point": [
+            114.36550292990702,
+            52.4945372795184
+          ],
+          "width": 1.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-h7Ti0i-rUvaL",
+          "point": [
+            114.19991410237678,
+            52.49459080462157
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-h7Ti0i-O-JVX",
+          "point": [
+            118.20415200306499,
+            52.493296470637944
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-19X_vC",
+      "level": "L1",
+      "kind": "room",
+      "name": "235",
+      "polygon": [
+        [
+          110.538,
+          52.495
+        ],
+        [
+          110.538,
+          45.42
+        ],
+        [
+          112.963,
+          45.421
+        ],
+        [
+          112.934,
+          52.495
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-19X_vC-3Ko2R",
+          "point": [
+            111.75287911980597,
+            52.495
+          ],
+          "width": 1.4131313,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-kGr56z",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          21.67217730736326,
-          61.903029509438404
+          130.968,
+          52.49
         ],
         [
-          21.93561886644228,
-          67.9096868482515
+          130.968,
+          50.51
         ],
         [
-          29.16232867730676,
-          67.4376595840583
+          132.829,
+          50.513
         ],
         [
-          29.119266540924222,
-          66.89459819745628
+          132.812,
+          52.489
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-kGr56z-KC8Wc",
+          "point": [
+            131.73006755100022,
+            50.51122848073777
+          ],
+          "width": 0.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-GxuULL"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-GxuULL",
+      "level": "L1",
+      "kind": "room",
+      "name": "240",
+      "polygon": [
+        [
+          130.968,
+          50.51
         ],
         [
-          29.91149943462862,
-          66.90729600690241
+          130.968,
+          45.424
         ],
         [
-          29.71354272593666,
-          62.11795180064342
+          138.472,
+          45.425
+        ],
+        [
+          138.471,
+          52.488
+        ],
+        [
+          132.812,
+          52.489
+        ],
+        [
+          132.829,
+          50.513
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-qm2Gvk-b",
+          "point": [
+            131.73006755100022,
+            50.51122848073777
+          ],
+          "width": 0.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-kGr56z"
+        },
+        {
+          "id": "opening-IngUoG-b",
+          "point": [
+            138.47122903734754,
+            50.870309214428694
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-U4iAPH"
+        },
+        {
+          "id": "opening-NDFNWu-a",
+          "point": [
+            138.4717727158277,
+            47.03030810893435
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-4jL-Xs"
+        },
+        {
+          "id": "opening-room-l1-GxuULL-ryV36",
+          "point": [
+            135.10141229741765,
+            52.48859543871754
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-weHEc3",
+      "level": "L1",
+      "kind": "room",
+      "name": "242",
+      "polygon": [
+        [
+          130.968,
+          62.934
+        ],
+        [
+          130.968,
+          56.033
+        ],
+        [
+          142.623,
+          56.035
+        ],
+        [
+          142.62,
+          62.929
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-weHEc3-92kSK",
+          "point": [
+            141.12182684154004,
+            56.034742398428406
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-mEdCbW",
+      "level": "L1",
+      "kind": "room",
+      "name": "244",
+      "polygon": [
+        [
+          152.612,
+          62.924
+        ],
+        [
+          152.63,
+          56.037
+        ],
+        [
+          162.985,
+          56.039
+        ],
+        [
+          162.958,
+          62.919
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-cI_oat-b",
+          "point": [
+            152.62191401598088,
+            59.13078732998065
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_t5sMy"
+        },
+        {
+          "id": "opening-fb20AW-a",
+          "point": [
+            162.97258441271708,
+            59.202675574314206
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-DY0c8e"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-DY0c8e",
+      "level": "L1",
+      "kind": "room",
+      "name": "244а",
+      "polygon": [
+        [
+          162.958,
+          62.919
+        ],
+        [
+          162.985,
+          56.039
+        ],
+        [
+          167.254,
+          56.04
+        ],
+        [
+          167.206,
+          62.917
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-fb20AW-b",
+          "point": [
+            162.97258441271708,
+            59.202675574314206
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-mEdCbW"
+        },
+        {
+          "id": "opening-ZFAqMH-a",
+          "point": [
+            167.24320353391875,
+            57.58681869251701
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-OWPnrB"
+        },
+        {
+          "id": "opening-room-l1-DY0c8e-EIPOH",
+          "point": [
+            165.02479289951054,
+            56.03947781515566
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-OWPnrB",
+      "level": "L1",
+      "kind": "room",
+      "name": "248",
+      "polygon": [
+        [
+          167.206,
+          62.917
+        ],
+        [
+          167.254,
+          56.04
+        ],
+        [
+          172.598,
+          56.041
+        ],
+        [
+          172.603,
+          62.915
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-5nywr3-a",
+          "point": [
+            172.60199871566306,
+            61.53843429354426
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-QwHwV8"
+        },
+        {
+          "id": "opening-ZFAqMH-b",
+          "point": [
+            167.24320353391875,
+            57.58681869251701
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-DY0c8e"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-QwHwV8",
+      "level": "L1",
+      "kind": "room",
+      "name": "New room",
+      "polygon": [
+        [
+          172.603,
+          62.915
+        ],
+        [
+          172.601,
+          60.371
+        ],
+        [
+          175.316,
+          60.371
+        ],
+        [
+          175.283,
+          62.914
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-5nywr3-b",
+          "point": [
+            172.6019177943022,
+            61.53843435240472
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-OWPnrB"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-v1dnC9",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          175.283,
+          62.914
+        ],
+        [
+          178.113,
+          62.912
+        ],
+        [
+          178.085,
+          60.372
+        ],
+        [
+          175.316,
+          60.371
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening--7iBjM-b",
+          "point": [
+            176.1570254441098,
+            60.37130372894334
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-TY8OL3"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-bNC79l",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          178.113,
+          62.912
+        ],
+        [
+          178.073,
+          59.294
+        ],
+        [
+          183.252,
+          59.55
+        ],
+        [
+          183.251,
+          62.91
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-W_0syA-a",
+          "point": [
+            180.12072551860507,
+            59.395219875026626
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1--ltf_P"
+        }
+      ]
+    },
+    {
+      "id": "room-l1--ltf_P",
+      "level": "L1",
+      "kind": "room",
+      "name": "25М",
+      "polygon": [
+        [
+          178.073,
+          59.294
+        ],
+        [
+          178.037,
+          56.042
+        ],
+        [
+          183.254,
+          56.043
+        ],
+        [
+          183.252,
+          59.55
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-W_0syA-b",
+          "point": [
+            180.12072551860507,
+            59.395219875026626
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-bNC79l"
+        },
+        {
+          "id": "opening-room-l1--ltf_P-h22I2",
+          "point": [
+            180.95173921794867,
+            56.04255870025263
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-TY8OL3",
+      "level": "L1",
+      "kind": "room",
+      "name": "24Ж",
+      "polygon": [
+        [
+          172.601,
+          60.371
+        ],
+        [
+          172.598,
+          56.041
+        ],
+        [
+          178.037,
+          56.042
+        ],
+        [
+          178.085,
+          60.372
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening--7iBjM-a",
+          "point": [
+            176.1570253196217,
+            60.3716484364186
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-v1dnC9"
+        },
+        {
+          "id": "opening-room-l1-TY8OL3-ATqn_",
+          "point": [
+            174.1668586119854,
+            56.04128844615039
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-lGS8cZ",
+      "level": "L1",
+      "kind": "room",
+      "name": "4лк9",
+      "polygon": [
+        [
+          183.25,
+          64.486
+        ],
+        [
+          183.251,
+          60.886
+        ],
+        [
+          187.831,
+          60.832
+        ],
+        [
+          187.832,
+          64.486
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-qV8am9-a",
+          "point": [
+            187.83170656101566,
+            63.41377395130502
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-nks07h"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-nks07h",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          187.832,
+          64.486
+        ],
+        [
+          187.829,
+          56.044
+        ],
+        [
+          192.713,
+          56.045
+        ],
+        [
+          192.726,
+          64.487
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-qV8am9-b",
+          "point": [
+            187.83161896729754,
+            63.413773975277024
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lGS8cZ"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-H8anpV",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          183.251,
+          60.886
+        ],
+        [
+          183.253,
+          56.747
+        ],
+        [
+          187.83,
+          56.746
+        ],
+        [
+          187.831,
+          60.832
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-D5HYqB-a",
+          "point": [
+            185.657573043752,
+            56.74647463992927
+          ],
+          "width": 2.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-lFj-2y",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          182.088,
+          56.043
+        ],
+        [
+          182.092,
+          52.476
+        ],
+        [
+          187.807,
+          52.475
+        ],
+        [
+          187.828,
+          50.904
+        ],
+        [
+          192.706,
+          50.903
+        ],
+        [
+          192.711,
+          54.246
+        ],
+        [
+          192.713,
+          56.045
+        ],
+        [
+          187.829,
+          56.044
+        ],
+        [
+          187.83,
+          56.746
+        ],
+        [
+          183.253,
+          56.747
+        ],
+        [
+          183.254,
+          56.043
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-D5HYqB-b",
+          "point": [
+            185.657573043752,
+            56.74647463992927
+          ],
+          "width": 2.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-H8anpV"
+        },
+        {
+          "id": "opening-op-iUn-a",
+          "point": [
+            182.092,
+            52.476
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-lFj-2y-nMFY8",
+          "point": [
+            182.09010813584862,
+            54.16306985699215
+          ],
+          "width": 2.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-lFj-2y-p3-QX",
+          "point": [
+            192.70848079174834,
+            52.56165736294857
+          ],
+          "width": 1.817,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        },
+        {
+          "id": "opening-c2Qnwd-a",
+          "point": [
+            182.092,
+            52.476
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-elPExM-a",
+          "point": [
+            190.97909259034373,
+            50.903354019559174
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-7GzER2"
+        },
+        {
+          "id": "opening-room-l1-lFj-2y-hiJj_",
+          "point": [
+            182.088008542169,
+            56.03538252077711
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-2cf3Bd-a",
+          "point": [
+            182.092,
+            52.476
+          ],
+          "width": 0.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        },
+        {
+          "id": "opening-room-l1-lFj-2y-U10Dk",
+          "point": [
+            182.088008513338,
+            56.03540823082946
+          ],
+          "width": 1.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-HPyGGL",
+      "level": "L1",
+      "kind": "room",
+      "name": "251",
+      "polygon": [
+        [
+          182.092,
+          52.476
+        ],
+        [
+          182.101,
+          45.432
+        ],
+        [
+          187.826,
+          45.433
+        ],
+        [
+          187.807,
+          52.475
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-HPyGGL-zonUM",
+          "point": [
+            187.8142601263728,
+            49.78416789908858
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        }
+      ]
+    },
+    {
+      "id": "room-l1-vMisH9",
+      "level": "L1",
+      "kind": "room",
+      "name": "216",
+      "polygon": [
+        [
+          33.144,
+          62.127
+        ],
+        [
+          39.425,
+          62.125
+        ],
+        [
+          39.949,
+          71.919
+        ],
+        [
+          32.655,
+          72.299
+        ],
+        [
+          32.346,
+          66.729
+        ],
+        [
+          31.769,
+          66.759
+        ],
+        [
+          31.615,
+          62.128
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-vMisH9-wMxTo",
+          "point": [
+            31.680743461536792,
+            64.10499980764219
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-5-8vFi",
+      "level": "L1",
+      "kind": "amenity",
+      "name": "New Room",
+      "polygon": [
+        [
+          30.36,
+          91.093
+        ],
+        [
+          33.686,
+          90.922
+        ],
+        [
+          32.824,
+          75.353
+        ],
+        [
+          40.113,
+          74.971
+        ],
+        [
+          39.949,
+          71.919
+        ],
+        [
+          32.655,
+          72.299
+        ],
+        [
+          32.346,
+          66.729
+        ],
+        [
+          31.769,
+          66.759
+        ],
+        [
+          31.615,
+          62.128
+        ],
+        [
+          29.659,
+          62.128
+        ],
+        [
+          29.884,
+          66.859
+        ],
+        [
+          29.099,
+          66.9
+        ],
+        [
+          29.131,
+          67.511
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-cozqV6-a",
+          "point": [
+            30.001216674190033,
+            84.2086807247757
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-9n4fyE"
+        },
+        {
+          "id": "opening-Z111CU-b",
+          "point": [
+            33.21707337228723,
+            82.45248878554511
+          ],
+          "width": 1.6151515,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-gaGVBS"
+        },
+        {
+          "id": "opening-wKeX53-b",
+          "point": [
+            29.805638820665322,
+            65.21132560252286
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-eZKdJX"
+        },
+        {
+          "id": "opening-M85Q0v-b",
+          "point": [
+            29.474525764074418,
+            74.10255782620256
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-kIk8u9"
+        },
+        {
+          "id": "opening-aLnVzv-b",
+          "point": [
+            32.00530946611825,
+            91.0084095253439
+          ],
+          "width": 2.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        },
+        {
+          "id": "opening-room-l1-5-8vFi-MtEUc",
+          "point": [
+            30.41348623038366,
+            62.128
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        },
+        {
+          "id": "opening-room-l1-5-8vFi-6FG11",
+          "point": [
+            31.680743461536792,
+            64.10499980764219
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-vMisH9"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-U4iAPH",
+      "level": "L1",
+      "kind": "room",
+      "name": "241",
+      "polygon": [
+        [
+          138.471,
+          52.488
+        ],
+        [
+          138.471,
+          48.27
+        ],
+        [
+          142.627,
+          48.279
+        ],
+        [
+          142.625,
+          52.487
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-IngUoG-a",
+          "point": [
+            138.471,
+            50.87030918200092
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-GxuULL"
+        },
+        {
+          "id": "opening-room-l1-U4iAPH-yQcOI",
+          "point": [
+            139.93604280634094,
+            52.4876473175719
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-75YQDS",
+      "level": "L1",
+      "kind": "room",
+      "name": "245а",
+      "polygon": [
+        [
+          142.625,
+          52.487
+        ],
+        [
+          142.628,
+          45.426
+        ],
+        [
+          148.378,
+          45.427
+        ],
+        [
+          148.389,
+          52.485
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-P1X4yH-a",
+          "point": [
+            148.38572421907307,
+            50.3831398379737
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H_06f"
+        },
+        {
+          "id": "opening-room-l1-75YQDS-qen0e",
+          "point": [
+            145.45098551834752,
+            52.48601943597559
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-8H_06f",
+      "level": "L1",
+      "kind": "room",
+      "name": "245",
+      "polygon": [
+        [
+          148.389,
+          52.485
+        ],
+        [
+          148.378,
+          45.427
+        ],
+        [
+          151.795,
+          45.427
+        ],
+        [
+          151.809,
+          52.484
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-h77v70-b",
+          "point": [
+            151.80480069569455,
+            50.367250679753475
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Qqry_5"
+        },
+        {
+          "id": "opening-P1X4yH-b",
+          "point": [
+            148.38572421907307,
+            50.3831398379737
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-75YQDS"
+        },
+        {
+          "id": "opening-room-l1-8H_06f-cFTqe",
+          "point": [
+            149.94406486933553,
+            52.48454530266979
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Qqry_5",
+      "level": "L1",
+      "kind": "room",
+      "name": "245б",
+      "polygon": [
+        [
+          151.809,
+          52.484
+        ],
+        [
+          151.795,
+          45.427
+        ],
+        [
+          157.611,
+          45.428
+        ],
+        [
+          157.605,
+          52.483
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-h77v70-a",
+          "point": [
+            151.80480069569455,
+            50.367250679753475
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H_06f"
+        },
+        {
+          "id": "opening-room-l1-Qqry_5-U_8Pq",
+          "point": [
+            154.3773617423195,
+            52.4835568734054
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1--aCLb1",
+      "level": "L1",
+      "kind": "room",
+      "name": "246а",
+      "polygon": [
+        [
+          157.605,
+          52.483
+        ],
+        [
+          157.611,
+          45.428
+        ],
+        [
+          163.215,
+          45.429
+        ],
+        [
+          163.223,
+          52.481
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Iack-o-a",
+          "point": [
+            163.22071389387634,
+            50.46579745198906
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-cil6KH"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-cil6KH",
+      "level": "L1",
+      "kind": "room",
+      "name": "246",
+      "polygon": [
+        [
+          163.223,
+          52.481
+        ],
+        [
+          163.215,
+          45.429
+        ],
+        [
+          166.668,
+          45.43
+        ],
+        [
+          166.67,
+          52.481
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Iack-o-b",
+          "point": [
+            163.22071389387634,
+            50.46579745198906
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1--aCLb1"
+        },
+        {
+          "id": "opening-mPvHmM-a",
+          "point": [
+            166.66940084597633,
+            50.3686824895851
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-bZpMT3"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-bZpMT3",
+      "level": "L1",
+      "kind": "room",
+      "name": "246б",
+      "polygon": [
+        [
+          166.67,
+          52.481
+        ],
+        [
+          166.668,
+          45.43
+        ],
+        [
+          172.591,
+          45.431
+        ],
+        [
+          172.596,
+          52.479
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-mPvHmM-b",
+          "point": [
+            166.66940084597633,
+            50.3686824895851
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-cil6KH"
+        },
+        {
+          "id": "opening-room-l1-bZpMT3-6wN8Y",
+          "point": [
+            170.21321943083456,
+            52.47980417838986
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-qmG5w9",
+      "level": "L1",
+      "kind": "room",
+      "name": "250",
+      "polygon": [
+        [
+          172.596,
+          52.479
+        ],
+        [
+          172.591,
+          45.431
+        ],
+        [
+          176.508,
+          45.431
+        ],
+        [
+          176.531,
+          52.478
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-nzafAw-a",
+          "point": [
+            176.52393058003884,
+            50.31199119711327
+          ],
+          "width": 1.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_36_q4"
+        },
+        {
+          "id": "opening-room-l1-qmG5w9-jK5GS",
+          "point": [
+            174.80615181424852,
+            52.478438334990024
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-_36_q4",
+      "level": "L1",
+      "kind": "room",
+      "name": "250а",
+      "polygon": [
+        [
+          176.531,
+          52.478
+        ],
+        [
+          176.508,
+          45.431
+        ],
+        [
+          182.101,
+          45.432
+        ],
+        [
+          182.092,
+          52.476
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-nzafAw-b",
+          "point": [
+            176.52393058003884,
+            50.31199119711327
+          ],
+          "width": 1.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qmG5w9"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-7GzER2",
+      "level": "L1",
+      "kind": "room",
+      "name": "252",
+      "polygon": [
+        [
+          187.828,
+          50.904
+        ],
+        [
+          187.826,
+          45.433
+        ],
+        [
+          192.697,
+          45.434
+        ],
+        [
+          192.706,
+          50.903
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-elPExM-b",
+          "point": [
+            190.97909259034373,
+            50.903354019559174
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-tE3iVk",
+      "level": "L1",
+      "kind": "room",
+      "name": "253",
+      "polygon": [
+        [
+          195.577,
+          47.548
+        ],
+        [
+          192.7,
+          47.561
+        ],
+        [
+          192.695,
+          43.925
+        ],
+        [
+          200.367,
+          43.925
+        ],
+        [
+          200.417,
+          50.902
+        ],
+        [
+          195.538,
+          50.903
+        ]
+      ],
+      "subtitle": "",
+      "department": "1.41313131313131321.41313131313131321.4131313131313132",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-0r6TnL-a",
+          "point": [
+            194.1861079446734,
+            47.55428487894308
+          ],
+          "width": 1.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iwOpM0"
+        },
+        {
+          "id": "opening-V3rR2n-b",
+          "point": [
+            198.16861194531154,
+            50.902460829689424
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-2tKyUi",
+      "level": "L1",
+      "kind": "room",
+      "name": "255",
+      "polygon": [
+        [
+          105.559,
+          140.438
+        ],
+        [
+          192.711,
+          54.246
+        ],
+        [
+          200.051,
+          54.25
+        ],
+        [
+          200.073,
+          62.071
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Mk9LMy-a",
+          "point": [
+            200.0572740713081,
+            56.4804323500263
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-ROXuyh"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-ROXuyh",
+      "level": "L1",
+      "kind": "room",
+      "name": "255а",
+      "polygon": [
+        [
+          200.073,
+          62.071
+        ],
+        [
+          200.051,
+          54.25
+        ],
+        [
+          204.443,
+          54.252
+        ],
+        [
+          204.443,
+          62.069
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-EJk5WV-b",
+          "point": [
+            202.5355105221405,
+            54.25113138001919
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        },
+        {
+          "id": "opening-467CP_-a",
+          "point": [
+            204.443,
+            56.3935811766937
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Z1R53l"
+        },
+        {
+          "id": "opening-Mk9LMy-b",
+          "point": [
+            200.0572740713081,
+            56.4804323500263
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2tKyUi"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Z1R53l",
+      "level": "L1",
+      "kind": "room",
+      "name": "257",
+      "polygon": [
+        [
+          204.443,
+          62.069
+        ],
+        [
+          204.443,
+          54.252
+        ],
+        [
+          211.334,
+          54.255
+        ],
+        [
+          211.381,
+          62.067
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-467CP_-b",
+          "point": [
+            204.443,
+            56.3935811766937
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-ROXuyh"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-2UJvFR",
+      "level": "L1",
+      "kind": "room",
+      "name": "257а",
+      "polygon": [
+        [
+          211.381,
+          62.067
+        ],
+        [
+          211.334,
+          54.255
+        ],
+        [
+          215.382,
+          54.258
+        ],
+        [
+          215.405,
+          62.066
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Yzeqbv-b",
+          "point": [
+            213.1427803735428,
+            54.2563404992887
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-jZJxEU",
+      "level": "L1",
+      "kind": "room",
+      "name": "260",
+      "polygon": [
+        [
+          215.405,
+          62.066
+        ],
+        [
+          215.382,
+          54.258
+        ],
+        [
+          222.458,
+          54.261
+        ],
+        [
+          222.48,
+          62.063
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-WM9gdW-a",
+          "point": [
+            217.2189901316085,
+            54.25877882566349
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-SgtWpv",
+      "level": "L1",
+      "kind": "room",
+      "name": "254",
+      "polygon": [
+        [
+          200.417,
+          50.902
+        ],
+        [
+          200.367,
+          43.925
+        ],
+        [
+          205.422,
+          43.925
+        ],
+        [
+          205.403,
+          50.902
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-SgtWpv-Ev9BZ",
+          "point": [
+            202.88270199909425,
+            50.902
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-8-BZjM",
+      "level": "L1",
+      "kind": "room",
+      "name": "256",
+      "polygon": [
+        [
+          205.403,
+          50.902
+        ],
+        [
+          205.422,
+          43.925
+        ],
+        [
+          210.426,
+          43.925
+        ],
+        [
+          210.433,
+          50.901
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-8-BZjM-0Kv59",
+          "point": [
+            207.8848435972124,
+            50.901506591730175
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-hUZqfD",
+      "level": "L1",
+      "kind": "room",
+      "name": "258",
+      "polygon": [
+        [
+          210.433,
+          50.901
+        ],
+        [
+          210.426,
+          43.925
+        ],
+        [
+          215.395,
+          43.925
+        ],
+        [
+          215.477,
+          50.901
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-hUZqfD-T2QD9",
+          "point": [
+            212.87483305487567,
+            50.901
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-mdQtQC",
+      "level": "L1",
+      "kind": "room",
+      "name": "259",
+      "polygon": [
+        [
+          215.477,
+          50.901
+        ],
+        [
+          215.395,
+          43.925
+        ],
+        [
+          219.743,
+          43.925
+        ],
+        [
+          219.503,
+          50.9
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-mdQtQC-AVTkY",
+          "point": [
+            217.91346234465368,
+            50.90039481809621
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-pNW6O8",
+      "level": "L1",
+      "kind": "room",
+      "name": "261",
+      "polygon": [
+        [
+          219.503,
+          50.9
+        ],
+        [
+          219.743,
+          43.925
+        ],
+        [
+          225.399,
+          43.925
+        ],
+        [
+          225.386,
+          50.9
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-pNW6O8-nWzoP",
+          "point": [
+            222.66786779521212,
+            50.9
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-wjGZVt",
+      "level": "L1",
+      "kind": "room",
+      "name": "262",
+      "polygon": [
+        [
+          225.386,
+          50.9
+        ],
+        [
+          225.399,
+          43.925
+        ],
+        [
+          231.525,
+          43.925
+        ],
+        [
+          231.891,
+          50.899
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-wjGZVt-XwjV5",
+          "point": [
+            226.76787365249413,
+            50.89978756746311
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-0MgX4S",
+      "level": "L1",
+      "kind": "room",
+      "name": "263",
+      "polygon": [
+        [
+          227.919,
+          54.264
+        ],
+        [
+          227.876,
+          50.899
+        ],
+        [
+          231.891,
+          50.899
+        ],
+        [
+          232.068,
+          54.266
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-FcaUjG-a",
+          "point": [
+            227.8967401782339,
+            52.52203952923443
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-4mmaaS",
+      "level": "L1",
+      "kind": "room",
+      "name": "264",
+      "polygon": [
+        [
+          225.365,
+          62.062
+        ],
+        [
+          225.38,
+          54.263
+        ],
+        [
+          232.068,
+          54.266
+        ],
+        [
+          232.477,
+          62.06
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-3F6qHs-b",
+          "point": [
+            228.7722241868782,
+            62.06104183796769
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-elozVX"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-elozVX",
+      "level": "L1",
+      "kind": "room",
+      "name": "265а",
+      "polygon": [
+        [
+          226.364,
+          65.21
+        ],
+        [
+          232.702,
+          66.346
+        ],
+        [
+          232.477,
+          62.06
+        ],
+        [
+          226.209,
+          62.062
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-3F6qHs-a",
+          "point": [
+            228.77222422632863,
+            62.06118212373123
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-4mmaaS"
+        },
+        {
+          "id": "opening-v6OQ6j-b",
+          "point": [
+            226.27148637861208,
+            63.33107819271511
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-krsww0"
+        },
+        {
+          "id": "opening-room-l1-elozVX-f8Cb5",
+          "point": [
+            229.17348072016688,
+            65.71356107575096
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_af1Jz"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-_af1Jz",
+      "level": "L1",
+      "kind": "room",
+      "name": "265",
+      "polygon": [
+        [
+          226.758,
+          72.394
+        ],
+        [
+          233.002,
+          72.063
+        ],
+        [
+          232.702,
+          66.346
+        ],
+        [
+          226.364,
+          65.21
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-tfo8WT-b",
+          "point": [
+            229.17348072016688,
+            65.71356107575096
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-elozVX"
+        },
+        {
+          "id": "opening-C7QIy8-a",
+          "point": [
+            231.8513943419388,
+            72.1239946304962
+          ],
+          "width": 0.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-LFj4Vt"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-LFj4Vt",
+      "level": "L1",
+      "kind": "room",
+      "name": "268",
+      "polygon": [
+        [
+          227.008,
+          77.11
+        ],
+        [
+          233.25,
+          76.782
+        ],
+        [
+          233.002,
+          72.063
+        ],
+        [
+          226.758,
+          72.394
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-q_ieex-b",
+          "point": [
+            226.88091223203875,
+            74.71261634517862
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iP2nYA"
+        },
+        {
+          "id": "opening-CFyiko-a",
+          "point": [
+            232.2053094581424,
+            76.83689562603801
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-N_iq2n"
+        },
+        {
+          "id": "opening-C7QIy8-b",
+          "point": [
+            231.8513943419388,
+            72.1239946304962
+          ],
+          "width": 0.7,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_af1Jz"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-krsww0",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          221.779,
+          68.023
+        ],
+        [
+          221.462,
+          62.064
+        ],
+        [
+          226.209,
+          62.062
+        ],
+        [
+          226.512,
+          67.774
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-RoWZCN-b",
+          "point": [
+            223.95318002895965,
+            62.06295041919993
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-qjBp4u"
+        },
+        {
+          "id": "opening-ZGo40q-a",
+          "point": [
+            221.53805460229898,
+            63.49368257129258
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tK1oSj"
+        },
+        {
+          "id": "opening-MfN0Wf-b",
+          "point": [
+            224.29411950640574,
+            67.89068122605218
+          ],
+          "width": 2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iP2nYA"
+        },
+        {
+          "id": "opening-room-l1-krsww0-Q2Mu6",
+          "point": [
+            226.27630623648403,
+            63.33082251748136
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-elozVX"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-tK1oSj",
+      "level": "L1",
+      "kind": "room",
+      "name": "266а",
+      "polygon": [
+        [
+          214.882,
+          65.428
+        ],
+        [
+          214.706,
+          62.066
+        ],
+        [
+          221.462,
+          62.064
+        ],
+        [
+          221.625,
+          65.118
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-ZGo40q-b",
+          "point": [
+            221.53830519940783,
+            63.4936691962668
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-krsww0"
+        },
+        {
+          "id": "opening-room-l1-tK1oSj-B3ZIV",
+          "point": [
+            218.28508159183014,
+            65.27154808045864
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-eowA50"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-iP2nYA",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          221.971,
+          71.614
+        ],
+        [
+          221.352,
+          71.646
+        ],
+        [
+          221.144,
+          68.056
+        ],
+        [
+          226.512,
+          67.774
+        ],
+        [
+          227.008,
+          77.11
+        ],
+        [
+          222.275,
+          77.359
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-MfN0Wf-a",
+          "point": [
+            224.29411068557218,
+            67.8905135593645
+          ],
+          "width": 2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-krsww0"
+        },
+        {
+          "id": "opening-q_ieex-a",
+          "point": [
+            226.88063335901327,
+            74.7126311285239
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-LFj4Vt"
+        },
+        {
+          "id": "opening-O0lNEQ-a",
+          "point": [
+            224.28866942854918,
+            77.25306218303217
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-1e6znj"
+        },
+        {
+          "id": "opening-FFo4zS-a",
+          "point": [
+            224.2970915175443,
+            77.25261910249978
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-1e6znj"
+        },
+        {
+          "id": "opening-room-l1-iP2nYA-3tDzp",
+          "point": [
+            222.16552854259388,
+            75.29020551711139
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-InMjDL"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-eowA50",
+      "level": "L1",
+      "kind": "room",
+      "name": "266",
+      "polygon": [
+        [
+          221.352,
+          71.646
+        ],
+        [
+          215.224,
+          71.966
+        ],
+        [
+          214.882,
+          65.428
+        ],
+        [
+          221.625,
+          65.118
+        ],
+        [
+          221.779,
+          68.023
+        ],
+        [
+          221.144,
+          68.056
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-MK-kZY-b",
+          "point": [
+            218.28508159183014,
+            65.27154808045864
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tK1oSj"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-InMjDL",
+      "level": "L1",
+      "kind": "room",
+      "name": "267",
+      "polygon": [
+        [
+          222.224,
+          76.371
+        ],
+        [
+          215.473,
+          76.712
+        ],
+        [
+          215.224,
+          71.966
+        ],
+        [
+          221.971,
+          71.614
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-InMjDL-YeJpm",
+          "point": [
+            222.16651539143126,
+            75.29015303177276
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iP2nYA"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-1e6znj",
+      "level": "L1",
+      "kind": "amenity",
+      "name": "Столовая",
+      "polygon": [
+        [
+          216.326,
+          93.002
+        ],
+        [
+          215.473,
+          76.712
+        ],
+        [
+          222.224,
+          76.371
+        ],
+        [
+          222.275,
+          77.359
+        ],
+        [
+          227.008,
+          77.11
+        ],
+        [
+          227.821,
+          92.399
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-O0lNEQ-b",
+          "point": [
+            224.28866942854918,
+            77.25306218303217
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iP2nYA"
+        },
+        {
+          "id": "opening-84cDUa-b",
+          "point": [
+            227.70301259796733,
+            90.18016926238924
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iYupHe"
+        },
+        {
+          "id": "opening-FFo4zS-b",
+          "point": [
+            224.2970915175443,
+            77.25261910249978
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iP2nYA"
+        },
+        {
+          "id": "opening-DfQiWf-a",
+          "point": [
+            225.59906030477478,
+            92.51555760210707
+          ],
+          "width": 3.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-JSLZxg"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-iYupHe",
+      "level": "L1",
+      "kind": "room",
+      "name": "269",
+      "polygon": [
+        [
+          227.821,
+          92.399
+        ],
+        [
+          227.558,
+          87.442
+        ],
+        [
+          233.794,
+          87.158
+        ],
+        [
+          234.052,
+          92.072
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-84cDUa-a",
+          "point": [
+            227.703276342043,
+            90.18015523766994
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-1e6znj"
+        },
+        {
+          "id": "opening-NgFOcN-a",
+          "point": [
+            229.02114128450248,
+            87.3753655989739
+          ],
+          "width": 0.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-N_iq2n"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-N_iq2n",
+      "level": "L1",
+      "kind": "room",
+      "name": "268а",
+      "polygon": [
+        [
+          227.558,
+          87.442
+        ],
+        [
+          227.008,
+          77.11
+        ],
+        [
+          233.25,
+          76.782
+        ],
+        [
+          233.794,
+          87.158
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-CFyiko-b",
+          "point": [
+            232.2053094581424,
+            76.83689562603801
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-LFj4Vt"
+        },
+        {
+          "id": "opening-NgFOcN-b",
+          "point": [
+            229.02114128450248,
+            87.3753655989739
+          ],
+          "width": 0.9,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-iYupHe"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-4jL-Xs",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          138.471,
+          48.27
+        ],
+        [
+          138.472,
+          45.425
+        ],
+        [
+          142.628,
+          45.426
+        ],
+        [
+          142.627,
+          48.279
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-NDFNWu-b",
+          "point": [
+            138.47143574409097,
+            47.030308061224915
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-GxuULL"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-qjBp4u",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          192.711,
+          54.246
+        ],
+        [
+          192.706,
+          50.903
+        ],
+        [
+          227.876,
+          50.899
+        ],
+        [
+          227.919,
+          54.264
+        ],
+        [
+          225.38,
+          54.263
+        ],
+        [
+          225.365,
+          62.062
+        ],
+        [
+          222.48,
+          62.063
+        ],
+        [
+          222.458,
+          54.261
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-Iyj_K3-b",
+          "point": [
+            192.70848079174834,
+            52.56165736294857
+          ],
+          "width": 1.817,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-bXN74G-a",
+          "point": [
+            202.88270199909425,
+            50.901842570145114
+          ],
+          "width": 1.4,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-SgtWpv"
+        },
+        {
+          "id": "opening-oQUmyK-b",
+          "point": [
+            207.88484355090392,
+            50.901273660102255
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8-BZjM"
+        },
+        {
+          "id": "opening-Qk-iU3-b",
+          "point": [
+            212.87483305487567,
+            50.900706132151846
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-hUZqfD"
+        },
+        {
+          "id": "opening-G6M1dv-b",
+          "point": [
+            217.91346227963982,
+            50.90013307224571
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-mdQtQC"
+        },
+        {
+          "id": "opening-_xI0Gh-a",
+          "point": [
+            222.66786779521212,
+            50.899592338038644
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-pNW6O8"
+        },
+        {
+          "id": "opening-2f0JZ9-a",
+          "point": [
+            226.7678735507975,
+            50.899126030872814
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-wjGZVt"
+        },
+        {
+          "id": "opening-FcaUjG-b",
+          "point": [
+            227.8967401782339,
+            52.52203952923443
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-0MgX4S"
+        },
+        {
+          "id": "opening-RoWZCN-a",
+          "point": [
+            223.9531798691491,
+            62.06248936572993
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-krsww0"
+        },
+        {
+          "id": "opening-room-l1-qjBp4u-W3D7g",
+          "point": [
+            202.53551060289902,
+            54.25095403432425
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-ROXuyh"
+        },
+        {
+          "id": "opening-room-l1-qjBp4u-x7jDn",
+          "point": [
+            213.14278040149907,
+            54.256302776953056
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-2UJvFR"
+        },
+        {
+          "id": "opening-room-l1-qjBp4u-epuR5",
+          "point": [
+            217.21899030993364,
+            54.258358216110835
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-jZJxEU"
+        },
+        {
+          "id": "opening-V3rR2n-a",
+          "point": [
+            198.16861192848216,
+            50.90237871914376
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tE3iVk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-JSLZxg",
+      "level": "L1",
+      "kind": "room",
+      "name": "270 Столовая",
+      "polygon": [
+        [
+          216.816,
+          101.393
+        ],
+        [
+          216.326,
+          93.002
+        ],
+        [
+          234.052,
+          92.072
+        ],
+        [
+          234.549,
+          100.468
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-98XvFb-a",
+          "point": [
+            220.334924196646,
+            101.20944364281861
+          ],
+          "width": 2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-7RgXGL"
+        },
+        {
+          "id": "opening-KzGmfT-a",
+          "point": [
+            225.99714843295754,
+            100.91408710875285
+          ],
+          "width": 2.12,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-7RgXGL"
+        },
+        {
+          "id": "opening-DfQiWf-b",
+          "point": [
+            225.59905656219888,
+            92.5154862573144
+          ],
+          "width": 3.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-1e6znj"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-7RgXGL",
+      "level": "L1",
+      "kind": "room",
+      "name": "Столовая",
+      "polygon": [
+        [
+          217.543,
+          116.245
+        ],
+        [
+          216.816,
+          101.393
+        ],
+        [
+          234.549,
+          100.468
+        ],
+        [
+          235.321,
+          116.24
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-98XvFb-b",
+          "point": [
+            220.334924196646,
+            101.20944364281861
+          ],
+          "width": 2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-JSLZxg"
+        },
+        {
+          "id": "opening-KzGmfT-b",
+          "point": [
+            225.99714843295754,
+            100.91408710875285
+          ],
+          "width": 2.12,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-JSLZxg"
+        },
+        {
+          "id": "opening-mPsWAJ-a",
+          "point": [
+            227.96001259291657,
+            116.2420702518301
+          ],
+          "width": 2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-xorxKl"
+        }
+      ]
+    },
+    {
+      "id": "room-l1--JAUcu",
+      "level": "L1",
+      "kind": "room",
+      "name": "275а",
+      "polygon": [
+        [
+          224.149,
+          135.536
+        ],
+        [
+          224.18,
+          127.891
+        ],
+        [
+          235.337,
+          127.891
+        ],
+        [
+          235.347,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1--JAUcu-zJXIV",
+          "point": [
+            224.16732241627884,
+            131.01745572736252
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-vZJGsS"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-xf5KKP",
+      "level": "L1",
+      "kind": "room",
+      "name": "275б",
+      "polygon": [
+        [
+          219.214,
+          135.536
+        ],
+        [
+          219.208,
+          132.017
+        ],
+        [
+          224.162,
+          132.003
+        ],
+        [
+          224.149,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-0JPu8i-a",
+          "point": [
+            221.86088387613256,
+            132.00950295230805
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-vZJGsS"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-vZJGsS",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          219.208,
+          132.017
+        ],
+        [
+          219.202,
+          127.891
+        ],
+        [
+          224.18,
+          127.891
+        ],
+        [
+          224.162,
+          132.003
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-sW0HOm-b",
+          "point": [
+            224.166314170841,
+            131.0174516389899
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1--JAUcu"
+        },
+        {
+          "id": "opening-0JPu8i-b",
+          "point": [
+            221.86088387613256,
+            132.00950295230805
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-xf5KKP"
+        },
+        {
+          "id": "opening-room-l1-vZJGsS-xlnrW",
+          "point": [
+            219.20638125426638,
+            130.9038425171832
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-o4huUI"
+        },
+        {
+          "id": "opening-room-l1-vZJGsS-GPX2z",
+          "point": [
+            222.57118598755335,
+            127.891
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-PPdsyu"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-o4huUI",
+      "level": "L1",
+      "kind": "room",
+      "name": "275в",
+      "polygon": [
+        [
+          214.187,
+          135.536
+        ],
+        [
+          214.144,
+          127.891
+        ],
+        [
+          216.573,
+          127.891
+        ],
+        [
+          216.5652580782781,
+          129.96667447525775
+        ],
+        [
+          219.205,
+          129.993
+        ],
+        [
+          219.214,
+          135.536
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-mNWcwd-a",
+          "point": [
+            219.20647890697757,
+            130.9038423751773
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-vZJGsS"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-E3VjgJ",
+      "level": "L1",
+      "kind": "room",
+      "name": "277",
+      "polygon": [
+        [
+          214.187,
+          135.536
+        ],
+        [
+          209.206,
+          135.536
+        ],
+        [
+          209.204,
+          127.891
+        ],
+        [
+          214.144,
+          127.891
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-E3VjgJ-Wsoz4",
+          "point": [
+            212.047662664212,
+            127.891
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-PPdsyu"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-8Pxqr7",
+      "level": "L1",
+      "kind": "room",
+      "name": "271",
+      "polygon": [
+        [
+          235.327,
+          120.981
+        ],
+        [
+          229.181,
+          120.944
+        ],
+        [
+          229.19,
+          116.242
+        ],
+        [
+          235.321,
+          116.24
         ]
       ],
       "subtitle": "",
@@ -337,34 +7694,108 @@
       "openings": []
     },
     {
-      "id": "room-l1--52_o0",
+      "id": "room-l1-xorxKl",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          31.729129375268066,
-          62.09614628717344
+          226.699,
+          120.803
         ],
         [
-          31.904261482608966,
-          66.76389769270514
+          226.674,
+          116.243
         ],
         [
-          32.46207054117921,
-          66.74577469344672
+          229.19,
+          116.242
         ],
         [
-          32.650465440446986,
-          72.42312030997145
+          229.203,
+          120.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-mPsWAJ-b",
+          "point": [
+            227.96001271065037,
+            116.24248886617224
+          ],
+          "width": 2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-7RgXGL"
+        },
+        {
+          "id": "opening-FnTGCN-a",
+          "point": [
+            229.1995126607785,
+            119.57948044698576
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-5su8we-b",
+          "point": [
+            229.17734087328193,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H32ov"
+        },
+        {
+          "id": "opening-Ha_gVM-a",
+          "point": [
+            226.68382321327553,
+            118.0347541014566
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-BhX31y-a",
+          "point": [
+            227.9763673416434,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H32ov"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-fBGo6k",
+      "level": "L1",
+      "kind": "room",
+      "name": "273",
+      "polygon": [
+        [
+          229.203,
+          120.803
         ],
         [
-          39.975950326740474,
-          72.06403204559528
+          229.181,
+          120.944
         ],
         [
-          39.43702133318746,
-          62.04137099086768
+          235.327,
+          120.981
+        ],
+        [
+          235.331,
+          123.9
         ]
       ],
       "subtitle": "",
@@ -373,34 +7804,1841 @@
       "openings": []
     },
     {
-      "id": "room-l1-3_wfhk",
+      "id": "room-l1-eR1I1y",
+      "level": "L1",
+      "kind": "room",
+      "name": "275",
+      "polygon": [
+        [
+          229.169,
+          127.891
+        ],
+        [
+          229.203,
+          120.803
+        ],
+        [
+          235.331,
+          123.9
+        ],
+        [
+          235.337,
+          127.891
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-pv1aLL-a",
+          "point": [
+            229.1797737272577,
+            125.64499474110096
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H32ov"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-8H32ov",
       "level": "L1",
       "kind": "room",
       "name": "New Room",
       "polygon": [
         [
-          22.30918703802249,
-          76.78254456181983
+          226.67,
+          127.891
         ],
         [
-          21.93561886644228,
-          67.9096868482515
+          226.699,
+          120.803
         ],
         [
-          29.16232867730676,
-          67.4376595840583
+          229.203,
+          120.803
         ],
         [
-          29.535416893493693,
-          76.40765135622993
+          229.169,
+          127.891
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-BhX31y-b",
+          "point": [
+            227.9763673416434,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-xorxKl"
+        },
+        {
+          "id": "opening-pv1aLL-b",
+          "point": [
+            229.1797737272577,
+            125.64499474110096
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-eR1I1y"
+        },
+        {
+          "id": "opening-room-l1-8H32ov-5_Za1",
+          "point": [
+            226.6789284008334,
+            125.70877568595857
+          ],
+          "width": 1.918,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-PPdsyu"
+        },
+        {
+          "id": "opening-room-l1-8H32ov-_RB5t",
+          "point": [
+            229.17734087328193,
+            120.803
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-xorxKl"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-PPdsyu",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          226.67,
+          127.891
+        ],
+        [
+          209.204,
+          127.891
+        ],
+        [
+          209.202,
+          123.903
+        ],
+        [
+          226.699,
+          120.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-PPdsyu-L-P0l",
+          "point": [
+            222.57118598755335,
+            127.891
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-vZJGsS"
+        },
+        {
+          "id": "opening-CW1mNo-b",
+          "point": [
+            222.11256521503913,
+            121.61559346364398
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-vJT6h3-a",
+          "point": [
+            218.0744521607506,
+            122.33103899535196
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-Z8Ha3y-b",
+          "point": [
+            212.01521890138108,
+            123.40457292139902
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-yBwIrL-b",
+          "point": [
+            215.6229390679482,
+            122.76538148764706
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-3afpiU-a",
+          "point": [
+            209.2024171664692,
+            124.73482993956063
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IbxxxO"
+        },
+        {
+          "id": "opening-room-l1-PPdsyu-bzz0g",
+          "point": [
+            226.6789284008334,
+            125.70877568595857
+          ],
+          "width": 1.918,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-8H32ov"
+        },
+        {
+          "id": "opening-room-l1-PPdsyu-IV6Vl",
+          "point": [
+            212.047662664212,
+            127.891
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-E3VjgJ"
+        },
+        {
+          "id": "opening-room-l1-PPdsyu-F1OTK",
+          "point": [
+            217.82345842869293,
+            127.891
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-kI6ZZ4"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-fbp02x",
+      "level": "L1",
+      "kind": "room",
+      "name": "278",
+      "polygon": [
+        [
+          214.575,
+          123.902
+        ],
+        [
+          214.565,
+          120.004
+        ],
+        [
+          217.281,
+          120.004
+        ],
+        [
+          217.291,
+          123.902
         ]
       ],
       "subtitle": "",
       "department": "",
       "searchTokens": [],
       "openings": []
+    },
+    {
+      "id": "room-l1-HC3e8j",
+      "level": "L1",
+      "kind": "room",
+      "name": "276",
+      "polygon": [
+        [
+          217.291,
+          123.902
+        ],
+        [
+          217.281,
+          120.004
+        ],
+        [
+          221.551,
+          120.004
+        ],
+        [
+          221.612,
+          123.901
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": []
+    },
+    {
+      "id": "room-l1-mIu7X4",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          214.565,
+          120.004
+        ],
+        [
+          214.556,
+          116.246
+        ],
+        [
+          221.492,
+          116.244
+        ],
+        [
+          221.551,
+          120.004
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-bNuzFl-b",
+          "point": [
+            214.56032849595297,
+            118.05338753235631
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-VpHCJf"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-9RAPp5",
+      "level": "L1",
+      "kind": "room",
+      "name": "272",
+      "polygon": [
+        [
+          221.551,
+          120.004
+        ],
+        [
+          221.492,
+          116.244
+        ],
+        [
+          226.674,
+          116.243
+        ],
+        [
+          226.673,
+          120.004
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": []
+    },
+    {
+      "id": "room-l1-BE7dVm",
+      "level": "L1",
+      "kind": "room",
+      "name": "274",
+      "polygon": [
+        [
+          221.612,
+          123.901
+        ],
+        [
+          221.551,
+          120.004
+        ],
+        [
+          226.673,
+          120.004
+        ],
+        [
+          226.699,
+          120.803
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": []
+    },
+    {
+      "id": "room-l1-VpHCJf",
+      "level": "L1",
+      "kind": "room",
+      "name": "279",
+      "polygon": [
+        [
+          214.575,
+          123.902
+        ],
+        [
+          207.549,
+          123.903
+        ],
+        [
+          207.544,
+          116.248
+        ],
+        [
+          214.556,
+          116.246
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-bNuzFl-a",
+          "point": [
+            214.56048541741322,
+            118.05338714292218
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-mIu7X4"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-Jcq7Ob",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          207.549,
+          123.903
+        ],
+        [
+          201.643,
+          123.904
+        ],
+        [
+          201.657,
+          116.25
+        ],
+        [
+          207.544,
+          116.248
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-01L475-a",
+          "point": [
+            204.58813415973034,
+            123.90350133183885
+          ],
+          "width": 2.221,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IbxxxO"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-IbxxxO",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          209.204,
+          127.891
+        ],
+        [
+          201.637,
+          127.891
+        ],
+        [
+          201.643,
+          123.904
+        ],
+        [
+          209.202,
+          123.903
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-ZJRtp9-a",
+          "point": [
+            207.17627319229766,
+            127.891
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-RUvb05"
+        },
+        {
+          "id": "opening-01L475-b",
+          "point": [
+            204.5881341781944,
+            123.90361038045003
+          ],
+          "width": 2.221,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Jcq7Ob"
+        },
+        {
+          "id": "opening-SOlnAJ-b",
+          "point": [
+            203.32816752112552,
+            127.891
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-VIv5HT"
+        },
+        {
+          "id": "opening-room-l1-IbxxxO-nXNhR",
+          "point": [
+            209.2024171664692,
+            124.73482993956063
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-PPdsyu"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-RUvb05",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          209.206,
+          135.536
+        ],
+        [
+          205.247,
+          135.536
+        ],
+        [
+          205.252,
+          127.891
+        ],
+        [
+          209.204,
+          127.891
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-ZJRtp9-b",
+          "point": [
+            207.17627319229766,
+            127.891
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IbxxxO"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-VIv5HT",
+      "level": "L1",
+      "kind": "room",
+      "name": "280",
+      "polygon": [
+        [
+          205.247,
+          135.536
+        ],
+        [
+          201.622,
+          135.536
+        ],
+        [
+          201.637,
+          127.891
+        ],
+        [
+          205.252,
+          127.891
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-SOlnAJ-a",
+          "point": [
+            203.32816752112552,
+            127.891
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-IbxxxO"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-tbWh_W",
+      "level": "L1",
+      "kind": "amenity",
+      "name": "218 Конференц зал",
+      "polygon": [
+        [
+          42.772,
+          50.92
+        ],
+        [
+          27.755,
+          50.921
+        ],
+        [
+          27.751,
+          62.129
+        ],
+        [
+          53.138,
+          62.121
+        ],
+        [
+          53.091,
+          54.353
+        ],
+        [
+          42.746,
+          54.353
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-0F4pso-b",
+          "point": [
+            35.35126379117828,
+            50.92049415570413
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-NCBh9O"
+        },
+        {
+          "id": "opening-cg1LOE-b",
+          "point": [
+            42.75921774743997,
+            52.60774896302233
+          ],
+          "width": 1.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-3i61wv"
+        },
+        {
+          "id": "opening-oTHUJG-b",
+          "point": [
+            53.09997309910316,
+            55.83604327305039
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-J_ELld"
+        },
+        {
+          "id": "opening-80KESN-b",
+          "point": [
+            53.113684327666576,
+            58.102188453488694
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-J_ELld"
+        },
+        {
+          "id": "opening-room-l1-tbWh_W-jB2NE",
+          "point": [
+            30.41348628111584,
+            62.12816099223031
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-5-8vFi"
+        },
+        {
+          "id": "opening-room-l1-tbWh_W-efV_m",
+          "point": [
+            53.091,
+            54.353
+          ],
+          "width": 2.3,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-J_ELld"
+        },
+        {
+          "id": "opening-room-l1-tbWh_W-tTD5c",
+          "point": [
+            27.752541611012703,
+            57.80940594240829
+          ],
+          "width": 1.514,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-c_TEYk"
+        },
+        {
+          "id": "opening-room-l1-tbWh_W-Kf3FU",
+          "point": [
+            27.75436068337249,
+            52.71236519027946
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-P4ExJr"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-XJRywd",
+      "level": "L1",
+      "kind": "room",
+      "name": "243а",
+      "polygon": [
+        [
+          142.62,
+          62.929
+        ],
+        [
+          142.623,
+          56.035
+        ],
+        [
+          147.187,
+          56.036
+        ],
+        [
+          147.205,
+          62.927
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-XJRywd-JoLcv",
+          "point": [
+            147.20267121851822,
+            62.035464822719106
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-_t5sMy"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-_t5sMy",
+      "level": "L1",
+      "kind": "room",
+      "name": "243",
+      "polygon": [
+        [
+          147.205,
+          62.927
+        ],
+        [
+          147.187,
+          56.036
+        ],
+        [
+          152.63,
+          56.037
+        ],
+        [
+          152.612,
+          62.924
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-_t5sMy-gMGJy",
+          "point": [
+            152.62191401598088,
+            59.13078732998065
+          ],
+          "width": 1.2,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-mEdCbW"
+        },
+        {
+          "id": "opening-room-l1-_t5sMy-xBCM0",
+          "point": [
+            147.20267121851822,
+            62.035464822719106
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-XJRywd"
+        },
+        {
+          "id": "opening-room-l1-_t5sMy-5u_BA",
+          "point": [
+            149.95506632545505,
+            56.03650855526832
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-C4R5SI"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-3i61wv",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          42.746,
+          54.353
+        ],
+        [
+          42.774,
+          48.92
+        ],
+        [
+          47.846,
+          48.987
+        ],
+        [
+          47.846,
+          50.919
+        ],
+        [
+          60.718,
+          54.353
+        ],
+        [
+          60.412,
+          54.353
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-3i61wv--E0S5",
+          "point": [
+            46.19352431502336,
+            48.96517116110145
+          ],
+          "width": 1.413,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-NCBh9O"
+        },
+        {
+          "id": "opening-room-l1-3i61wv-CgHhN",
+          "point": [
+            50.450757817162184,
+            51.61389887695268
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-room-l1-3i61wv-4A0YR",
+          "point": [
+            59.416282484814005,
+            54.00572700845644
+          ],
+          "width": 2.1,
+          "kind": "door",
+          "traversable": true
+        },
+        {
+          "id": "opening-room-l1-3i61wv-yZ_0d",
+          "point": [
+            42.754994648368,
+            52.60771697916685
+          ],
+          "width": 1.8,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tbWh_W"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-iwOpM0",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          192.706,
+          50.903
+        ],
+        [
+          192.7,
+          47.561
+        ],
+        [
+          195.577,
+          47.548
+        ],
+        [
+          195.538,
+          50.903
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-0r6TnL-b",
+          "point": [
+            194.1861079446734,
+            47.55428487894308
+          ],
+          "width": 1.1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-tE3iVk"
+        }
+      ]
+    },
+    {
+      "id": "room-l1-kI6ZZ4",
+      "level": "L1",
+      "kind": "room",
+      "name": "New Room",
+      "polygon": [
+        [
+          216.5652580782781,
+          129.96667447525775
+        ],
+        [
+          216.573,
+          127.891
+        ],
+        [
+          219.202,
+          127.891
+        ],
+        [
+          219.205,
+          129.993
+        ]
+      ],
+      "subtitle": "",
+      "department": "",
+      "searchTokens": [],
+      "openings": [
+        {
+          "id": "opening-room-l1-kI6ZZ4-Bgbqx",
+          "point": [
+            217.82345842869293,
+            127.891
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-PPdsyu"
+        }
+      ]
     }
   ],
   "pois": [],
-  "structures": []
+  "structures": [],
+  "guides": [
+    {
+      "id": "guide-SHxAHF",
+      "a": [
+        20.67,
+        43.945
+      ],
+      "b": [
+        24.477,
+        116.302
+      ]
+    },
+    {
+      "id": "guide-cBAa3m",
+      "a": [
+        24.477,
+        116.302
+      ],
+      "b": [
+        24.468,
+        135.536
+      ]
+    },
+    {
+      "id": "guide-4RZxhy",
+      "a": [
+        24.468,
+        135.536
+      ],
+      "b": [
+        235.347,
+        135.536
+      ]
+    },
+    {
+      "id": "guide-DCHpR2",
+      "a": [
+        235.347,
+        135.536
+      ],
+      "b": [
+        235.321,
+        116.24
+      ]
+    },
+    {
+      "id": "guide-G_xp0n",
+      "a": [
+        235.321,
+        116.24
+      ],
+      "b": [
+        231.525,
+        43.925
+      ]
+    },
+    {
+      "id": "guide-m_CEW_",
+      "a": [
+        231.525,
+        43.925
+      ],
+      "b": [
+        192.695,
+        43.925
+      ]
+    },
+    {
+      "id": "guide-ToPGZ3",
+      "a": [
+        192.695,
+        43.925
+      ],
+      "b": [
+        192.726,
+        64.487
+      ]
+    },
+    {
+      "id": "guide-TxW2s2",
+      "a": [
+        192.726,
+        64.487
+      ],
+      "b": [
+        60.387,
+        64.468
+      ]
+    },
+    {
+      "id": "guide-7cfbnx",
+      "a": [
+        24.477,
+        116.302
+      ],
+      "b": [
+        235.321,
+        116.24
+      ]
+    },
+    {
+      "id": "guide-YQD1Es",
+      "a": [
+        217.543,
+        116.245
+      ],
+      "b": [
+        214.706,
+        62.066
+      ]
+    },
+    {
+      "id": "guide-9FVJ9S",
+      "a": [
+        232.477,
+        62.06
+      ],
+      "b": [
+        214.706,
+        62.066
+      ]
+    },
+    {
+      "id": "guide-69ZGcy",
+      "a": [
+        183.25,
+        64.486
+      ],
+      "b": [
+        183.251,
+        62.077
+      ]
+    },
+    {
+      "id": "guide-rN3tV_",
+      "a": [
+        183.251,
+        62.91
+      ],
+      "b": [
+        69.906,
+        62.962
+      ]
+    },
+    {
+      "id": "guide-HrjEWy",
+      "a": [
+        60.412,
+        64.468
+      ],
+      "b": [
+        60.412,
+        43.925
+      ]
+    },
+    {
+      "id": "guide-1Jt7KC",
+      "a": [
+        21.037,
+        50.922
+      ],
+      "b": [
+        231.891,
+        50.899
+      ]
+    },
+    {
+      "id": "guide-VkjyA3",
+      "a": [
+        65.347,
+        50.969
+      ],
+      "b": [
+        65.34,
+        64.469
+      ]
+    },
+    {
+      "id": "guide-72mJZf",
+      "a": [
+        42.326,
+        116.297
+      ],
+      "b": [
+        39.425,
+        62.125
+      ]
+    },
+    {
+      "id": "guide-cjZ20K",
+      "a": [
+        201.622,
+        135.536
+      ],
+      "b": [
+        201.657,
+        116.25
+      ]
+    },
+    {
+      "id": "guide-NQ27Be",
+      "a": [
+        31.674,
+        116.3
+      ],
+      "b": [
+        29.185,
+        68.561
+      ]
+    },
+    {
+      "id": "guide-8yt_iG",
+      "a": [
+        35.093,
+        116.299
+      ],
+      "b": [
+        32.444,
+        68.495
+      ]
+    },
+    {
+      "id": "guide-w2G6gB",
+      "a": [
+        40.948,
+        90.55
+      ],
+      "b": [
+        23.169,
+        91.461
+      ]
+    },
+    {
+      "id": "guide-Z-Dnb3",
+      "a": [
+        41.455,
+        100.037
+      ],
+      "b": [
+        23.671,
+        100.981
+      ]
+    },
+    {
+      "id": "guide-2O3Ln_",
+      "a": [
+        30.585,
+        135.536
+      ],
+      "b": [
+        30.6,
+        116.3
+      ]
+    },
+    {
+      "id": "guide-uId6ho",
+      "a": [
+        65.346,
+        52.507
+      ],
+      "b": [
+        187.807,
+        52.475
+      ]
+    },
+    {
+      "id": "guide-gVW2Aa",
+      "a": [
+        235.331,
+        123.9
+      ],
+      "b": [
+        24.473,
+        123.923
+      ]
+    },
+    {
+      "id": "guide-mK7hLZ",
+      "a": [
+        23.572,
+        127.891
+      ],
+      "b": [
+        235.337,
+        127.891
+      ]
+    },
+    {
+      "id": "guide-hWdrym",
+      "a": [
+        60.411,
+        54.353
+      ],
+      "b": [
+        21.222,
+        54.353
+      ]
+    },
+    {
+      "id": "guide-CQVxsL",
+      "a": [
+        227.683,
+        89.789
+      ],
+      "b": [
+        226.209,
+        62.062
+      ]
+    },
+    {
+      "id": "guide-qFKewY",
+      "a": [
+        226.671,
+        122.992
+      ],
+      "b": [
+        226.674,
+        116.243
+      ]
+    },
+    {
+      "id": "guide-cke5nZ",
+      "a": [
+        229.19,
+        116.242
+      ],
+      "b": [
+        229.168,
+        127.446
+      ]
+    },
+    {
+      "id": "guide-Kbarjg",
+      "a": [
+        58.085,
+        135.536
+      ],
+      "b": [
+        58.085,
+        116.292
+      ]
+    },
+    {
+      "id": "guide-soLxFs",
+      "a": [
+        31.401,
+        111.065
+      ],
+      "b": [
+        34.794,
+        110.888
+      ]
+    },
+    {
+      "id": "guide-J3XCEu",
+      "a": [
+        47.846,
+        43.925
+      ],
+      "b": [
+        47.846,
+        48.987
+      ]
+    },
+    {
+      "id": "guide-maKvlQ",
+      "a": [
+        35.759,
+        100.339
+      ],
+      "b": [
+        35.463,
+        94.597
+      ]
+    },
+    {
+      "id": "guide-HZRuEA",
+      "a": [
+        32.824,
+        75.353
+      ],
+      "b": [
+        40.113,
+        74.971
+      ]
+    },
+    {
+      "id": "guide-d9ZP9G",
+      "a": [
+        69.911,
+        64.469
+      ],
+      "b": [
+        69.911,
+        56.021
+      ]
+    },
+    {
+      "id": "guide-VS0Wvy",
+      "a": [
+        69.915,
+        56.021
+      ],
+      "b": [
+        192.713,
+        56.045
+      ]
+    },
+    {
+      "id": "guide-wYaISh",
+      "a": [
+        60.432,
+        45.412
+      ],
+      "b": [
+        192.697,
+        45.434
+      ]
+    },
+    {
+      "id": "guide-Tnuypi",
+      "a": [
+        71.042,
+        45.414
+      ],
+      "b": [
+        71.042,
+        56.021
+      ]
+    },
+    {
+      "id": "guide-ICnvIj",
+      "a": [
+        75.137,
+        62.96
+      ],
+      "b": [
+        75.137,
+        59.295
+      ]
+    },
+    {
+      "id": "guide-OzMZgW",
+      "a": [
+        80.607,
+        62.957
+      ],
+      "b": [
+        80.607,
+        56.023
+      ]
+    },
+    {
+      "id": "guide-C_PLGn",
+      "a": [
+        182.088,
+        56.043
+      ],
+      "b": [
+        182.101,
+        45.432
+      ]
+    },
+    {
+      "id": "guide-SfqRYo",
+      "a": [
+        85.542,
+        52.502
+      ],
+      "b": [
+        85.542,
+        45.416
+      ]
+    },
+    {
+      "id": "guide-yFnhgy",
+      "a": [
+        105.472,
+        43.626
+      ],
+      "b": [
+        105.48,
+        52.497
+      ]
+    },
+    {
+      "id": "guide-CT6Mcb",
+      "a": [
+        110.538,
+        62.943
+      ],
+      "b": [
+        110.538,
+        45.42
+      ]
+    },
+    {
+      "id": "guide-cLN2Tm",
+      "a": [
+        122.215,
+        64.477
+      ],
+      "b": [
+        122.215,
+        45.422
+      ]
+    },
+    {
+      "id": "guide-TgQNci",
+      "a": [
+        130.968,
+        64.478
+      ],
+      "b": [
+        130.968,
+        45.424
+      ]
+    },
+    {
+      "id": "guide-Ucu-1n",
+      "a": [
+        142.62,
+        62.929
+      ],
+      "b": [
+        142.628,
+        45.426
+      ]
+    },
+    {
+      "id": "guide-dpjtn5",
+      "a": [
+        172.603,
+        62.915
+      ],
+      "b": [
+        172.591,
+        45.431
+      ]
+    },
+    {
+      "id": "guide-pEE6el",
+      "a": [
+        172.601,
+        60.371
+      ],
+      "b": [
+        178.085,
+        60.372
+      ]
+    },
+    {
+      "id": "guide-9Ecll5",
+      "a": [
+        178.113,
+        62.912
+      ],
+      "b": [
+        178.037,
+        56.042
+      ]
+    },
+    {
+      "id": "guide-aVK_aW",
+      "a": [
+        187.826,
+        45.433
+      ],
+      "b": [
+        187.832,
+        64.486
+      ]
+    },
+    {
+      "id": "guide-t-XvBF",
+      "a": [
+        192.711,
+        54.246
+      ],
+      "b": [
+        232.068,
+        54.266
+      ]
+    },
+    {
+      "id": "guide-Bh4RKZ",
+      "a": [
+        225.365,
+        62.062
+      ],
+      "b": [
+        225.399,
+        43.925
+      ]
+    },
+    {
+      "id": "guide-DAYV3e",
+      "a": [
+        221.462,
+        62.064
+      ],
+      "b": [
+        221.818,
+        68.752
+      ]
+    },
+    {
+      "id": "guide-gqNLnT",
+      "a": [
+        226.512,
+        67.774
+      ],
+      "b": [
+        221.779,
+        68.023
+      ]
+    },
+    {
+      "id": "guide-DcsnX_",
+      "a": [
+        233.25,
+        76.782
+      ],
+      "b": [
+        227.008,
+        77.11
+      ]
+    },
+    {
+      "id": "guide-d6aUZi",
+      "a": [
+        219.112,
+        71.763
+      ],
+      "b": [
+        215.224,
+        71.966
+      ]
+    },
+    {
+      "id": "guide-UhV8O0",
+      "a": [
+        234.052,
+        92.072
+      ],
+      "b": [
+        216.326,
+        93.002
+      ]
+    },
+    {
+      "id": "guide-m0bFl-",
+      "a": [
+        226.673,
+        120.004
+      ],
+      "b": [
+        201.65,
+        120.004
+      ]
+    },
+    {
+      "id": "guide-ZyUum2",
+      "a": [
+        221.492,
+        116.244
+      ],
+      "b": [
+        221.612,
+        123.901
+      ]
+    },
+    {
+      "id": "guide-Sd-ePe",
+      "a": [
+        224.149,
+        135.536
+      ],
+      "b": [
+        224.173,
+        129.118
+      ]
+    },
+    {
+      "id": "guide-E3SDvb",
+      "a": [
+        219.214,
+        135.536
+      ],
+      "b": [
+        219.203,
+        128.943
+      ]
+    },
+    {
+      "id": "guide-7eLiUA",
+      "a": [
+        209.206,
+        135.536
+      ],
+      "b": [
+        209.202,
+        123.903
+      ]
+    },
+    {
+      "id": "guide-SkKbjH",
+      "a": [
+        214.575,
+        123.902
+      ],
+      "b": [
+        214.556,
+        116.246
+      ]
+    },
+    {
+      "id": "guide-r6jFPJ",
+      "a": [
+        32.346,
+        66.729
+      ],
+      "b": [
+        29.884,
+        66.859
+      ]
+    },
+    {
+      "id": "guide-H8T_RA",
+      "a": [
+        35.015,
+        120.803
+      ],
+      "b": [
+        48.435,
+        120.803
+      ]
+    },
+    {
+      "id": "guide-snHe7C",
+      "a": [
+        43.008,
+        116.297
+      ],
+      "b": [
+        43.008,
+        123.921
+      ]
+    },
+    {
+      "id": "guide-kujvYq",
+      "a": [
+        35.526,
+        135.536
+      ],
+      "b": [
+        35.532,
+        122.747
+      ]
+    },
+    {
+      "id": "guide-Bjo78f",
+      "a": [
+        217.281,
+        120.017
+      ],
+      "b": [
+        217.291,
+        123.902
+      ]
+    },
+    {
+      "id": "guide-ZLlgbP",
+      "a": [
+        214.187,
+        135.536
+      ],
+      "b": [
+        214.143,
+        127.535
+      ]
+    },
+    {
+      "id": "guide-qIp-3e",
+      "a": [
+        21.929,
+        67.883
+      ],
+      "b": [
+        29.131,
+        67.511
+      ]
+    },
+    {
+      "id": "guide-HlXpQo",
+      "a": [
+        221.35,
+        71.622
+      ],
+      "b": [
+        219.988,
+        48.143
+      ]
+    },
+    {
+      "id": "guide-l9sv4Q",
+      "a": [
+        27.751,
+        62.129
+      ],
+      "b": [
+        27.755,
+        50.921
+      ]
+    },
+    {
+      "id": "guide-umCmJs",
+      "a": [
+        24.472,
+        127.431
+      ],
+      "b": [
+        58.087,
+        127.433
+      ]
+    }
+  ]
 }

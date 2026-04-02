@@ -4,6 +4,7 @@ import { Inspector } from "./components/Inspector";
 import { ToolRail } from "./components/ToolRail";
 import { useNewEditorStore } from "./state/editorStore";
 import type { CanonicalGuide, CanonicalIndoorDataset } from "../lib/types";
+import { guideAngleFromPoints } from "./model/commands";
 import { findSharedWallRoom, pointOnRoomEdge, projectPointToRoomEdge } from "./model/openings";
 import "./new-editor.css";
 
@@ -15,14 +16,25 @@ const parseDataset = (json: string): CanonicalIndoorDataset => {
   if (parsed.guides && !Array.isArray(parsed.guides)) {
     throw new Error("Invalid indoor-data.json: guides must be an array");
   }
+  if (parsed.guides) {
+    parsed.guides = parsed.guides.map((guide) =>
+      "point" in guide
+        ? guide
+        : {
+            id: guide.id,
+            point: [guide.a[0], guide.a[1]] as [number, number],
+            angle: guideAngleFromPoints(guide.a, guide.b),
+          },
+    );
+  }
   return parsed;
 };
 
 const exportableGuides = (guides: CanonicalGuide[]): CanonicalGuide[] =>
   guides.map((guide) => ({
     id: guide.id,
-    a: [guide.a[0], guide.a[1]],
-    b: [guide.b[0], guide.b[1]],
+    point: [guide.point[0], guide.point[1]],
+    angle: guide.angle,
   }));
 
 const sanitizeExportDataset = (dataset: CanonicalIndoorDataset): CanonicalIndoorDataset => {

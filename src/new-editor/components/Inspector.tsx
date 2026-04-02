@@ -1,6 +1,7 @@
 import type { CanonicalOpening, CanonicalRoom } from "../../lib/types";
 import { useRef, useState } from "react";
 import { useNewEditorStore } from "../state/editorStore";
+import { normalizeAngle } from "../model/commands";
 import { prepareReferenceImage } from "../model/referenceImage";
 
 interface Props {
@@ -12,9 +13,11 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [mergeDistance, setMergeDistance] = useState("0.2");
   const [alignDistance, setAlignDistance] = useState("0.2");
+  const [roundDecimals, setRoundDecimals] = useState("2");
   const {
     activeLevel,
     guides,
+    selectedGuideId,
     viewport,
     hoveredSnap,
     referenceImage,
@@ -22,11 +25,23 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
     setReferenceImage,
     updateRoomFields,
     updateOpeningFields,
+    updateGuide,
     mergeNearbyVertices,
     alignVerticesToGuides,
+    roundAllPoints,
     deleteOpening,
   } = useNewEditorStore();
   const roomOpenings = selectedRoom?.openings ?? [];
+  const selectedGuide = selectedGuideId ? guides.find((guide) => guide.id === selectedGuideId) ?? null : null;
+  const selectedGuideAngle =
+    selectedGuide
+      ? normalizeAngle(selectedGuide.angle)
+      : 0;
+
+  const applyGuideAngle = (nextAngle: number) => {
+    if (!selectedGuide || !Number.isFinite(nextAngle)) return;
+    updateGuide(selectedGuide.id, selectedGuide.point, normalizeAngle(nextAngle));
+  };
 
   const handleReferenceFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -149,6 +164,21 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
                 onChange={(event) => updateRoomFields(selectedRoom.id, { subtitle: event.target.value })}
               />
             </label>
+          </>
+        ) : selectedGuide ? (
+          <>
+            <div className="ne-kv"><span>Guide</span><strong>{selectedGuide.id}</strong></div>
+            <label className="ne-field">
+              <span>Angle</span>
+              <input
+                className="ne-input"
+                type="number"
+                step="1"
+                value={selectedGuideAngle.toFixed(1)}
+                onChange={(event) => applyGuideAngle(Number(event.target.value))}
+              />
+            </label>
+            <div className="ne-kv"><span>Point</span><strong>{selectedGuide.point[0].toFixed(2)}, {selectedGuide.point[1].toFixed(2)}</strong></div>
           </>
         ) : (
           <div className="ne-empty">No selection yet. Click a room to inspect it. This panel will later host edge, opening, and document inspectors.</div>
@@ -327,6 +357,26 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
           disabled={guides.length === 0}
         >
           Align points to guides
+        </button>
+        <div className="ne-empty">Round editable geometry points across the workspace to a fixed decimal precision.</div>
+        <label className="ne-field">
+          <span>Round decimals</span>
+          <input
+            className="ne-input"
+            type="number"
+            min="0"
+            max="6"
+            step="1"
+            value={roundDecimals}
+            onChange={(event) => setRoundDecimals(event.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          className="ne-btn-secondary"
+          onClick={() => roundAllPoints(Number(roundDecimals))}
+        >
+          Round all points
         </button>
       </div>
       <div className="ne-panel-title">Viewport</div>

@@ -5,9 +5,12 @@ import {
   appendDraftPoint,
   createRoomFromDraft,
   defaultViewportForDataset,
+  guideAngleFromPoints,
+  guideReferencePoints,
   initialDataset,
   localUnitsFromScreenPixels,
   localPointToScreenPoint,
+  normalizeAngle,
   screenPointToLocalPoint,
   shouldCloseDraftPolygon,
 } from "../model/commands";
@@ -20,7 +23,7 @@ import {
   findSharedWallRoom,
   projectPointToRoomEdge,
 } from "../model/openings";
-import { distance } from "../model/geometry";
+import { distance, mergePolygonsBySharedEdge, pointOnPolygonEdge } from "../model/geometry";
 
 const NEW_EDITOR_STORAGE_KEY = "indoor-map.new-editor.workspace";
 const MAX_HISTORY_ENTRIES = 100;
@@ -54,9 +57,22 @@ const findOpening = (rooms: CanonicalRoom[], roomId: string, openingId: string) 
 const exportableGuides = (guides: EditorGuide[]): CanonicalGuide[] =>
   guides.map((guide) => ({
     id: guide.id,
-    a: [guide.a[0], guide.a[1]],
-    b: [guide.b[0], guide.b[1]],
+    point: [guide.point[0], guide.point[1]],
+    angle: guide.angle,
   }));
+
+const normalizeGuide = (guide: CanonicalGuide | { id: string; a: [number, number]; b: [number, number] }): EditorGuide =>
+  "point" in guide
+    ? {
+        id: guide.id,
+        point: [guide.point[0], guide.point[1]] as Point,
+        angle: normalizeAngle(guide.angle),
+      }
+    : {
+        id: guide.id,
+        point: [guide.a[0], guide.a[1]] as Point,
+        angle: guideAngleFromPoints(guide.a, guide.b),
+      };
 
 type PersistedReferenceImageState = {
   opacity: number;
@@ -110,6 +126,7 @@ const readPersistedWorkspace = (): PersistedWorkspaceState | null => {
         parsed.tool === "opening" ||
         parsed.tool === "guide" ||
         parsed.tool === "reference" ||
+        parsed.tool === "merge" ||
         parsed.tool === "delete" ||
         parsed.tool === "pan"
           ? parsed.tool
@@ -395,12 +412,23 @@ const alignVerticesToGuidesForLevel = (
   return { rooms, changed: true };
 };
 
+const roundCoordinate = (value: number, decimals: number) => {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+};
+
+const roundPoint = (point: Point, decimals: number): Point => [
+  roundCoordinate(point[0], decimals),
+  roundCoordinate(point[1], decimals),
+];
+
 interface NewEditorState {
   dataset: CanonicalIndoorDataset;
   activeLevel: LevelId;
   tool: NewEditorTool;
   selectedRoomId: string | null;
   selectedOpeningId: string | null;
+  selectedGuideId: string | null;
   guides: EditorGuide[];
   referenceImage: {
     src: string | null;
@@ -423,6 +451,7 @@ interface NewEditorState {
   pendingDragHistory: PendingDragHistory | null;
   setTool(tool: NewEditorTool): void;
   setSelection(roomId: string | null, openingId?: string | null): void;
+  setSelectedGuide(guideId: string | null): void;
   loadDataset(dataset: CanonicalIndoorDataset): void;
   setReferenceImage(
     patch: Partial<{
@@ -439,8 +468,8 @@ interface NewEditorState {
     }>,
   ): void;
   setViewport(viewport: ViewportState): void;
-  addGuide(a: Point, b: Point): void;
-  updateGuide(guideId: string, a: Point, b: Point): void;
+  addGuide(point: Point, angle: number): void;
+  updateGuide(guideId: string, point: Point, angle: number): void;
   removeGuide(guideId: string): void;
   panViewport(dx: number, dy: number): void;
   zoomAt(nextZoom: number, anchor: Point): void;
@@ -464,6 +493,8 @@ interface NewEditorState {
   cancelDragHistory(): void;
   mergeNearbyVertices(maxDistance: number): void;
   alignVerticesToGuides(maxDistance: number): void;
+  roundAllPoints(decimals: number): void;
+  mergeRooms(primaryRoomId: string, secondaryRoomId: string): boolean;
   deleteOpening(roomId: string, openingId: string): void;
   deleteRoom(roomId: string): void;
   undo(): void;
@@ -480,11 +511,10 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
   tool: persistedWorkspace?.tool ?? "select",
   selectedRoomId: null,
   selectedOpeningId: null,
-  guides: (persistedWorkspace?.guides ?? []).map((guide) => ({
-    id: guide.id,
-    a: [guide.a[0], guide.a[1]] as CanonicalGuide["a"],
-    b: [guide.b[0], guide.b[1]] as CanonicalGuide["b"],
-  })),
+  selectedGuideId: null,
+  guides: (persistedWorkspace?.guides ?? []).map((guide) =>
+    normalizeGuide(guide as CanonicalGuide & { a?: [number, number]; b?: [number, number] }),
+  ),
   referenceImage: {
     src: null,
     sourceName: null,
@@ -510,18 +540,18 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
       draftRoomPoints: tool === "draw-room" ? get().draftRoomPoints : [],
       draftCursorPoint: tool === "draw-room" ? get().draftCursorPoint : null,
     }),
-  setSelection: (selectedRoomId, selectedOpeningId = null) => set({ selectedRoomId, selectedOpeningId }),
+  setSelection: (selectedRoomId, selectedOpeningId = null) => set({ selectedRoomId, selectedOpeningId, selectedGuideId: null }),
+  setSelectedGuide: (selectedGuideId) => set({ selectedGuideId, selectedRoomId: null, selectedOpeningId: null }),
   loadDataset: (dataset) =>
     set({
       dataset,
       activeLevel: dataset.levels[0]?.id ?? "L1",
       selectedRoomId: null,
       selectedOpeningId: null,
-      guides: (dataset.guides ?? []).map((guide) => ({
-        id: guide.id,
-        a: [guide.a[0], guide.a[1]] as CanonicalGuide["a"],
-        b: [guide.b[0], guide.b[1]] as CanonicalGuide["b"],
-      })),
+      selectedGuideId: null,
+      guides: (dataset.guides ?? []).map((guide) =>
+        normalizeGuide(guide as CanonicalGuide & { a?: [number, number]; b?: [number, number] }),
+      ),
       draftRoomPoints: [],
       draftCursorPoint: null,
       hoveredSnap: null,
@@ -557,46 +587,94 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         : withHistory(state, { referenceImage: nextReferenceImage });
     }),
   setViewport: (viewport) => set({ viewport }),
-  addGuide: (a, b) =>
+  addGuide: (point, angle) =>
     set((state) => {
-      const normalizedA: Point = [Number(a[0].toFixed(3)), Number(a[1].toFixed(3))];
-      const normalizedB: Point = [Number(b[0].toFixed(3)), Number(b[1].toFixed(3))];
-      if (Math.hypot(normalizedB[0] - normalizedA[0], normalizedB[1] - normalizedA[1]) < 0.05) {
-        return {};
-      }
+      const normalizedPoint: Point = [Number(point[0].toFixed(3)), Number(point[1].toFixed(3))];
+      const normalizedGuideAngle = normalizeAngle(angle);
       const duplicate = state.guides.some(
         (guide) =>
-          Math.hypot(guide.a[0] - normalizedA[0], guide.a[1] - normalizedA[1]) <= 0.05 &&
-          Math.hypot(guide.b[0] - normalizedB[0], guide.b[1] - normalizedB[1]) <= 0.05,
+          Math.hypot(guide.point[0] - normalizedPoint[0], guide.point[1] - normalizedPoint[1]) <= 0.05 &&
+          Math.min(
+            Math.abs(normalizeAngle(guide.angle) - normalizedGuideAngle),
+            360 - Math.abs(normalizeAngle(guide.angle) - normalizedGuideAngle),
+          ) <= 0.5,
       );
       if (duplicate) return {};
 
       return withHistory(state, {
-        guides: [...state.guides, { id: `guide-${nanoid(6)}`, a: normalizedA, b: normalizedB }],
+        guides: [...state.guides, { id: `guide-${nanoid(6)}`, point: normalizedPoint, angle: normalizedGuideAngle }],
       });
     }),
-  updateGuide: (guideId, a, b) =>
+  updateGuide: (guideId, point, angle) =>
     set((state) => {
-      const normalizedA: Point = [Number(a[0].toFixed(3)), Number(a[1].toFixed(3))];
-      const normalizedB: Point = [Number(b[0].toFixed(3)), Number(b[1].toFixed(3))];
-      if (Math.hypot(normalizedB[0] - normalizedA[0], normalizedB[1] - normalizedA[1]) < 0.05) {
-        return {};
+      const normalizedPoint: Point = [Number(point[0].toFixed(3)), Number(point[1].toFixed(3))];
+      const normalizedGuideAngle = normalizeAngle(angle);
+
+      const guide = state.guides.find((entry) => entry.id === guideId);
+      if (!guide) return {};
+
+      const oldReference = guideReferencePoints(guide);
+      const oldAx = oldReference.a[0];
+      const oldAy = oldReference.a[1];
+      const oldDx = oldReference.b[0] - oldReference.a[0];
+      const oldDy = oldReference.b[1] - oldReference.a[1];
+      const oldLenSq = oldDx * oldDx + oldDy * oldDy;
+      const newReference = guideReferencePoints({ point: normalizedPoint, angle: normalizedGuideAngle });
+      const newDx = newReference.b[0] - newReference.a[0];
+      const newDy = newReference.b[1] - newReference.a[1];
+      const guideThreshold = 0.08;
+      const rooms = cloneRooms(state.dataset.rooms);
+      const touchedRoomIds = new Set<string>();
+
+      if (oldLenSq > 1e-9) {
+        for (const room of rooms) {
+          if (room.level !== state.activeLevel) continue;
+          room.polygon = room.polygon.map((point) => {
+            const cross = Math.abs((point[0] - oldAx) * oldDy - (point[1] - oldAy) * oldDx);
+            const lineDistance = cross / Math.sqrt(oldLenSq);
+            if (lineDistance > guideThreshold) {
+              return point;
+            }
+
+            const t = ((point[0] - oldAx) * oldDx + (point[1] - oldAy) * oldDy) / oldLenSq;
+            const nextPoint: Point = [
+              Number((normalizedPoint[0] + newDx * t).toFixed(3)),
+              Number((normalizedPoint[1] + newDy * t).toFixed(3)),
+            ];
+
+            if (nextPoint[0] !== point[0] || nextPoint[1] !== point[1]) {
+              touchedRoomIds.add(room.id);
+            }
+
+            return nextPoint;
+          });
+        }
       }
 
-      const guides = state.guides.map((guide) =>
-        guide.id === guideId
-          ? { ...guide, a: normalizedA, b: normalizedB }
-          : guide,
+      for (const roomId of touchedRoomIds) {
+        reconcileRoomOpenings(rooms, roomId);
+      }
+
+      const guides = state.guides.map((entry) =>
+        entry.id === guideId
+          ? { ...entry, point: normalizedPoint, angle: normalizedGuideAngle }
+          : entry,
       );
 
+      const patch = {
+        guides,
+        dataset: touchedRoomIds.size > 0 ? { ...state.dataset, rooms } : state.dataset,
+      };
+
       return state.pendingDragHistory
-        ? { guides }
-        : withHistory(state, { guides });
+        ? patch
+        : withHistory(state, patch);
     }),
   removeGuide: (guideId) =>
     set((state) =>
       withHistory(state, {
         guides: state.guides.filter((guide) => guide.id !== guideId),
+        selectedGuideId: state.selectedGuideId === guideId ? null : state.selectedGuideId,
         hoveredSnap:
           state.hoveredSnap?.kind === "guide" && state.hoveredSnap.guideId === guideId
             ? null
@@ -661,6 +739,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
           dataset: { ...state.dataset, rooms: [...state.dataset.rooms, room] },
           selectedRoomId: room.id,
           selectedOpeningId: null,
+          selectedGuideId: null,
           draftRoomPoints: [],
           draftCursorPoint: null,
         });
@@ -678,6 +757,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         dataset: { ...state.dataset, rooms: [...state.dataset.rooms, room] },
         selectedRoomId: room.id,
         selectedOpeningId: null,
+        selectedGuideId: null,
         draftRoomPoints: [],
         draftCursorPoint: null,
       });
@@ -704,6 +784,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         },
         selectedRoomId: snap.roomId,
         selectedOpeningId: placements[0]?.opening.id ?? null,
+        selectedGuideId: null,
       });
     }),
   updateRoomFields: (roomId, patch) =>
@@ -787,6 +868,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         dataset: { ...state.dataset, rooms },
         selectedRoomId: roomId,
         selectedOpeningId: null,
+        selectedGuideId: null,
       });
     }),
   removeRoomVertex: (roomId, vertexIndex) =>
@@ -802,6 +884,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         dataset: { ...state.dataset, rooms },
         selectedRoomId: roomId,
         selectedOpeningId: null,
+        selectedGuideId: null,
       });
     }),
   updateOpeningFields: (roomId, openingId, patch) =>
@@ -877,6 +960,167 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         pendingDragHistory: null,
       });
     }),
+  roundAllPoints: (decimals) =>
+    set((state) => {
+      if (!Number.isFinite(decimals)) return {};
+      const safeDecimals = Math.max(0, Math.min(6, Math.round(decimals)));
+      let changed = false;
+
+      const rooms = cloneRooms(state.dataset.rooms).map((room) => {
+        const polygon = room.polygon.map((point) => {
+          const rounded = roundPoint(point, safeDecimals);
+          if (rounded[0] !== point[0] || rounded[1] !== point[1]) changed = true;
+          return rounded;
+        });
+        const openings = (room.openings ?? []).map((opening) => {
+          const roundedPoint = roundPoint(opening.point, safeDecimals);
+          if (roundedPoint[0] !== opening.point[0] || roundedPoint[1] !== opening.point[1]) changed = true;
+          return {
+            ...opening,
+            point: roundedPoint,
+          };
+        });
+        const focusPoint = room.focusPoint ? roundPoint(room.focusPoint, safeDecimals) : room.focusPoint;
+        if (
+          room.focusPoint &&
+          (focusPoint[0] !== room.focusPoint[0] || focusPoint[1] !== room.focusPoint[1])
+        ) {
+          changed = true;
+        }
+        return {
+          ...room,
+          polygon,
+          openings,
+          focusPoint,
+        };
+      });
+
+      const pois = state.dataset.pois.map((poi) => {
+        const point = roundPoint(poi.point, safeDecimals);
+        const roomApproach = poi.accessPath?.roomApproach ? roundPoint(poi.accessPath.roomApproach, safeDecimals) : poi.accessPath?.roomApproach;
+        const threshold = poi.accessPath?.threshold ? roundPoint(poi.accessPath.threshold, safeDecimals) : poi.accessPath?.threshold;
+        const interiorApproach = poi.accessPath?.interiorApproach ? roundPoint(poi.accessPath.interiorApproach, safeDecimals) : poi.accessPath?.interiorApproach;
+        if (point[0] !== poi.point[0] || point[1] !== poi.point[1]) changed = true;
+        if (poi.accessPath?.roomApproach && (roomApproach[0] !== poi.accessPath.roomApproach[0] || roomApproach[1] !== poi.accessPath.roomApproach[1])) changed = true;
+        if (poi.accessPath?.threshold && (threshold[0] !== poi.accessPath.threshold[0] || threshold[1] !== poi.accessPath.threshold[1])) changed = true;
+        if (poi.accessPath?.interiorApproach && (interiorApproach[0] !== poi.accessPath.interiorApproach[0] || interiorApproach[1] !== poi.accessPath.interiorApproach[1])) changed = true;
+        return {
+          ...poi,
+          point,
+          accessPath: poi.accessPath
+            ? {
+                roomApproach,
+                threshold,
+                interiorApproach,
+              }
+            : poi.accessPath,
+        };
+      });
+
+      const structures = state.dataset.structures.map((structure) => {
+        if (structure.geometry.type !== "line") {
+          return structure;
+        }
+        const coordinates = structure.geometry.coordinates.map((point) => {
+          const rounded = roundPoint(point, safeDecimals);
+          if (rounded[0] !== point[0] || rounded[1] !== point[1]) changed = true;
+          return rounded;
+        });
+        return {
+          ...structure,
+          geometry: {
+            ...structure.geometry,
+            coordinates,
+          },
+        };
+      });
+
+      const guides = state.guides.map((guide) => {
+        const point = roundPoint(guide.point, safeDecimals);
+        if (point[0] !== guide.point[0] || point[1] !== guide.point[1]) {
+          changed = true;
+        }
+        return {
+          ...guide,
+          point,
+        };
+      });
+
+      if (!changed) return {};
+
+      for (const room of rooms) {
+        reconcileRoomOpenings(rooms, room.id);
+      }
+
+      return withHistory(state, {
+        dataset: {
+          ...state.dataset,
+          rooms,
+          pois,
+          structures,
+        },
+        guides,
+        pendingDragHistory: null,
+      });
+    }),
+  mergeRooms: (primaryRoomId, secondaryRoomId) => {
+    const state = get();
+    if (primaryRoomId === secondaryRoomId) return false;
+    const primaryRoom = findRoom(state.dataset.rooms, primaryRoomId);
+    const secondaryRoom = findRoom(state.dataset.rooms, secondaryRoomId);
+    if (!primaryRoom || !secondaryRoom || primaryRoom.level !== secondaryRoom.level) {
+      return false;
+    }
+
+    const mergedPolygon = mergePolygonsBySharedEdge(primaryRoom.polygon, secondaryRoom.polygon);
+    if (!mergedPolygon) {
+      return false;
+    }
+
+    const rooms = cloneRooms(state.dataset.rooms);
+    const nextPrimaryRoom = findRoom(rooms, primaryRoomId);
+    const nextSecondaryRoom = findRoom(rooms, secondaryRoomId);
+    if (!nextPrimaryRoom || !nextSecondaryRoom) {
+      return false;
+    }
+
+    const mergedOpenings = [...(nextPrimaryRoom.openings ?? []), ...(nextSecondaryRoom.openings ?? [])]
+      .filter((opening) => opening.connectsTo !== primaryRoomId && opening.connectsTo !== secondaryRoomId)
+      .filter((opening) => !pointOnPolygonEdge(opening.point, primaryRoom.polygon) || !pointOnPolygonEdge(opening.point, secondaryRoom.polygon))
+      .map((opening) => ({
+        ...opening,
+        point: [opening.point[0], opening.point[1]] as Point,
+      }));
+
+    nextPrimaryRoom.polygon = mergedPolygon;
+    nextPrimaryRoom.openings = mergedOpenings;
+    nextPrimaryRoom.searchTokens = [...new Set([...(nextPrimaryRoom.searchTokens ?? []), ...(nextSecondaryRoom.searchTokens ?? [])])];
+    nextPrimaryRoom.subtitle = nextPrimaryRoom.subtitle || nextSecondaryRoom.subtitle;
+    nextPrimaryRoom.department = nextPrimaryRoom.department || nextSecondaryRoom.department;
+    nextPrimaryRoom.capacity = (nextPrimaryRoom.capacity ?? 0) + (nextSecondaryRoom.capacity ?? 0) || undefined;
+
+    for (const room of rooms) {
+      if (room.id === secondaryRoomId) continue;
+      room.openings = (room.openings ?? []).map((opening) =>
+        opening.connectsTo === secondaryRoomId
+          ? { ...opening, connectsTo: primaryRoomId }
+          : opening,
+      );
+    }
+
+    const nextRooms = rooms.filter((room) => room.id !== secondaryRoomId);
+    reconcileRoomOpenings(nextRooms, primaryRoomId);
+
+    set((current) =>
+      withHistory(current, {
+        dataset: { ...current.dataset, rooms: nextRooms },
+        selectedRoomId: primaryRoomId,
+        selectedOpeningId: null,
+        selectedGuideId: null,
+      }),
+    );
+    return true;
+  },
   deleteOpening: (roomId, openingId) =>
     set((state) => {
       const rooms = cloneRooms(state.dataset.rooms);
@@ -892,6 +1136,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         dataset: { ...state.dataset, rooms: nextRooms },
         selectedOpeningId: state.selectedOpeningId === openingId || state.selectedOpeningId === linkedRef?.openingId ? null : state.selectedOpeningId,
         pendingDragHistory: null,
+        selectedGuideId: null,
       });
     }),
   deleteRoom: (roomId) =>
@@ -904,11 +1149,12 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
         selectedRoomId: state.selectedRoomId === roomId ? null : state.selectedRoomId,
         selectedOpeningId: null,
         pendingDragHistory: null,
+        selectedGuideId: null,
       });
     }),
   undo: () =>
     set((state) => {
-      const snapshot = state.undoStack.at(-1);
+      const snapshot = state.undoStack[state.undoStack.length - 1];
       if (!snapshot) return {};
       const redoStack = [...state.redoStack, createHistorySnapshot(state)].slice(-MAX_HISTORY_ENTRIES);
       return {
@@ -918,7 +1164,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
     }),
   redo: () =>
     set((state) => {
-      const snapshot = state.redoStack.at(-1);
+      const snapshot = state.redoStack[state.redoStack.length - 1];
       if (!snapshot) return {};
       const undoStack = [...state.undoStack, createHistorySnapshot(state)].slice(-MAX_HISTORY_ENTRIES);
       return {

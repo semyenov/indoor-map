@@ -2044,7 +2044,12 @@ export function MapCanvas({
         source: ROOM_LABEL_SOURCE,
         filter: floorFilter(activeLevel, ["room", "meeting_room", "amenity"], "Point"),
         layout: {
-          "text-field": ["get", "name"],
+          "text-field": [
+            "case",
+            ["has", "number"],
+            ["concat", ["get", "number"], "\n", ["get", "name"]],
+            ["get", "name"],
+          ],
           "text-size": [
             "case",
             ["==", ["get", "kind"], "meeting_room"],
