@@ -3,7 +3,7 @@ import type { RoomStatus } from "./lib/types";
 
 export const FONT = "'Manrope', -apple-system, BlinkMacSystemFont, sans-serif";
 export const MONO = "'JetBrains Mono', 'SF Mono', monospace";
-export const TOP_BAR_CLEARANCE = 96;
+export const TOP_BAR_CLEARANCE = 148;
 export const BOTTOM_BAR_CLEARANCE = 96;
 export const SIDE_PANEL_TOP_INSET = 16;
 export const ATLAS_THEME_VARS = {
@@ -355,15 +355,22 @@ export const S: Record<string, CSSProperties> = {
     left: 0,
     right: 0,
     zIndex: 10,
-    display: "grid",
-    gridTemplateColumns: "1fr",
+    display: "flex",
+    flexDirection: "column",
     alignItems: "stretch",
     gap: 0,
     padding: 0,
     ...glassChromeBase,
     borderBottom: T.controlBorder,
     borderRadius: 0,
-    minHeight: TOP_BAR_CLEARANCE,
+  },
+  topControlsRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "5px 14px",
+    borderTop: T.controlBorder,
+    flexWrap: "nowrap",
   },
   topBrandBlock: { display: "grid", gap: 8, minWidth: 0, padding: "12px 14px" },
   mapControls: {
@@ -419,7 +426,7 @@ export const S: Record<string, CSSProperties> = {
   themeSwitch: { display: "flex", gap: 2, padding: 3, borderRadius: 0, background: T.chromeSurfaceSoft, border: T.controlBorder },
   themeBtn: { padding: "7px 12px", background: "none", border: "none", borderRadius: 0, fontSize: 12, fontWeight: 600, fontFamily: FONT, color: T.muted },
   themeBtnActive: { color: T.text, background: T.chromeSurfaceStrong },
-  viewModes: { ...segmentedFrame, width: "100%" },
+  viewModes: { ...segmentedFrame },
   segmentBtn: { ...segmentedButtonBase },
   segmentBtnEqual: { flex: "1 1 0" },
   segmentBtnMono: { fontFamily: MONO, fontWeight: 700, letterSpacing: ".01em" },
@@ -983,7 +990,7 @@ export const S: Record<string, CSSProperties> = {
   rrStatV: { fontSize: 15, fontWeight: 800, fontFamily: MONO, lineHeight: 1, display: "flex", alignItems: "center" },
   rrStatL: { fontSize: 9, fontWeight: 600, color: T.muted, textTransform: "uppercase", letterSpacing: ".05em" },
   rrDirections: { flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 0 },
-  rrStepCard: { ...chromeSectionStrongBase, display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", minWidth: 0, cursor: "pointer" },
+  rrStepCard: { ...chromeSectionStrongBase, display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", minWidth: 0, cursor: "pointer", appearance: "none", fontFamily: FONT, color: T.text, textAlign: "left" } as CSSProperties,
   rrStepCardLast: { border: `1px solid ${T.accentBorder}` },
   rrStepCardHovered: { background: T.accentBg, border: `1px solid ${T.accentBorder}`, boxShadow: `inset 0 0 0 1px ${T.accent}18` },
   rrStepN: { width: 24, height: 24, borderRadius: 0, background: T.chromeSurface, border: T.controlBorder, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0, color: T.sec },

@@ -161,7 +161,6 @@ export interface IndoorStatusPayload {
   roomIds: string[];
 }
 
-export type RoomSide = "north" | "south" | "west" | "east";
 export type OpeningKind = "door" | "opening";
 export type LocalRectBounds = [number, number, number, number];
 
@@ -181,12 +180,17 @@ export interface CanonicalLevelMeta {
 
 export interface CanonicalOpening {
   id: string;
-  side: RoomSide;
-  center: number;
+  point: [number, number];
   width: number;
   kind: OpeningKind;
   traversable?: boolean;
   connectsTo?: string;
+}
+
+export interface CanonicalGuide {
+  id: string;
+  a: [number, number];
+  b: [number, number];
 }
 
 export interface CanonicalRoom {
@@ -194,7 +198,8 @@ export interface CanonicalRoom {
   level: LevelId;
   kind: "room" | "meeting_room" | "amenity";
   name: string;
-  bounds: LocalRectBounds;
+  polygon: [number, number][];
+  wallEdges?: number[];
   subtitle: string;
   department: string;
   searchTokens: string[];
@@ -203,7 +208,6 @@ export interface CanonicalRoom {
   equipment?: string[];
   status?: RoomStatus;
   showLabel?: boolean;
-  wallSides?: Partial<Record<RoomSide, boolean>>;
   openings?: CanonicalOpening[];
 }
 
@@ -322,6 +326,7 @@ export interface CanonicalIndoorDataset {
   rooms: CanonicalRoom[];
   pois: CanonicalPoi[];
   structures: CanonicalStructure[];
+  guides?: CanonicalGuide[];
 }
 
 export interface IndoorRuntimeDataset {

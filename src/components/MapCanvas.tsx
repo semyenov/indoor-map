@@ -1271,6 +1271,7 @@ export interface MapCanvasProps {
   featureLabelSourceById: Map<string, FeatureLabelSourceId>;
   featureSourceById: Map<string, FeatureSourceId>;
   focusRequestId: number;
+  hoveredStepCenter: Coordinate | null;
   levels: LevelMeta[];
   showControls?: boolean;
   themeVariant?: MapThemeVariant;
@@ -1293,6 +1294,7 @@ export function MapCanvas({
   featureLabelSourceById,
   featureSourceById,
   focusRequestId,
+  hoveredStepCenter,
   levels,
   showControls = true,
   themeVariant = "light",
@@ -2356,7 +2358,7 @@ export function MapCanvas({
   }, [routeRevision]);
 
   useEffect(() => {
-    if (hoveredStepIdx === null || !route || route.legs.length === 0) {
+    if (hoveredStepIdx === null || !hoveredStepCenter) {
       return;
     }
 
@@ -2366,21 +2368,13 @@ export function MapCanvas({
       return;
     }
 
-    const legIdx = Math.min(hoveredStepIdx, route.legs.length - 1);
-    const leg = route.legs[legIdx];
-
-    if (!leg || leg.path.length === 0) {
-      return;
-    }
-
-    const midpoint = leg.path[Math.floor(leg.path.length / 2)];
-
-    if (!midpoint) {
-      return;
-    }
-
-    map.flyTo({ center: [midpoint[0], midpoint[1]], zoom: Math.max(map.getZoom(), 19.5), duration: 400, essential: true });
-  }, [hoveredStepIdx]);
+    map.flyTo({
+      center: [hoveredStepCenter[0], hoveredStepCenter[1]],
+      zoom: Math.max(map.getZoom(), 19.5),
+      duration: 400,
+      essential: true,
+    });
+  }, [hoveredStepIdx, hoveredStepCenter]);
 
   useEffect(() => {
     const map = mapRef.current;

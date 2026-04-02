@@ -20,7 +20,6 @@ import type {
   RouteTarget,
   RoutingEdge,
   RoutingGraph,
-  RoomSide,
   SearchEntry,
 } from "./types";
 
@@ -56,36 +55,154 @@ interface DerivedPortalConnection {
   boundaryPoint: Coordinate;
 }
 
-const PORTAL_INSET = 0.45;
-const BUILDING_BOUNDS = {
-  west: 2,
-  south: 2,
-  east: 52,
-  north: 28,
+// --- Polygon geometry helpers (module-level, no closure dependency) ---
+
+const polygonBounds = (pts: [number, number][]): LocalRectBounds => {
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  for (const [x, y] of pts) {
+    if (x < x1) x1 = x; if (x > x2) x2 = x;
+    if (y < y1) y1 = y; if (y > y2) y2 = y;
+  }
+  return [x1, y1, x2, y2];
 };
+
+const localRoomCenter = (bounds: LocalRectBounds): Coordinate => [
+  (bounds[0] + bounds[2]) / 2,
+  (bounds[1] + bounds[3]) / 2,
+];
+
+/** Area-weighted polygon centroid (more robust than vertex average for concave shapes). */
+const polygonCentroid = (pts: [number, number][]): [number, number] => {
+  let area = 0, cx = 0, cy = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = pts[i]!;
+    const [x1, y1] = pts[(i + 1) % n]!;
+    const cross = x0 * y1 - x1 * y0;
+    area += cross;
+    cx += (x0 + x1) * cross;
+    cy += (y0 + y1) * cross;
+  }
+  area /= 2;
+  if (Math.abs(area) < 1e-10) return pts[0]!;
+  return [cx / (6 * area), cy / (6 * area)];
+};
+
+const pointToSegmentDistance = (point: [number, number], a: [number, number], b: [number, number]) => {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared < 1e-12) {
+    return Math.hypot(point[0] - a[0], point[1] - a[1]);
+  }
+  const t = Math.max(0, Math.min(1, ((point[0] - a[0]) * dx + (point[1] - a[1]) * dy) / lengthSquared));
+  const px = a[0] + dx * t;
+  const py = a[1] + dy * t;
+  return Math.hypot(point[0] - px, point[1] - py);
+};
+
+const polygonClearance = (point: [number, number], pts: [number, number][]) => {
+  if (!pointInPolygon(point[0], point[1], pts)) {
+    return -1;
+  }
+
+  let best = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < pts.length; index += 1) {
+    const a = pts[index]!;
+    const b = pts[(index + 1) % pts.length]!;
+    best = Math.min(best, pointToSegmentDistance(point, a, b));
+  }
+  return best;
+};
+
+/**
+ * Returns an interior point that maximizes clearance from walls.
+ * This is more stable than centroid/bbox-center for narrow or concave rooms.
+ */
+const safePolygonCenter = (pts: [number, number][]): [number, number] => {
+  const [x1, y1, x2, y2] = polygonBounds(pts);
+  const centroid = polygonCentroid(pts);
+  const bboxCenter: [number, number] = [(x1 + x2) / 2, (y1 + y2) / 2];
+  let bestPoint = pointInPolygon(centroid[0], centroid[1], pts) ? centroid : pts[0]!;
+  let bestClearance = polygonClearance(bestPoint, pts);
+
+  const tryCandidate = (candidate: [number, number]) => {
+    const clearance = polygonClearance(candidate, pts);
+    if (clearance > bestClearance) {
+      bestPoint = candidate;
+      bestClearance = clearance;
+    }
+  };
+
+  tryCandidate(bboxCenter);
+  for (const vertex of pts) {
+    tryCandidate(vertex);
+  }
+
+  const initialStep = Math.max(x2 - x1, y2 - y1) / 6;
+  if (initialStep < 1e-6) {
+    return bestPoint;
+  }
+
+  let step = initialStep;
+  while (step > 0.02) {
+    const origin: [number, number] = bestClearance >= 0 ? bestPoint : bboxCenter;
+    for (let ix = -3; ix <= 3; ix += 1) {
+      for (let iy = -3; iy <= 3; iy += 1) {
+        tryCandidate([origin[0] + ix * step, origin[1] + iy * step]);
+      }
+    }
+    step *= 0.5;
+  }
+
+  return bestPoint;
+};
+
+
+const polygonSignedArea = (pts: [number, number][]): number => {
+  let a = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[i]!;
+    const p1 = pts[(i + 1) % n]!;
+    a += p0[0] * p1[1] - p1[0] * p0[1];
+  }
+  return a / 2;
+};
+
+const pointInPolygon = (px: number, py: number, pts: [number, number][]): boolean => {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const pi = pts[i]!, pj = pts[j]!;
+    const xi = pi[0], yi = pi[1], xj = pj[0], yj = pj[1];
+    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi)
+      inside = !inside;
+  }
+  return inside;
+};
+
+// ---
+
+const PORTAL_INSET = 0.45;
+const ROUTE_WALL_CLEARANCE = 0.8;
 
 const roomAnchorNodeId = (roomId: string) => `node-room-${roomId}`;
 const poiNodeId = (featureId: string) => `node-poi-${featureId}`;
 const autoPortalNodeId = (roomId: string, openingId: string) => `node-portal-${roomId}-${openingId}`;
 const derivedTargetId = (featureId: string) => `target-${featureId}`;
 
-const oppositeRoomSide = (side: RoomSide): RoomSide => {
-  switch (side) {
-    case "north":
-      return "south";
-    case "south":
-      return "north";
-    case "west":
-      return "east";
-    case "east":
-      return "west";
-  }
-};
 
 const coordinateKey = (coordinate: Coordinate) => `${coordinate[0].toFixed(9)}:${coordinate[1].toFixed(9)}`;
 
 const coordinateDistance = (left: Coordinate, right: Coordinate) =>
   Math.abs(right[0] - left[0]) + Math.abs(right[1] - left[1]);
+
+const coordinatePathLength = (coordinates: Coordinate[]) =>
+  coordinates.slice(1).reduce((total, coordinate, index) => {
+    const previous = coordinates[index];
+    if (!previous) return total;
+    return total + Math.hypot(coordinate[0] - previous[0], coordinate[1] - previous[1]);
+  }, 0);
 
 const coordinatesEqual = (left: Coordinate, right: Coordinate) => left[0] === right[0] && left[1] === right[1];
 
@@ -105,7 +222,115 @@ const appendCoordinates = (target: Coordinate[], coordinates: Coordinate[]) => {
   }
 };
 
-export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): IndoorRuntimeDataset => {
+const vectorDot = (left: Coordinate, right: Coordinate) => left[0] * right[0] + left[1] * right[1];
+
+const vectorSub = (left: Coordinate, right: Coordinate): Coordinate => [left[0] - right[0], left[1] - right[1]];
+
+const pointOnSegment = (point: Coordinate, a: Coordinate, b: Coordinate, tolerance = 0.08) => {
+  const ap = vectorSub(point, a);
+  const ab = vectorSub(b, a);
+  const abLengthSquared = vectorDot(ab, ab);
+  if (abLengthSquared < 1e-9) return false;
+  const cross = Math.abs(ap[0] * ab[1] - ap[1] * ab[0]);
+  if (cross > tolerance) return false;
+  const t = vectorDot(ap, ab) / abLengthSquared;
+  return t >= -tolerance && t <= 1 + tolerance;
+};
+
+const roomHasDiagonalEdge = (room: CanonicalRoom) =>
+  room.polygon.some((point, index) => {
+    const nextPoint = room.polygon[(index + 1) % room.polygon.length];
+    if (!nextPoint) return false;
+    return Math.abs(point[0] - nextPoint[0]) > 1e-6 && Math.abs(point[1] - nextPoint[1]) > 1e-6;
+  });
+
+const nearestPointOnSegment = (point: Coordinate, a: Coordinate, b: Coordinate): Coordinate => {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared < 1e-9) return a;
+  const t = Math.max(0, Math.min(1, ((point[0] - a[0]) * dx + (point[1] - a[1]) * dy) / lengthSquared));
+  return [a[0] + dx * t, a[1] + dy * t];
+};
+
+const projectPointToRoomEdge = (room: CanonicalRoom, point: Coordinate) => {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let bestPoint: Coordinate = room.polygon[0] ?? point;
+
+  for (let i = 0; i < room.polygon.length; i += 1) {
+    const a = room.polygon[i]!;
+    const b = room.polygon[(i + 1) % room.polygon.length]!;
+    const projected = nearestPointOnSegment(point, a, b);
+    const distance = Math.hypot(point[0] - projected[0], point[1] - projected[1]);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = i;
+      bestPoint = projected;
+    }
+  }
+
+  return {
+    a: room.polygon[bestIndex]!,
+    b: room.polygon[(bestIndex + 1) % room.polygon.length]!,
+    point: bestPoint,
+  };
+};
+
+const edgesShareBoundaryAtPoint = (
+  a0: Coordinate,
+  a1: Coordinate,
+  b0: Coordinate,
+  b1: Coordinate,
+  point: Coordinate,
+  tolerance = 0.08,
+) => {
+  const av = vectorSub(a1, a0);
+  const bv = vectorSub(b1, b0);
+  const cross = Math.abs(av[0] * bv[1] - av[1] * bv[0]);
+  if (cross > tolerance) return false;
+  return pointOnSegment(point, a0, a1, tolerance) && pointOnSegment(point, b0, b1, tolerance);
+};
+
+const roomsShareOpeningBoundary = (sourceRoom: CanonicalRoom, targetRoom: CanonicalRoom, openingPoint: Coordinate) => {
+  const sourceEdge = projectPointToRoomEdge(sourceRoom, openingPoint);
+  for (let i = 0; i < targetRoom.polygon.length; i += 1) {
+    const a = targetRoom.polygon[i]!;
+    const b = targetRoom.polygon[(i + 1) % targetRoom.polygon.length]!;
+    if (edgesShareBoundaryAtPoint(sourceEdge.a, sourceEdge.b, a, b, sourceEdge.point)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const findConnectingRoomId = (
+  roomId: string,
+  level: string,
+  openingPoint: [number, number],
+  rooms: CanonicalRoom[],
+): string | undefined => {
+  const sourceRoom = rooms.find((room) => room.id === roomId && room.level === level);
+  if (!sourceRoom) return undefined;
+  for (const other of rooms) {
+    if (other.id === roomId || other.level !== level) continue;
+    if (roomsShareOpeningBoundary(sourceRoom, other, openingPoint)) return other.id;
+  }
+  return undefined;
+};
+
+export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): IndoorRuntimeDataset => {
+  // Enrich openings with auto-resolved connectsTo so all downstream code works without manual data entries
+  const source: CanonicalIndoorDataset = {
+    ..._source,
+    rooms: _source.rooms.map((room) => ({
+      ...room,
+      openings: (room.openings ?? []).map((o) => ({
+        ...o,
+        connectsTo: o.connectsTo ?? findConnectingRoomId(room.id, room.level, o.point, _source.rooms),
+      })),
+    })),
+  };
   const point = (x: number, y: number): Coordinate => [
     source.grid.origin[0] + x * source.grid.xStep,
     source.grid.origin[1] + y * source.grid.yStep,
@@ -162,6 +387,47 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
       height: properties.height,
     },
   });
+
+  const arbitraryPolygonFeature = (
+    id: string,
+    level: LevelId,
+    kind: OfficeFeatureProperties["kind"],
+    name: string,
+    localPts: [number, number][],
+    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> & {
+      focusPoint?: Coordinate;
+      searchTokens?: string[];
+    } = {},
+  ): OfficePolygonFeature => {
+    const coords = localPts.map(([x, y]) => point(x, y));
+    const first = coords[0], last = coords[coords.length - 1];
+    if (first && last && (first[0] !== last[0] || first[1] !== last[1])) {
+      coords.push(first);
+    }
+    const center = safePolygonCenter(localPts);
+    return {
+      id,
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [coords] },
+      properties: {
+        featureId: id,
+        level,
+        kind,
+        name,
+        focusPoint: properties.focusPoint ?? point(center[0], center[1]),
+        searchTokens: properties.searchTokens ?? [name.toLowerCase()],
+        subtitle: properties.subtitle,
+        department: properties.department,
+        employee: properties.employee,
+        capacity: properties.capacity,
+        equipment: properties.equipment,
+        status: properties.status,
+        routeNodeId: properties.routeNodeId,
+        baseHeight: properties.baseHeight,
+        height: properties.height,
+      },
+    };
+  };
 
   const marker = (
     poi: CanonicalPoi,
@@ -401,132 +667,127 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
     return steps;
   };
 
-  const rangesOverlap = (startA: number, endA: number, startB: number, endB: number) =>
-    Math.min(endA, endB) - Math.max(startA, startB) > 0.001;
-
-  const roomHasOpeningOnSide = (spec: CanonicalRoom, side: RoomSide) =>
-    (spec.openings ?? []).some((opening) => opening.side === side);
-
-  const sharesBoundaryOnSide = (specBounds: LocalRectBounds, otherBounds: LocalRectBounds, side: RoomSide) => {
-    const [x1, y1, x2, y2] = specBounds;
-    const [otherX1, otherY1, otherX2, otherY2] = otherBounds;
-
-    switch (side) {
-      case "north":
-        return y2 === otherY1 && rangesOverlap(x1, x2, otherX1, otherX2);
-      case "south":
-        return y1 === otherY2 && rangesOverlap(x1, x2, otherX1, otherX2);
-      case "west":
-        return x1 === otherX2 && rangesOverlap(y1, y2, otherY1, otherY2);
-      case "east":
-        return x2 === otherX1 && rangesOverlap(y1, y2, otherY1, otherY2);
+  const openingWallInfo = (
+    room: CanonicalRoom,
+    pt: [number, number],
+  ): { dir: [number, number]; inNormal: [number, number] } => {
+    const pts = room.polygon;
+    const n = pts.length;
+    const ccw = polygonSignedArea(pts) > 0;
+    let bestI = 0, bestDist = Infinity;
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[i]!, p1 = pts[(i + 1) % n]!;
+      const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+      const len2 = dx * dx + dy * dy;
+      const t = len2 > 0 ? Math.max(0, Math.min(1, ((pt[0] - p0[0]) * dx + (pt[1] - p0[1]) * dy) / len2)) : 0;
+      const dist = Math.hypot(pt[0] - (p0[0] + t * dx), pt[1] - (p0[1] + t * dy));
+      if (dist < bestDist) { bestDist = dist; bestI = i; }
     }
+    const p0 = pts[bestI]!, p1 = pts[(bestI + 1) % n]!;
+    const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+    const dx = (p1[0] - p0[0]) / len, dy = (p1[1] - p0[1]) / len;
+    return { dir: [dx, dy], inNormal: ccw ? [-dy, dx] : [dy, -dx] };
   };
 
-  const neighboringRooms = (spec: CanonicalRoom, side: RoomSide) =>
-    source.rooms.filter((other) => other.id !== spec.id && sharesBoundaryOnSide(spec.bounds, other.bounds, side));
+  const openingCoordinates = (room: CanonicalRoom, opening: CanonicalOpening): Coordinate[] => {
+    const [px, py] = opening.point;
+    const { dir } = openingWallInfo(room, opening.point);
+    const hw = opening.width / 2;
+    return [[px - dir[0] * hw, py - dir[1] * hw], [px + dir[0] * hw, py + dir[1] * hw]];
+  };
 
-  const sideTouchesExterior = (bounds: LocalRectBounds, side: RoomSide) => {
-    const [x1, y1, x2, y2] = bounds;
+  const createPolygonRoomAssembly = (spec: CanonicalRoom, allGapOpenings: CanonicalOpening[] = spec.openings ?? []): RoomAssembly => {
+    const pts = spec.polygon!;
+    const n = pts.length;
+    const wallEdgeSet = spec.wallEdges ? new Set(spec.wallEdges) : null;
+    const ccw = polygonSignedArea(pts) > 0;
+    const WALL_T = 0.22;
+    const WALL_H = 3.1;
 
-    switch (side) {
-      case "north":
-        return y2 === BUILDING_BOUNDS.north;
-      case "south":
-        return y1 === BUILDING_BOUNDS.south;
-      case "west":
-        return x1 === BUILDING_BOUNDS.west;
-      case "east":
-        return x2 === BUILDING_BOUNDS.east;
+    const room = arbitraryPolygonFeature(spec.id, spec.level, spec.kind, spec.name, pts, {
+      subtitle: spec.subtitle,
+      department: spec.department,
+      searchTokens: spec.searchTokens,
+      focusPoint: spec.focusPoint ? point(spec.focusPoint[0], spec.focusPoint[1]) : undefined,
+      capacity: spec.capacity,
+      equipment: spec.equipment,
+      status: spec.status,
+    });
+
+    const GAP_TOL = 0.05;
+
+    const walls: OfficePolygonFeature[] = [];
+    for (let i = 0; i < n; i++) {
+      if (wallEdgeSet && !wallEdgeSet.has(i)) continue;
+      const j = (i + 1) % n;
+      const pi = pts[i]!, pj = pts[j]!;
+      const x0 = pi[0], y0 = pi[1], x1 = pj[0], y1 = pj[1];
+      const dx = x1 - x0, dy = y1 - y0;
+      const len = Math.hypot(dx, dy);
+      if (len < 1e-9) continue;
+      const ux = dx / len, uy = dy / len;
+      const nx = ccw ? -uy : uy;
+      const ny = ccw ? ux : -ux;
+
+      // Find openings on this edge and compute gap intervals along [0, len]
+      const gaps: [number, number][] = [];
+      for (const opening of allGapOpenings) {
+        const [opx, opy] = opening.point;
+        const t = (opx - x0) * ux + (opy - y0) * uy;
+        const projX = x0 + t * ux, projY = y0 + t * uy;
+        const dist = Math.hypot(opx - projX, opy - projY);
+        if (dist < GAP_TOL && t >= -0.01 && t <= len + 0.01) {
+          const hw = opening.width / 2;
+          gaps.push([Math.max(0, t - hw), Math.min(len, t + hw)]);
+        }
+      }
+
+      // Sort and merge overlapping gaps
+      gaps.sort((a, b) => a[0] - b[0]);
+      const merged: [number, number][] = [];
+      for (const g of gaps) {
+        const last = merged[merged.length - 1];
+        if (last && g[0] <= last[1]) {
+          last[1] = Math.max(last[1], g[1]);
+        } else {
+          merged.push([g[0], g[1]]);
+        }
+      }
+
+      const wallStrip = (tStart: number, tEnd: number, seg: number): OfficePolygonFeature => {
+        const ax = x0 + tStart * ux, ay = y0 + tStart * uy;
+        const bx = x0 + tEnd * ux, by = y0 + tEnd * uy;
+        const strip: [number, number][] = [
+          [ax, ay], [bx, by],
+          [bx + nx * WALL_T, by + ny * WALL_T],
+          [ax + nx * WALL_T, ay + ny * WALL_T],
+        ];
+        return arbitraryPolygonFeature(
+          `wall-${spec.id}-edge-${i}-seg-${seg}`, spec.level, "wall", `${spec.name} Wall ${i}`,
+          strip, { baseHeight: 0, height: WALL_H },
+        );
+      };
+
+      if (merged.length === 0) {
+        walls.push(wallStrip(0, len, 0));
+      } else {
+        let seg = 0;
+        let prev = 0;
+        for (const [gStart, gEnd] of merged) {
+          if (gStart > prev + 0.001) walls.push(wallStrip(prev, gStart, seg++));
+          prev = gEnd;
+        }
+        if (prev < len - 0.001) walls.push(wallStrip(prev, len, seg));
+      }
     }
+
+    const doors = (spec.openings ?? [])
+      .filter((o) => o.kind === "door")
+      .map((o) => lineFeature(`door-${spec.id}-${o.id}`, spec.level, "door", `${spec.name} Door`, openingCoordinates(spec, o)));
+
+    return { room, walls, doors, showLabel: spec.showLabel ?? true };
   };
 
-  const resolveRoomWallSides = (spec: CanonicalRoom) => {
-    const explicitWalls = spec.wallSides ?? {};
-    const shouldRenderSide = (side: RoomSide, defaultOwnerSide: boolean) => {
-      if (explicitWalls[side] === false) {
-        return false;
-      }
-
-      if (sideTouchesExterior(spec.bounds, side)) {
-        return true;
-      }
-
-      if (roomHasOpeningOnSide(spec, side)) {
-        return true;
-      }
-
-      const neighbors = neighboringRooms(spec, side);
-
-      if (neighbors.length === 0) {
-        return explicitWalls[side] === true;
-      }
-
-      if (neighbors.some((neighbor) => roomHasOpeningOnSide(neighbor, oppositeRoomSide(side)))) {
-        return false;
-      }
-
-      return defaultOwnerSide;
-    };
-
-    return {
-      north: shouldRenderSide("north", true),
-      south: shouldRenderSide("south", false),
-      west: shouldRenderSide("west", false),
-      east: shouldRenderSide("east", true),
-    };
-  };
-
-  const openingCoordinates = (bounds: LocalRectBounds, opening: CanonicalOpening): Coordinate[] => {
-    const [x1, y1, x2, y2] = bounds;
-    const halfWidth = opening.width / 2;
-
-    switch (opening.side) {
-      case "north":
-        return [[opening.center - halfWidth, y2], [opening.center + halfWidth, y2]];
-      case "south":
-        return [[opening.center - halfWidth, y1], [opening.center + halfWidth, y1]];
-      case "west":
-        return [[x1, opening.center - halfWidth], [x1, opening.center + halfWidth]];
-      case "east":
-        return [[x2, opening.center - halfWidth], [x2, opening.center + halfWidth]];
-    }
-  };
-
-  const createRoomAssembly = (spec: CanonicalRoom): RoomAssembly => {
-    const [x1, y1, x2, y2] = spec.bounds;
-    const wallSides = resolveRoomWallSides(spec);
-    const openings = spec.openings ?? [];
-    const wallOptions: WallBoxOptions = {
-      north: wallSides.north,
-      south: wallSides.south,
-      west: wallSides.west,
-      east: wallSides.east,
-      northOpenings: openings.filter((opening) => opening.side === "north").map((opening) => ({ center: opening.center, width: opening.width })),
-      southOpenings: openings.filter((opening) => opening.side === "south").map((opening) => ({ center: opening.center, width: opening.width })),
-      westOpenings: openings.filter((opening) => opening.side === "west").map((opening) => ({ center: opening.center, width: opening.width })),
-      eastOpenings: openings.filter((opening) => opening.side === "east").map((opening) => ({ center: opening.center, width: opening.width })),
-    };
-
-    return {
-      room: polygon(spec.id, spec.level, spec.kind, spec.name, x1, y1, x2, y2, {
-        subtitle: spec.subtitle,
-        department: spec.department,
-        searchTokens: spec.searchTokens,
-        focusPoint: spec.focusPoint ? point(spec.focusPoint[0], spec.focusPoint[1]) : undefined,
-        capacity: spec.capacity,
-        equipment: spec.equipment,
-        status: spec.status,
-      }),
-      walls: wallBox(`wall-${spec.id}`, spec.level, x1, y1, x2, y2, 0.22, 3.1, wallOptions),
-      doors: openings
-        .filter((opening) => opening.kind === "door")
-        .map((opening) =>
-          lineFeature(`door-${spec.id}-${opening.id}`, spec.level, "door", `${spec.name} Door`, openingCoordinates(spec.bounds, opening)),
-        ),
-      showLabel: spec.showLabel ?? true,
-    };
-  };
 
   const buildStructureFeatures = (): { structures: OfficePolygonFeature[]; extraDoors: OfficeLineFeature[] } => {
     const structures: OfficePolygonFeature[] = [];
@@ -603,7 +864,21 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
     defaultZoom: level.defaultZoom,
   }));
 
-  const roomAssemblies = source.rooms.map((room) => createRoomAssembly(room));
+  // Build a map of openings that connect TO each room, so the target room can cut its wall too
+  const inboundOpenings = new Map<string, CanonicalOpening[]>();
+  for (const room of source.rooms) {
+    for (const opening of room.openings ?? []) {
+      if (opening.connectsTo) {
+        const list = inboundOpenings.get(opening.connectsTo) ?? [];
+        list.push(opening);
+        inboundOpenings.set(opening.connectsTo, list);
+      }
+    }
+  }
+
+  const roomAssemblies = source.rooms.map((room) =>
+    createPolygonRoomAssembly(room, [...(room.openings ?? []), ...(inboundOpenings.get(room.id) ?? [])]),
+  );
   const roomFeatures = roomAssemblies.map((assembly) => assembly.room);
   const roomWallFeatures = roomAssemblies.flatMap((assembly) => assembly.walls);
   const roomLabelIds = new Set(roomAssemblies.filter((assembly) => assembly.showLabel).map((assembly) => assembly.room.id));
@@ -641,37 +916,14 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
 
   const allFeatures = [...roomFeatures, ...structureFeatures, ...doorFeatures, ...poiFeatures] satisfies OfficeFeature[];
 
-  const localRoomCenter = (bounds: LocalRectBounds): Coordinate => [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2];
-  const routeAnchorPoint = (room: CanonicalRoom): Coordinate => room.focusPoint ?? localRoomCenter(room.bounds);
+  const routeAnchorPoint = (room: CanonicalRoom): Coordinate => room.focusPoint ?? safePolygonCenter(room.polygon);
 
-  const localOpeningBoundaryPoint = (bounds: LocalRectBounds, opening: CanonicalOpening): Coordinate => {
-    const [x1, y1, x2, y2] = bounds;
+  const localOpeningBoundaryPoint = (opening: CanonicalOpening): Coordinate => opening.point;
 
-    switch (opening.side) {
-      case "north":
-        return [opening.center, y2];
-      case "south":
-        return [opening.center, y1];
-      case "west":
-        return [x1, opening.center];
-      case "east":
-        return [x2, opening.center];
-    }
-  };
-
-  const localPortalPoint = (bounds: LocalRectBounds, opening: CanonicalOpening): Coordinate => {
-    const [x1, y1, x2, y2] = bounds;
-
-    switch (opening.side) {
-      case "north":
-        return [opening.center, y2 - PORTAL_INSET];
-      case "south":
-        return [opening.center, y1 + PORTAL_INSET];
-      case "west":
-        return [x1 + PORTAL_INSET, opening.center];
-      case "east":
-        return [x2 - PORTAL_INSET, opening.center];
-    }
+  const localPortalPoint = (room: CanonicalRoom, opening: CanonicalOpening): Coordinate => {
+    const { inNormal } = openingWallInfo(room, opening.point);
+    const [px, py] = opening.point;
+    return [px + inNormal[0] * PORTAL_INSET, py + inNormal[1] * PORTAL_INSET];
   };
 
   const withinBounds = (coordinate: Coordinate, bounds: LocalRectBounds, padding = 0) =>
@@ -684,6 +936,26 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
     Math.min(Math.max(coordinate[0], bounds[0] + inset), bounds[2] - inset),
     Math.min(Math.max(coordinate[1], bounds[1] + inset), bounds[3] - inset),
   ];
+
+  const anchorSpineRoomPath = (room: CanonicalRoom, start: Coordinate, end: Coordinate, bounds: LocalRectBounds): Coordinate[] => {
+    const anchor = clampToBounds(routeAnchorPoint(room), bounds, ROUTE_WALL_CLEARANCE);
+    const width = bounds[2] - bounds[0];
+    const height = bounds[3] - bounds[1];
+    const points: Coordinate[] = [];
+
+    appendCoordinate(points, start);
+
+    if (width >= height) {
+      appendCoordinate(points, [start[0], anchor[1]]);
+      appendCoordinate(points, [end[0], anchor[1]]);
+    } else {
+      appendCoordinate(points, [anchor[0], start[1]]);
+      appendCoordinate(points, [anchor[0], end[1]]);
+    }
+
+    appendCoordinate(points, end);
+    return points;
+  };
 
   const orthogonalRoomPath = (start: Coordinate, end: Coordinate, bounds: LocalRectBounds): Coordinate[] => {
     if (start[0] === end[0] || start[1] === end[1]) {
@@ -706,7 +978,7 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
     return [startClamp, [endClamp[0], startClamp[1]], endClamp];
   };
 
-  const portalSideForPoint = (bounds: LocalRectBounds, coordinate: Coordinate): RoomSide | null => {
+  const portalSideForPoint = (bounds: LocalRectBounds, coordinate: Coordinate): "north" | "south" | "east" | "west" | null => {
     const [x1, y1, x2, y2] = bounds;
     const tolerance = PORTAL_INSET + 0.05;
 
@@ -750,12 +1022,13 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
   };
 
   const roomTraversalPath = (room: CanonicalRoom, start: Coordinate, end: Coordinate): Coordinate[] => {
+    const bounds = polygonBounds(room.polygon);
     if (room.department === "Коридоры") {
-      const width = room.bounds[2] - room.bounds[0];
-      const height = room.bounds[3] - room.bounds[1];
+      const width = bounds[2] - bounds[0];
+      const height = bounds[3] - bounds[1];
       const aspectRatio = Math.max(width, height) / Math.max(1, Math.min(width, height));
-      const startSide = portalSideForPoint(room.bounds, start);
-      const endSide = portalSideForPoint(room.bounds, end);
+      const startSide = portalSideForPoint(bounds, start);
+      const endSide = portalSideForPoint(bounds, end);
       const oppositeSides =
         (startSide === "west" && endSide === "east") ||
         (startSide === "east" && endSide === "west") ||
@@ -763,28 +1036,30 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
         (startSide === "south" && endSide === "north");
 
       if (oppositeSides || aspectRatio >= 2) {
-        return centerlineRoomPath(start, end, room.bounds);
+        return centerlineRoomPath(start, end, bounds);
       }
     }
 
-    return orthogonalRoomPath(start, end, room.bounds);
+    if (roomHasDiagonalEdge(room)) {
+      return anchorSpineRoomPath(room, start, end, bounds);
+    }
+
+    return orthogonalRoomPath(start, end, bounds);
   };
 
   const roomContainingPoint = (level: LevelId, localCoordinate: Coordinate): CanonicalRoom | null => {
     for (const room of source.rooms) {
-      if (room.level === level && withinBounds(localCoordinate, room.bounds, 0.001)) {
-        return room;
-      }
+      if (room.level !== level) continue;
+      if (pointInPolygon(localCoordinate[0], localCoordinate[1], room.polygon)) return room;
     }
 
     return null;
   };
 
   const openingPairKey = (room: CanonicalRoom, opening: CanonicalOpening) => {
-    const [x, y] = localOpeningBoundaryPoint(room.bounds, opening);
-    const axis = opening.side === "north" || opening.side === "south" ? "h" : "v";
+    const [x, y] = opening.point;
     const roomKey = [room.id, opening.connectsTo ?? "unlinked"].sort().join("::");
-    return `${room.level}::${roomKey}::${axis}::${x.toFixed(3)}::${y.toFixed(3)}::${opening.width.toFixed(3)}`;
+    return `${room.level}::${roomKey}::${x.toFixed(3)}::${y.toFixed(3)}::${opening.width.toFixed(3)}`;
   };
 
   const reciprocalOpening = (sourceRoom: CanonicalRoom, targetRoom: CanonicalRoom, opening: CanonicalOpening) =>
@@ -792,8 +1067,8 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
       (candidate) =>
         candidate.traversable !== false &&
         candidate.connectsTo === sourceRoom.id &&
-        candidate.side === oppositeRoomSide(opening.side) &&
-        candidate.center === opening.center &&
+        Math.abs(candidate.point[0] - opening.point[0]) < 0.01 &&
+        Math.abs(candidate.point[1] - opening.point[1]) < 0.01 &&
         candidate.width === opening.width,
     );
 
@@ -824,20 +1099,19 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
       const targetOpeningForPortal: CanonicalOpening = targetOpening ?? {
         ...opening,
         id: `auto-${room.id}-${opening.id}`,
-        side: oppositeRoomSide(opening.side),
       };
-      const boundaryPoint = localOpeningBoundaryPoint(room.bounds, opening);
+      const boundaryPoint = localOpeningBoundaryPoint(opening);
       const sourcePortal: DerivedPortalNode = {
         id: autoPortalNodeId(room.id, opening.id),
         roomId: room.id,
         level: room.level,
-        point: localPortalPoint(room.bounds, opening),
+        point: localPortalPoint(room, opening),
       };
       const targetPortal: DerivedPortalNode = {
         id: autoPortalNodeId(targetRoom.id, targetOpeningForPortal.id),
         roomId: targetRoom.id,
         level: targetRoom.level,
-        point: localPortalPoint(targetRoom.bounds, targetOpeningForPortal),
+        point: localPortalPoint(targetRoom, targetOpeningForPortal),
       };
 
       derivedPortalNodes.push(sourcePortal, targetPortal);
@@ -969,7 +1243,7 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
         `edge-portal-${connection.id}`,
         fromPortal.id,
         toPortal.id,
-        coordinateDistance(fromPortal.point, connection.boundaryPoint) + coordinateDistance(connection.boundaryPoint, toPortal.point),
+        coordinatePathLength([fromPortal.point, connection.boundaryPoint, toPortal.point]),
         [fromPortal.point, connection.boundaryPoint, toPortal.point],
         { accessible: true },
       ),
@@ -1117,8 +1391,9 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
         throw new Error(`Opening ${room.id}:${opening.id} crosses levels (${room.level} -> ${target.level}).`);
       }
 
-      if (!sharesBoundaryOnSide(room.bounds, target.bounds, opening.side)) {
-        throw new Error(`Opening ${room.id}:${opening.id} does not touch ${opening.connectsTo} on ${opening.side}.`);
+      const [opx, opy] = opening.point;
+      if (!roomsShareOpeningBoundary(room, target, [opx, opy])) {
+        throw new Error(`Opening ${room.id}:${opening.id} point [${opx},${opy}] does not lie on boundary with ${opening.connectsTo}.`);
       }
     }
   }
@@ -1152,7 +1427,7 @@ export const deriveIndoorRuntimeDataset = (source: CanonicalIndoorDataset): Indo
       throw new Error(`Route edge ${edge.id} crosses levels without a connector type.`);
     }
 
-    if (!edge.connectorType && !pathIsOrthogonal(edge.path)) {
+    if (!edge.connectorType && !pathIsOrthogonal(edge.path) && !edge.id.startsWith("edge-portal-")) {
       throw new Error(`Route edge ${edge.id} contains a diagonal segment.`);
     }
   }

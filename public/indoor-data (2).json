@@ -1,0 +1,25 @@
+{
+  "grid": {
+    "origin": [
+      37.61888,
+      55.75112
+    ],
+    "xStep": 0.000018,
+    "yStep": 0.00001
+  },
+  "levels": [
+    {
+      "id": "L1",
+      "label": "Этаж 1",
+      "order": 1,
+      "defaultCenter": [
+        28,
+        15
+      ],
+      "defaultZoom": 20.6
+    }
+  ],
+  "rooms": [],
+  "pois": [],
+  "structures": []
+}

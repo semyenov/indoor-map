@@ -412,10 +412,54 @@ export const buildRouteCollection = (
     return { type: "FeatureCollection", features: [] };
   }
 
+  const isPortalLeg = (legId: string) => legId.startsWith("edge-portal-");
+
+  const displayPathForLeg = (legs: RouteResult["legs"], index: number): Coordinate[] => {
+    const leg = legs[index];
+    if (!leg) return [];
+
+    if (isPortalLeg(leg.id)) {
+      return leg.path.slice(1, -1);
+    }
+
+    let startIndex = 0;
+    let endIndex = leg.path.length;
+
+    const previousLeg = legs[index - 1];
+    if (
+      previousLeg &&
+      !previousLeg.connectorType &&
+      previousLeg.level === leg.level &&
+      isPortalLeg(previousLeg.id) &&
+      leg.path.length > 1
+    ) {
+      startIndex = 1;
+      if (leg.path.length > 3) {
+        startIndex = 2;
+      }
+    }
+
+    const nextLeg = legs[index + 1];
+    if (
+      nextLeg &&
+      !nextLeg.connectorType &&
+      nextLeg.level === leg.level &&
+      isPortalLeg(nextLeg.id) &&
+      leg.path.length - startIndex > 1
+    ) {
+      endIndex -= 1;
+      if (endIndex - startIndex > 2) {
+        endIndex -= 1;
+      }
+    }
+
+    return leg.path.slice(startIndex, endIndex);
+  };
+
   const segments: Array<{ level: LevelId; coordinates: Coordinate[]; protectedCoordinates: Set<string> }> = [];
   let activeSegment: { level: LevelId; coordinates: Coordinate[]; protectedCoordinates: Set<string> } | null = null;
 
-  for (const leg of route.legs) {
+  for (const [index, leg] of route.legs.entries()) {
     if (leg.connectorType) {
       activeSegment = null;
       continue;
@@ -430,13 +474,9 @@ export const buildRouteCollection = (
       segments.push(activeSegment);
     }
 
-    appendCoordinates(activeSegment.coordinates, leg.path);
+    const displayPath = displayPathForLeg(route.legs, index);
+    appendCoordinates(activeSegment.coordinates, displayPath);
 
-    if (leg.id.startsWith("edge-portal-")) {
-      for (const coordinate of leg.path.slice(1, -1)) {
-        activeSegment.protectedCoordinates.add(coordinateKey(coordinate));
-      }
-    }
   }
 
   return {

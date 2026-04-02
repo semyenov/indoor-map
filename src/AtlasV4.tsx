@@ -216,32 +216,54 @@ const connectorVerb = (connectorType: "stairs" | "elevator", fromLevel: LevelId,
   return ascending ? "Поднимитесь по лестнице" : "Спуститесь по лестнице";
 };
 
+type RouteStep = { text: string; level: LevelId; center: Coordinate | null };
+
+const isRouteStepFeature = (feature: IndoorFeature | null | undefined) =>
+  Boolean(feature && routeableKinds.has(feature.properties.kind) && featureDisplayName(feature));
+
+const routeLegCenter = (leg: RouteResult["legs"][number] | undefined): Coordinate | null => {
+  if (!leg || leg.path.length === 0) {
+    return null;
+  }
+
+  return leg.path[Math.floor(leg.path.length / 2)] ?? null;
+};
+
 const routeSteps = (
   route: RouteResult | null,
   fromLabel: string,
   toLabel: string,
+  fromLevel: LevelId,
+  toLevel: LevelId,
+  fromFeatureId: string | null,
+  toFeatureId: string | null,
   routingGraph: IndoorRuntimeData["dataset"]["routing"]["graph"],
   featureById: Map<string, IndoorFeature>,
-) => {
+): RouteStep[] => {
   if (!route) {
     return [];
   }
 
   const nodeById = new Map(routingGraph.nodes.map((node) => [node.id, node]));
-  const steps: string[] = [];
-  const pushStep = (step: string | null) => {
-    if (!step) {
+  const steps: RouteStep[] = [];
+  let currentLevel: LevelId = fromLevel;
+  let lastStepSignature: string | null = null;
+
+  const pushStep = (text: string | null, key = text, center: Coordinate | null = null) => {
+    if (!text) {
       return;
     }
 
-    if (steps.at(-1) === step) {
+    const nextStepSignature = `${currentLevel}:${key}`;
+    if (lastStepSignature === nextStepSignature) {
       return;
     }
 
-    steps.push(step);
+    steps.push({ text, level: currentLevel, center });
+    lastStepSignature = nextStepSignature;
   };
 
-  pushStep(`Выйдите из ${fromLabel}`);
+  pushStep(`Выйдите из ${fromLabel}`, `exit:${fromLabel}:${fromLevel}`, routeLegCenter(route.legs[0]));
 
   for (const leg of route.legs) {
     const fromNode = nodeById.get(leg.fromNodeId);
@@ -250,9 +272,16 @@ const routeSteps = (
     const toFeature = toNode?.featureRef ? featureById.get(toNode.featureRef) ?? null : null;
 
     if (leg.connectorType && fromNode && toNode) {
-      pushStep(`${connectorVerb(leg.connectorType, fromNode.level, toNode.level)} на ${toNode.level}`);
+      currentLevel = toNode.level;
+      pushStep(
+        `${connectorVerb(leg.connectorType, fromNode.level, toNode.level)} на ${toNode.level}`,
+        `connector:${leg.id}`,
+        routeLegCenter(leg),
+      );
       continue;
     }
+
+    currentLevel = leg.level;
 
     const passRoomId = edgeFeatureRef(leg.id, "edge-room-pass-", featureById);
 
@@ -260,32 +289,31 @@ const routeSteps = (
       const passFeature = featureById.get(passRoomId) ?? null;
       const passName = featureDisplayName(passFeature);
 
-      if (passName && passName !== fromLabel && passName !== toLabel) {
-        pushStep(`Следуйте через ${passName}`);
+      if (passName && passRoomId !== fromFeatureId && passRoomId !== toFeatureId) {
+        pushStep(`Следуйте через ${passName}`, `through:${passRoomId}`, routeLegCenter(leg));
       }
 
       continue;
     }
 
-    const poiFeatureId = edgeFeatureRef(leg.id, "edge-poi-", featureById);
+    const fromStepFeature = isRouteStepFeature(fromFeature) ? fromFeature : null;
+    const toStepFeature = isRouteStepFeature(toFeature) ? toFeature : null;
 
-    if (poiFeatureId) {
-      const poiFeature = featureById.get(poiFeatureId) ?? null;
-      const poiName = featureDisplayName(poiFeature);
-
-      if (poiFeature?.properties.kind === "connector" && poiName && poiName !== fromLabel && poiName !== toLabel) {
-        pushStep(`Подойдите к ${poiName}`);
+    if (
+      toStepFeature &&
+      toStepFeature.id !== fromStepFeature?.id &&
+      toStepFeature.id !== fromFeatureId &&
+      toStepFeature.id !== toFeatureId
+    ) {
+      const stepName = featureDisplayName(toStepFeature);
+      if (stepName) {
+        pushStep(`Следуйте через ${stepName}`, `through:${toStepFeature.id}`, routeLegCenter(leg));
       }
-
-      continue;
-    }
-
-    if (toFeature && featureDisplayName(toFeature) && featureDisplayName(toFeature) !== fromLabel && featureDisplayName(toFeature) !== toLabel && toFeature.id !== fromFeature?.id) {
-      pushStep(`Перейдите в ${featureDisplayName(toFeature)}`);
     }
   }
 
-  pushStep(`Войдите в ${toLabel}`);
+  currentLevel = toLevel;
+  pushStep(`Войдите в ${toLabel}`, `arrive:${toLabel}:${toLevel}`, routeLegCenter(route.legs.at(-1)));
   return steps;
 };
 
@@ -471,7 +499,6 @@ export default function AtlasV4() {
   const [roomStatuses, setRoomStatuses] = useState<RoomStatuses>({});
   const [occupancyUpdatedAt, setOccupancyUpdatedAt] = useState<Date | null>(null);
   const [zoomCommand, setZoomCommand] = useState<{ id: number; delta: 1 | -1 } | null>(null);
-  const [mapControlsOpen, setMapControlsOpen] = useState(true);
   const topSearchRef = useRef<HTMLInputElement | null>(null);
   const routeDefaultsAppliedRef = useRef(false);
   const deferredBrowseQuery = useDeferredValue(browseQ);
@@ -662,6 +689,10 @@ export default function AtlasV4() {
     route,
     routeFrom?.name ?? "Старт",
     routeTo?.name ?? "Точка назначения",
+    routeFrom?.level ?? activeLevel,
+    routeTo?.level ?? activeLevel,
+    routeFrom?.featureId ?? null,
+    routeTo?.featureId ?? null,
     routingGraph,
     featureById,
   );
@@ -671,6 +702,7 @@ export default function AtlasV4() {
   const routeStepColumns = Array.from({ length: routeStepColumnCount }, (_, columnIndex) =>
     routeStepsList.filter((_, index) => Math.floor(index / routeStepRows) === columnIndex),
   );
+  const hoveredStepCenter = hoveredStepIdx === null ? null : routeStepsList[hoveredStepIdx]?.center ?? null;
   const isWorkspaceDrawerMode = drawerMode === "search" || drawerMode === "route" || drawerMode === "ops";
   const isInfoDrawerMode = drawerMode === "detail" || drawerMode === "route-result";
   const bottomPanelMode: DrawerMode | null = drawerOpen
@@ -1063,6 +1095,7 @@ export default function AtlasV4() {
             featureLabelSourceById={indexes.featureLabelSourceById}
             featureSourceById={indexes.featureSourceById}
             focusRequestId={focusRequestId}
+            hoveredStepCenter={hoveredStepCenter}
             levels={dataset.levels}
             onSelectFeature={onSelectFeature}
             onClearSelection={clearSelectedFeature}
@@ -1141,22 +1174,7 @@ export default function AtlasV4() {
           </div>
         </div>
 
-      </header>
-
-      <div style={S.mapControls}>
-        <div style={S.mapControlsHeader}>
-          <span style={S.topSectionLabel}>Управление</span>
-          <button
-            style={S.mapControlsToggle}
-            className="hud-btn"
-            aria-label={mapControlsOpen ? "Свернуть панель управления" : "Развернуть панель управления"}
-            onClick={() => setMapControlsOpen((v) => !v)}
-            type="button"
-          >
-            {mapControlsOpen ? <Ic.ChevronUp /> : <Ic.ChevronDown />}
-          </button>
-        </div>
-        {mapControlsOpen && <div style={S.mapControlsRow}>
+        <div style={S.topControlsRow}>
           <div style={S.viewModes}>
             {VIEW_MODES.map((mode) => (
               <button
@@ -1172,8 +1190,6 @@ export default function AtlasV4() {
               </button>
             ))}
           </div>
-        </div>}
-        {mapControlsOpen && <div style={S.mapControlsRow}>
           <div style={S.topFloorGroup}>
             {levels.map((level) => (
               <button
@@ -1210,8 +1226,8 @@ export default function AtlasV4() {
               +
             </button>
           </div>
-        </div>}
-      </div>
+        </div>
+      </header>
 
       <div style={{ ...S.bottomBar, ...(drawerOpen ? S.bottomBarDrawerOpen : null) }}>
         <button
@@ -1609,20 +1625,21 @@ export default function AtlasV4() {
                           const isLast = index === routeStepsList.length - 1;
                           const isHovered = hoveredStepIdx === index;
                           return (
-                            <div
-                              key={`${index}-${step}`}
+                            <button
+                              key={`${index}-${step.text}`}
+                              type="button"
                               style={{ ...S.rrStepCard, ...(isLast ? S.rrStepCardLast : {}), ...(isHovered ? S.rrStepCardHovered : {}) }}
-                              onMouseEnter={() => setHoveredStepIdx(index)}
+                              onMouseEnter={() => { setHoveredStepIdx(index); setActiveLevel(step.level); }}
                               onMouseLeave={() => setHoveredStepIdx(null)}
-                              onClick={() => setHoveredStepIdx(index)}
+                              onClick={() => { setHoveredStepIdx(index); setActiveLevel(step.level); }}
                             >
                               <div style={{ ...S.rrStepN, ...(isLast ? S.rrStepNLast : isHovered ? S.rrStepNHovered : {}) }}>
                                 {isLast ? <Ic.Check /> : index + 1}
                               </div>
                               <div style={S.rrStepBody}>
-                                <span style={{ ...S.rrStepT, ...(isHovered ? S.rrStepTHovered : {}) }}>{step}</span>
+                                <span style={{ ...S.rrStepT, ...(isHovered ? S.rrStepTHovered : {}) }}>{step.text}</span>
                               </div>
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
