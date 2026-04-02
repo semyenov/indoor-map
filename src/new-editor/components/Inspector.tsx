@@ -1,7 +1,8 @@
 import type { CanonicalOpening, CanonicalRoom } from "../../lib/types";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNewEditorStore } from "../state/editorStore";
 import { normalizeGuideAngle } from "../model/commands";
+import { findLinkedOpening } from "../model/openings";
 import { prepareReferenceImage } from "../model/referenceImage";
 
 interface Props {
@@ -14,8 +15,10 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
   const [mergeDistance, setMergeDistance] = useState("0.2");
   const [alignDistance, setAlignDistance] = useState("0.2");
   const [roundDecimals, setRoundDecimals] = useState("2");
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const {
     activeLevel,
+    dataset,
     guides,
     selectedGuideId,
     viewport,
@@ -37,6 +40,27 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
     selectedGuide
       ? normalizeGuideAngle(selectedGuide.angle)
       : 0;
+  const openingDiagnostics = useMemo(
+    () =>
+      dataset.rooms
+        .filter((room) => room.level === activeLevel)
+        .flatMap((room) =>
+          (room.openings ?? []).flatMap((opening) =>
+            !opening.connectsTo || !findLinkedOpening(dataset.rooms, room.id, opening.id)
+              ? [
+                  {
+                    roomId: room.id,
+                    roomName: room.name || room.number || room.id,
+                    openingId: opening.id,
+                    connectsTo: opening.connectsTo ?? "outside",
+                    point: opening.point,
+                  },
+                ]
+              : [],
+          ),
+        ),
+    [activeLevel, dataset.rooms],
+  );
 
   const applyGuideAngle = (nextAngle: number) => {
     if (!selectedGuide || !Number.isFinite(nextAngle)) return;
@@ -387,6 +411,51 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
           <span>Hover snap</span>
           <strong>{hoveredSnap ? hoveredSnap.kind : "none"}</strong>
         </div>
+      </div>
+      <div className="ne-panel-title">Diagnostics</div>
+      <div className="ne-panel-card">
+        <button
+          type="button"
+          className="ne-btn-secondary"
+          onClick={() => setShowDiagnostics((value) => !value)}
+        >
+          {showDiagnostics ? "Hide diagnostics" : "Run diagnostics"}
+        </button>
+        {showDiagnostics && (
+          <>
+            <div className="ne-kv"><span>Broken openings</span><strong>{openingDiagnostics.length}</strong></div>
+            {openingDiagnostics.length > 0 ? (
+              <div className="ne-opening-list">
+                {openingDiagnostics.map((entry) => (
+                  <div
+                    key={entry.openingId}
+                    role="button"
+                    tabIndex={0}
+                    className="ne-opening-row"
+                    onClick={() => setSelection(entry.roomId, entry.openingId)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelection(entry.roomId, entry.openingId);
+                      }
+                    }}
+                  >
+                    <div className="ne-opening-main">
+                      <strong>{entry.roomName}</strong>
+                      <span>{entry.connectsTo}</span>
+                    </div>
+                    <div className="ne-opening-meta">
+                      <span>{entry.openingId}</span>
+                      <span>{entry.point[0].toFixed(2)}, {entry.point[1].toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="ne-empty">No broken openings on {activeLevel}.</div>
+            )}
+          </>
+        )}
       </div>
     </aside>
   );

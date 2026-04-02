@@ -7,12 +7,14 @@ import { findHoverSnap } from "../model/snapping";
 
 const SNAP_RADIUS_PX = 20;
 const GUIDE_HIT_RADIUS_PX = 12;
+const GUIDE_ANGLE_HANDLE_RADIUS_PX = 12;
 const REFERENCE_HANDLE_RADIUS_PX = 14;
 
 type DragState =
   | { kind: "vertex"; roomId: string; vertexIndex: number; moved: boolean }
   | { kind: "vertex-group"; vertices: Array<{ roomId: string; vertexIndex: number }>; roomId: string; moved: boolean }
   | { kind: "guide-point"; guideId: string; moved: boolean }
+  | { kind: "guide-angle"; guideId: string; moved: boolean }
   | { kind: "reference"; lastLocal: [number, number]; moved: boolean }
   | { kind: "reference-scale"; anchorX: number; anchorY: number; aspect: number; moved: boolean }
   | { kind: "opening"; roomId: string; openingId: string; moved: boolean };
@@ -129,6 +131,29 @@ export const CanvasShell = ({ width, height }: Props) => {
     for (const guide of guides) {
       const handleDistance = Math.hypot(localPoint[0] - guide.point[0], localPoint[1] - guide.point[1]);
       if (handleDistance > localUnitsFromScreenPixels(GUIDE_HIT_RADIUS_PX, viewport)) continue;
+      if (!bestHandle || handleDistance < bestHandle.distance) {
+        bestHandle = { guideId: guide.id, distance: handleDistance };
+      }
+    }
+    return bestHandle;
+  };
+
+  const findGuideAngleHandleHit = (localPoint: [number, number]) => {
+    let bestHandle: { guideId: string; distance: number } | null = null;
+    for (const guide of guides) {
+      const reference = guideReferencePoints(guide);
+      const directionX = reference.b[0] - reference.a[0];
+      const directionY = reference.b[1] - reference.a[1];
+      const directionLength = Math.hypot(directionX, directionY);
+      if (directionLength < 1e-6) continue;
+      const ux = directionX / directionLength;
+      const uy = directionY / directionLength;
+      const handlePoint: [number, number] = [
+        guide.point[0] + ux * 1.2,
+        guide.point[1] + uy * 1.2,
+      ];
+      const handleDistance = Math.hypot(localPoint[0] - handlePoint[0], localPoint[1] - handlePoint[1]);
+      if (handleDistance > localUnitsFromScreenPixels(GUIDE_ANGLE_HANDLE_RADIUS_PX, viewport)) continue;
       if (!bestHandle || handleDistance < bestHandle.distance) {
         bestHandle = { guideId: guide.id, distance: handleDistance };
       }
@@ -267,6 +292,22 @@ export const CanvasShell = ({ width, height }: Props) => {
           preferredRoomId: selectedRoomId,
           zoom: viewport.zoom,
         });
+        if (tool === "select") {
+          const angleHandleHit = findGuideAngleHandleHit(localPoint);
+          if (angleHandleHit) {
+            setSelectedGuide(angleHandleHit.guideId);
+            beginDragHistory();
+            setDragState({ kind: "guide-angle", guideId: angleHandleHit.guideId, moved: false });
+            return;
+          }
+          const handleHit = findGuideHandleHit(localPoint);
+          if (handleHit) {
+            setSelectedGuide(handleHit.guideId);
+            beginDragHistory();
+            setDragState({ kind: "guide-point", guideId: handleHit.guideId, moved: false });
+            return;
+          }
+        }
         if (tool === "merge") {
           if (hit?.kind === "opening") {
             setSelection(hit.roomId, null);
@@ -317,13 +358,6 @@ export const CanvasShell = ({ width, height }: Props) => {
           return;
         }
         if (tool === "select") {
-          const handleHit = findGuideHandleHit(localPoint);
-          if (handleHit) {
-            setSelectedGuide(handleHit.guideId);
-            beginDragHistory();
-            setDragState({ kind: "guide-point", guideId: handleHit.guideId, moved: false });
-            return;
-          }
           const guideHit = findGuideHit(localPoint);
           if (guideHit) {
             setSelectedGuide(guideHit.id);
@@ -395,6 +429,13 @@ export const CanvasShell = ({ width, height }: Props) => {
               localUnitsFromScreenPixels(SNAP_RADIUS_PX, viewport),
             )?.point ?? localPoint;
           updateGuide(dragState.guideId, snapTarget, guide.angle);
+          setDragState({ ...dragState, moved: true });
+          return;
+        }
+        if (dragState?.kind === "guide-angle") {
+          const guide = guides.find((entry) => entry.id === dragState.guideId);
+          if (!guide) return;
+          updateGuide(dragState.guideId, guide.point, guideAngleFromPoints(guide.point, localPoint));
           setDragState({ ...dragState, moved: true });
           return;
         }

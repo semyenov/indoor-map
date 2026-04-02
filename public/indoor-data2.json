@@ -50,7 +50,7 @@
         {
           "id": "opening-rOzlME-a",
           "point": [
-            29,
+            28.999985081526653,
             127.4
           ],
           "width": 1.111,
@@ -90,7 +90,7 @@
         {
           "id": "opening-DX9Le7-a",
           "point": [
-            33.799997806426965,
+            33.799971544624476,
             127.4
           ],
           "width": 1,
@@ -203,8 +203,8 @@
         {
           "id": "opening-gfOeKh-a",
           "point": [
-            30.60497142693299,
-            125.70000286726574
+            30.60497142692936,
+            125.70000287362232
           ],
           "width": 1.5,
           "kind": "door",
@@ -214,7 +214,7 @@
         {
           "id": "opening-room-l1-zNPRrH-GDYjR",
           "point": [
-            29,
+            28.999985081526653,
             127.4
           ],
           "width": 1.111,
@@ -455,17 +455,6 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-ZFOZCL-a",
-          "point": [
-            53.5,
-            127.4
-          ],
-          "width": 1.615,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-4t5gyZ"
-        },
-        {
           "id": "opening-xpN5-2-a",
           "point": [
             55.2,
@@ -510,21 +499,10 @@
           "connectsTo": "room-l1-WpJ6ZN"
         },
         {
-          "id": "opening-room-l1-2nqPbk-6Rl06",
-          "point": [
-            49,
-            127.4
-          ],
-          "width": 1.5,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-Ag-XF7"
-        },
-        {
           "id": "opening-CiTfca-a",
           "point": [
-            35.53278090225803,
-            125.2991848524769
+            35.532780901728195,
+            125.29918482986206
           ],
           "width": 2,
           "kind": "door",
@@ -541,6 +519,28 @@
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-fJbIrA"
+        },
+        {
+          "id": "opening-room-l1-2nqPbk-CoqK_",
+          "point": [
+            53.58025779630654,
+            127.4
+          ],
+          "width": 1.615,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-4t5gyZ"
+        },
+        {
+          "id": "opening-room-l1-2nqPbk-8jUDv",
+          "point": [
+            48.85955316066984,
+            127.4
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-Ag-XF7"
         }
       ],
       "name": "Коридор"
@@ -604,7 +604,7 @@
           127.4
         ],
         [
-          50.5,
+          50.6,
           135.5
         ]
       ],
@@ -615,7 +615,7 @@
         {
           "id": "opening-oKUmue-b",
           "point": [
-            49,
+            48.85955316066984,
             127.4
           ],
           "width": 1.5,
@@ -632,7 +632,7 @@
       "number": "201",
       "polygon": [
         [
-          50.5,
+          50.6,
           135.5
         ],
         [
@@ -655,7 +655,7 @@
         {
           "id": "opening-room-l1-4t5gyZ-Ci8q8",
           "point": [
-            53.5,
+            53.58025779630654,
             127.4
           ],
           "width": 1.615,
@@ -1303,8 +1303,8 @@
         {
           "id": "opening-room-l1-t1PNL2-Z3f8S",
           "point": [
-            30.604918917385262,
-            125.70000283726029
+            30.604918917381827,
+            125.70000284361687
           ],
           "width": 1.5,
           "kind": "door",
@@ -1314,8 +1314,8 @@
         {
           "id": "opening-CiTfca-b",
           "point": [
-            35.53278090225803,
-            125.2991848524769
+            35.532780901728195,
+            125.29918482986206
           ],
           "width": 2,
           "kind": "door",
@@ -1336,7 +1336,7 @@
         {
           "id": "opening-room-l1-t1PNL2-PaAjt",
           "point": [
-            33.799997806426965,
+            33.799971544624476,
             127.4
           ],
           "width": 1,
@@ -2498,7 +2498,7 @@
         ],
         [
           65.4,
-          64.481
+          64.48076167447543
         ]
       ],
       "subtitle": "",
@@ -2520,11 +2520,12 @@
           "id": "opening-FxYLaE-a",
           "point": [
             65.4,
-            63.338303080600895
+            63.35839304919597
           ],
           "width": 1,
           "kind": "door",
-          "traversable": true
+          "traversable": true,
+          "connectsTo": "room-l1-yGTRIv"
         }
       ]
     },
@@ -2536,10 +2537,10 @@
       "polygon": [
         [
           65.4,
-          64.481
+          64.48076167447543
         ],
         [
-          65.3,
+          65.4,
           60.9
         ],
         [
@@ -2554,7 +2555,19 @@
       "subtitle": "",
       "department": "",
       "searchTokens": [],
-      "openings": []
+      "openings": [
+        {
+          "id": "opening-room-l1-yGTRIv-n34Zn",
+          "point": [
+            65.4,
+            63.35839304919597
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-CuRfIv"
+        }
+      ]
     },
     {
       "id": "room-l1-EA4aQI",
@@ -2563,7 +2576,7 @@
       "number": "",
       "polygon": [
         [
-          65.3,
+          65.4,
           60.9
         ],
         [
@@ -3061,11 +3074,11 @@
           45.404
         ],
         [
-          95.5,
-          45.4
+          95.646,
+          45.405
         ],
         [
-          95.5,
+          95.634,
           52.5
         ]
       ],
@@ -3087,7 +3100,7 @@
         {
           "id": "opening-room-l1-oOBrYY-DjRpL",
           "point": [
-            88.39999999999998,
+            88.19071753193982,
             52.5
           ],
           "width": 1.5,
@@ -3104,12 +3117,12 @@
       "number": "232а",
       "polygon": [
         [
-          95.5,
+          95.634,
           52.5
         ],
         [
-          95.5,
-          45.4
+          95.646,
+          45.405
         ],
         [
           99.6,
@@ -3127,7 +3140,7 @@
         {
           "id": "opening-room-l1-o20nzQ-ncl8C",
           "point": [
-            98.1,
+            98.51313362998815,
             52.5
           ],
           "width": 1.6,
@@ -4036,7 +4049,7 @@
           "id": "opening-cI_oat-b",
           "point": [
             152.6,
-            59.2
+            58.726730588631355
           ],
           "width": 1,
           "kind": "door",
@@ -4146,17 +4159,6 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-5nywr3-a",
-          "point": [
-            172.6008115925664,
-            61.50000282293304
-          ],
-          "width": 1,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-QwHwV8"
-        },
-        {
           "id": "opening-room-l1-OWPnrB-fR17v",
           "point": [
             167.2,
@@ -4166,6 +4168,17 @@
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-DY0c8e"
+        },
+        {
+          "id": "opening-room-l1-OWPnrB-U-wnp",
+          "point": [
+            172.60085316026067,
+            61.42829855033577
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-QwHwV8"
         }
       ]
     },
@@ -4200,7 +4213,7 @@
           "id": "opening-5nywr3-b",
           "point": [
             172.6,
-            61.5000023524446
+            61.42829805575011
           ],
           "width": 1,
           "kind": "door",
@@ -4237,9 +4250,9 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening--7iBjM-b",
+          "id": "opening-room-l1-v1dnC9-Om14l",
           "point": [
-            176.2,
+            176.03641527295676,
             60.4
           ],
           "width": 0.8,
@@ -4277,9 +4290,9 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-room-l1-bNC79l-bLoWj",
+          "id": "opening-room-l1-bNC79l-dYuxm",
           "point": [
-            180.1,
+            180.18522376905642,
             59.2
           ],
           "width": 1,
@@ -4319,7 +4332,7 @@
         {
           "id": "opening-W_0syA-b",
           "point": [
-            180.1,
+            180.18522376905642,
             59.2
           ],
           "width": 1,
@@ -4370,7 +4383,7 @@
         {
           "id": "opening--7iBjM-a",
           "point": [
-            176.2,
+            176.03641527295676,
             60.4
           ],
           "width": 0.8,
@@ -4422,7 +4435,7 @@
           "id": "opening-qV8am9-a",
           "point": [
             187.8,
-            63.4
+            63.093500322977874
           ],
           "width": 1,
           "kind": "door",
@@ -4459,17 +4472,6 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-qV8am9-b",
-          "point": [
-            187.8,
-            63.4
-          ],
-          "width": 1,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-lGS8cZ"
-        },
-        {
           "id": "opening-room-l1-nks07h-rEhSo",
           "point": [
             190.2,
@@ -4479,6 +4481,17 @@
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-lFj-2y"
+        },
+        {
+          "id": "opening-room-l1-nks07h-LnoiY",
+          "point": [
+            187.8,
+            63.093500322977874
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-lGS8cZ"
         }
       ]
     },
@@ -5190,7 +5203,7 @@
           "id": "opening-room-l1-cil6KH-Ab7BO",
           "point": [
             166.7,
-            50.3
+            50.30899306112283
           ],
           "width": 1,
           "kind": "door",
@@ -5263,7 +5276,7 @@
           "id": "opening-room-l1-bZpMT3-fbaGg",
           "point": [
             166.7,
-            50.3
+            50.30899306112283
           ],
           "width": 1,
           "kind": "door",
@@ -7077,8 +7090,8 @@
         {
           "id": "opening-room-l1--JAUcu-zJXIV",
           "point": [
-            224.20058049847412,
-            130.79796235950866
+            224.20058049849953,
+            130.7979621537
           ],
           "width": 1,
           "kind": "door",
@@ -7179,7 +7192,7 @@
         {
           "id": "opening-room-l1-vZJGsS-T0-SR",
           "point": [
-            222.59999986467378,
+            222.59937077903322,
             127.4
           ],
           "width": 1.5,
@@ -7191,7 +7204,7 @@
           "id": "opening-room-l1-vZJGsS-0VpXD",
           "point": [
             224.201,
-            130.79796241129898
+            130.7979622054903
           ],
           "width": 1,
           "kind": "door",
@@ -7278,7 +7291,7 @@
         {
           "id": "opening-room-l1-E3VjgJ-6HNHt",
           "point": [
-            212.2,
+            212.19940514286128,
             127.4
           ],
           "width": 1,
@@ -7609,7 +7622,7 @@
         {
           "id": "opening-room-l1-PPdsyu-F1OTK",
           "point": [
-            218,
+            217.9993962864533,
             127.4
           ],
           "width": 1.3,
@@ -7620,8 +7633,8 @@
         {
           "id": "opening-room-l1-PPdsyu-tfkG-",
           "point": [
-            209.1915428633598,
-            125.70000725311931
+            209.19154286335169,
+            125.7000072436241
           ],
           "width": 1.60909,
           "kind": "door",
@@ -7631,7 +7644,7 @@
         {
           "id": "opening-room-l1-PPdsyu-3MSzt",
           "point": [
-            212.2,
+            212.19940514286128,
             127.4
           ],
           "width": 1,
@@ -7642,7 +7655,7 @@
         {
           "id": "opening-room-l1-PPdsyu-cN4CL",
           "point": [
-            222.59999986467378,
+            222.59937077903322,
             127.4
           ],
           "width": 1.5,
@@ -8018,8 +8031,8 @@
         {
           "id": "opening-room-l1-IbxxxO-nXNhR",
           "point": [
-            209.1915428633598,
-            125.70000725311931
+            209.19154286335169,
+            125.7000072436241
           ],
           "width": 1.60909,
           "kind": "door",
@@ -8029,7 +8042,7 @@
         {
           "id": "opening-room-l1-IbxxxO-HJ7_u",
           "point": [
-            207.2,
+            207.1994505097641,
             127.4
           ],
           "width": 1.52222,
@@ -8040,7 +8053,7 @@
         {
           "id": "opening-room-l1-IbxxxO-LMGoP",
           "point": [
-            203.3,
+            203.29946192598752,
             127.4
           ],
           "width": 1,
@@ -8081,7 +8094,7 @@
         {
           "id": "opening-ZJRtp9-b",
           "point": [
-            207.2,
+            207.1994505097641,
             127.4
           ],
           "width": 1.52222,
@@ -8121,7 +8134,7 @@
         {
           "id": "opening-SOlnAJ-a",
           "point": [
-            203.3,
+            203.29946192598752,
             127.4
           ],
           "width": 1,
@@ -8314,17 +8327,6 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-room-l1-_t5sMy-gMGJy",
-          "point": [
-            152.6,
-            59.2
-          ],
-          "width": 1,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-mEdCbW"
-        },
-        {
           "id": "opening-room-l1-_t5sMy-xBCM0",
           "point": [
             147.2,
@@ -8345,6 +8347,17 @@
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
+        },
+        {
+          "id": "opening-room-l1-_t5sMy-_EDPj",
+          "point": [
+            152.6,
+            58.726730588631355
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-mEdCbW"
         }
       ]
     },
@@ -8522,7 +8535,7 @@
         {
           "id": "opening-room-l1-kI6ZZ4-1frJm",
           "point": [
-            218,
+            217.9993962864533,
             127.4
           ],
           "width": 1.3,
@@ -8729,28 +8742,6 @@
           "connectsTo": "room-l1-MHZw1J"
         },
         {
-          "id": "opening-room-l1-EpEsnx-GIB6V",
-          "point": [
-            88.39999999999998,
-            52.5
-          ],
-          "width": 1.5,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-oOBrYY"
-        },
-        {
-          "id": "opening-room-l1-EpEsnx-GaogR",
-          "point": [
-            98.1,
-            52.5
-          ],
-          "width": 1.6,
-          "kind": "door",
-          "traversable": true,
-          "connectsTo": "room-l1-o20nzQ"
-        },
-        {
           "id": "opening-room-l1-EpEsnx-Z3F4M",
           "point": [
             102.50000000000001,
@@ -8947,6 +8938,28 @@
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-_t5sMy"
+        },
+        {
+          "id": "opening-room-l1-EpEsnx-303nx",
+          "point": [
+            98.51313362998815,
+            52.5
+          ],
+          "width": 1.6,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-o20nzQ"
+        },
+        {
+          "id": "opening-room-l1-EpEsnx-mBFDC",
+          "point": [
+            88.19071753193981,
+            52.5
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-oOBrYY"
         }
       ],
       "name": "Коридор"
@@ -9918,10 +9931,10 @@
     {
       "id": "guide-geD0LN",
       "point": [
-        95.5,
-        45.4
+        95.664,
+        35.331
       ],
-      "angle": 90
+      "angle": 90.1
     },
     {
       "id": "guide-0By1XP",
@@ -10066,6 +10079,30 @@
         123
       ],
       "angle": 0
+    },
+    {
+      "id": "guide-K4v4fO",
+      "point": [
+        46.5,
+        127.4
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-dFmQKB",
+      "point": [
+        50.6,
+        127.4
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-vrRU4n",
+      "point": [
+        52.2,
+        116.3
+      ],
+      "angle": 90
     }
   ]
 }

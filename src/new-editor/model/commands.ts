@@ -109,7 +109,7 @@ export const guideDirection = (guide: Pick<EditorGuide, "angle">): Point => {
 export const guideReferencePoints = (guide: Pick<EditorGuide, "point" | "angle">): { a: Point; b: Point } => {
   const direction = guideDirection(guide);
   return {
-    a: guide.point,
+    a: [guide.point[0] - direction[0], guide.point[1] - direction[1]],
     b: [guide.point[0] + direction[0], guide.point[1] + direction[1]],
   };
 };

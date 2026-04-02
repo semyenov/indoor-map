@@ -14,6 +14,7 @@ import {
   createRoomFromDraft,
   defaultViewportForDataset,
   guideAngleFromPoints,
+  guideDirection,
   guideReferencePoints,
   initialDataset,
   localUnitsFromScreenPixels,
@@ -622,33 +623,33 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
       const guide = state.guides.find((entry) => entry.id === guideId);
       if (!guide) return {};
 
-      const oldReference = guideReferencePoints(guide);
-      const oldAx = oldReference.a[0];
-      const oldAy = oldReference.a[1];
-      const oldDx = oldReference.b[0] - oldReference.a[0];
-      const oldDy = oldReference.b[1] - oldReference.a[1];
-      const oldLenSq = oldDx * oldDx + oldDy * oldDy;
-      const newReference = guideReferencePoints({ point: normalizedPoint, angle: normalizedGuideAngle });
-      const newDx = newReference.b[0] - newReference.a[0];
-      const newDy = newReference.b[1] - newReference.a[1];
+      const oldDirection = guideDirection(guide);
+      const newDirection = guideDirection({ angle: normalizedGuideAngle });
+      const angleDelta = Math.min(
+        Math.abs(normalizeGuideAngle(guide.angle) - normalizedGuideAngle),
+        180 - Math.abs(normalizeGuideAngle(guide.angle) - normalizedGuideAngle),
+      );
+      const angleChanged = angleDelta > 0.0001;
       const guideThreshold = 0.08;
       const rooms = cloneRooms(state.dataset.rooms);
       const touchedRoomIds = new Set<string>();
 
-      if (oldLenSq > 1e-9) {
+      if (angleChanged && Math.hypot(oldDirection[0], oldDirection[1]) > 1e-9) {
         for (const room of rooms) {
           if (room.level !== state.activeLevel) continue;
           room.polygon = room.polygon.map((point) => {
-            const cross = Math.abs((point[0] - oldAx) * oldDy - (point[1] - oldAy) * oldDx);
-            const lineDistance = cross / Math.sqrt(oldLenSq);
+            const relativeX = point[0] - guide.point[0];
+            const relativeY = point[1] - guide.point[1];
+            const cross = Math.abs(relativeX * oldDirection[1] - relativeY * oldDirection[0]);
+            const lineDistance = cross;
             if (lineDistance > guideThreshold) {
               return point;
             }
 
-            const t = ((point[0] - oldAx) * oldDx + (point[1] - oldAy) * oldDy) / oldLenSq;
+            const t = relativeX * oldDirection[0] + relativeY * oldDirection[1];
             const nextPoint: Point = [
-              Number((normalizedPoint[0] + newDx * t).toFixed(3)),
-              Number((normalizedPoint[1] + newDy * t).toFixed(3)),
+              Number((normalizedPoint[0] + newDirection[0] * t).toFixed(3)),
+              Number((normalizedPoint[1] + newDirection[1] * t).toFixed(3)),
             ];
 
             if (nextPoint[0] !== point[0] || nextPoint[1] !== point[1]) {

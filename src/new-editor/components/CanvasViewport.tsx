@@ -160,6 +160,24 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
           );
         })()
       : [];
+  const selectedGuideAngleHandle =
+    selectedGuide
+      ? (() => {
+          const guideReference = guideReferencePoints(selectedGuide);
+          const directionX = guideReference.b[0] - guideReference.a[0];
+          const directionY = guideReference.b[1] - guideReference.a[1];
+          const directionLength = Math.hypot(directionX, directionY);
+          if (directionLength < 1e-6) return null;
+          const ux = directionX / directionLength;
+          const uy = directionY / directionLength;
+          const anchor = localPointToScreenPoint(selectedGuide.point, viewport);
+          const handle = localPointToScreenPoint(
+            [selectedGuide.point[0] + ux * 1.2, selectedGuide.point[1] + uy * 1.2],
+            viewport,
+          );
+          return { anchor, handle };
+        })()
+      : null;
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} aria-label="New floor plan editor canvas">
@@ -227,6 +245,7 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
         const line = screenGuide(guideReference.a, guideReference.b);
         if (!line) return null;
         const isSelectedGuide = guide.id === selectedGuideId;
+        const anchorScreen = localPointToScreenPoint(guide.point, viewport);
         return (
           <g key={guide.id}>
             <line
@@ -240,8 +259,8 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
             />
             {isSelectedGuide && (
               <circle
-                cx={line.ax}
-                cy={line.ay}
+                cx={anchorScreen[0]}
+                cy={anchorScreen[1]}
                 r={7}
                 fill="#dbeafe"
                 stroke="rgba(29, 78, 216, 0.98)"
@@ -266,10 +285,32 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
           ))}
         </g>
       )}
+      {selectedGuideAngleHandle && (
+        <g>
+          <line
+            x1={selectedGuideAngleHandle.anchor[0]}
+            y1={selectedGuideAngleHandle.anchor[1]}
+            x2={selectedGuideAngleHandle.handle[0]}
+            y2={selectedGuideAngleHandle.handle[1]}
+            stroke="rgba(29, 78, 216, 0.9)"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+          />
+          <circle
+            cx={selectedGuideAngleHandle.handle[0]}
+            cy={selectedGuideAngleHandle.handle[1]}
+            r={6}
+            fill="#eff6ff"
+            stroke="rgba(29, 78, 216, 0.98)"
+            strokeWidth={2}
+          />
+        </g>
+      )}
       {guidePreview &&
         (() => {
           const line = screenGuide(guidePreview.a, guidePreview.b);
           if (!line) return null;
+          const previewAnchorScreen = localPointToScreenPoint(guidePreview.a, viewport);
           return (
             <g>
               <line
@@ -281,7 +322,7 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
                 strokeWidth={2}
                 strokeDasharray="12 6"
               />
-              <circle cx={line.ax} cy={line.ay} r={5} fill="#dbeafe" stroke="rgba(37, 99, 235, 0.95)" strokeWidth={1.5} />
+              <circle cx={previewAnchorScreen[0]} cy={previewAnchorScreen[1]} r={5} fill="#dbeafe" stroke="rgba(37, 99, 235, 0.95)" strokeWidth={1.5} />
             </g>
           );
         })()}
@@ -313,17 +354,17 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
           const isSelectedOpening =
             room.id === selectedRoomId && opening.id === selectedOpeningId;
           const isConnectedOpening = Boolean(opening.connectsTo);
-          const hasSingleConnection = Boolean(opening.connectsTo && !findLinkedOpening(rooms, room.id, opening.id));
+          const isBrokenOpening = !opening.connectsTo || !findLinkedOpening(rooms, room.id, opening.id);
           return (
             <g key={opening.id}>
-              {hasSingleConnection && (
+              {isBrokenOpening && (
                 <>
                   <circle
                     cx={screenPoint[0]}
                     cy={screenPoint[1]}
                     r={14}
-                    fill="rgba(245, 158, 11, 0.12)"
-                    stroke="rgba(217, 119, 6, 0.95)"
+                    fill="rgba(239, 68, 68, 0.12)"
+                    stroke="rgba(220, 38, 38, 0.95)"
                     strokeWidth={2}
                     strokeDasharray="5 4"
                   />
@@ -332,7 +373,7 @@ export const CanvasViewport = ({ width, height, rooms, hoveredSnap, guidePreview
                     y1={screenPoint[1] - ny * 12}
                     x2={screenPoint[0] + nx * 12}
                     y2={screenPoint[1] + ny * 12}
-                    stroke="rgba(217, 119, 6, 0.95)"
+                    stroke="rgba(220, 38, 38, 0.95)"
                     strokeWidth={2}
                     strokeLinecap="round"
                   />
