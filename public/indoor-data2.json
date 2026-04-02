@@ -75,7 +75,7 @@
           127.4
         ],
         [
-          35.5,
+          35.582,
           127.4
         ],
         [
@@ -90,7 +90,7 @@
         {
           "id": "opening-DX9Le7-a",
           "point": [
-            33.8,
+            33.799997806426965,
             127.4
           ],
           "width": 1,
@@ -112,11 +112,11 @@
         ],
         [
           24.496,
-          123.92
+          123.9
         ],
         [
           28.3,
-          123.92
+          123.9
         ],
         [
           28.3,
@@ -142,7 +142,7 @@
           "id": "opening-hDdRCa-a",
           "point": [
             25.5,
-            123.92
+            123.9
           ],
           "width": 1.9,
           "kind": "door",
@@ -163,11 +163,11 @@
         ],
         [
           28.3,
-          123.92
+          123.9
         ],
         [
           30.606,
-          123.919
+          123.9
         ],
         [
           30.604,
@@ -182,7 +182,7 @@
           "id": "opening-r_Bk7W-a",
           "point": [
             29.400008466166454,
-            123.91952297984989
+            123.9
           ],
           "width": 1.3,
           "kind": "door",
@@ -203,8 +203,8 @@
         {
           "id": "opening-gfOeKh-a",
           "point": [
-            30.604976729179374,
-            125.70000286330006
+            30.60497142693299,
+            125.70000286726574
           ],
           "width": 1.5,
           "kind": "door",
@@ -299,7 +299,7 @@
           "id": "opening-room-l1-wJ9zs3-qecLi",
           "point": [
             35,
-            117.49999801927139
+            117.4999970245264
           ],
           "width": 1,
           "kind": "door",
@@ -312,7 +312,7 @@
             38.7,
             120.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-nNkFX3"
@@ -327,7 +327,7 @@
       "polygon": [
         [
           34.996,
-          123.919
+          123.9
         ],
         [
           35,
@@ -339,7 +339,7 @@
         ],
         [
           37.4,
-          123.919
+          123.9
         ]
       ],
       "subtitle": "",
@@ -349,10 +349,10 @@
         {
           "id": "opening-room-l1-Dmr5ni-c_ORD",
           "point": [
-            34.99827757546489,
-            122.19999991787475
+            34.99826666089442,
+            122.20000432918151
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-t1PNL2"
@@ -367,7 +367,7 @@
       "polygon": [
         [
           37.4,
-          123.919
+          123.9
         ],
         [
           37.4,
@@ -379,7 +379,7 @@
         ],
         [
           40.2,
-          123.919
+          123.9
         ]
       ],
       "subtitle": "",
@@ -392,7 +392,7 @@
             38.7,
             120.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-wJ9zs3"
@@ -406,32 +406,32 @@
       "number": "",
       "polygon": [
         [
-          35.5,
+          35.582,
           127.4
         ],
         [
           35.5,
-          123.919
+          123.9
         ],
         [
           48.7,
-          123.918
+          123.9
         ],
         [
           48.7,
-          123.1
+          123
         ],
         [
           52.2,
-          123.1
+          123
         ],
         [
           52.2,
-          123.917
+          123.9
         ],
         [
           58.1,
-          123.917
+          123.9
         ],
         [
           58.1,
@@ -469,7 +469,7 @@
           "id": "opening-xpN5-2-a",
           "point": [
             55.2,
-            123.917
+            123.9
           ],
           "width": 2.2,
           "kind": "door",
@@ -479,10 +479,10 @@
         {
           "id": "opening-hEtWl9-a",
           "point": [
-            46.30000140495866,
-            123.91818181807538
+            46.300001418732755,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-fiOnFF"
@@ -490,10 +490,10 @@
         {
           "id": "opening-UtZruF-a",
           "point": [
-            43.90000144628097,
-            123.91836363625407
+            43.900001473829164,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-AO3SRK"
@@ -523,8 +523,8 @@
         {
           "id": "opening-CiTfca-a",
           "point": [
-            35.5,
-            125.3
+            35.53278090225803,
+            125.2991848524769
           ],
           "width": 2,
           "kind": "door",
@@ -535,14 +535,15 @@
           "id": "opening-room-l1-2nqPbk-Pt2Dn",
           "point": [
             50.3,
-            123.1
+            123
           ],
           "width": 2,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-fJbIrA"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-WpJ6ZN",
@@ -672,7 +673,7 @@
       "polygon": [
         [
           40.2,
-          123.919
+          123.9
         ],
         [
           40.2,
@@ -684,7 +685,7 @@
         ],
         [
           42.995,
-          123.918
+          123.9
         ]
       ],
       "subtitle": "",
@@ -705,8 +706,8 @@
         {
           "id": "opening-room-l1-jDPZZf-Dpp2X",
           "point": [
-            42.99574908249969,
-            122.89999688291832
+            42.99574074303779,
+            122.8999968989731
           ],
           "width": 1,
           "kind": "door",
@@ -763,7 +764,7 @@
       "polygon": [
         [
           42.995,
-          123.918
+          123.9
         ],
         [
           42.997,
@@ -775,7 +776,7 @@
         ],
         [
           45.6,
-          123.918
+          123.9
         ]
       ],
       "subtitle": "",
@@ -788,7 +789,7 @@
             43.9,
             120.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-ZIO_SH"
@@ -796,10 +797,10 @@
         {
           "id": "opening-room-l1-AO3SRK-jYQZU",
           "point": [
-            43.900001418732764,
-            123.918
+            43.900001473829164,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-2nqPbk"
@@ -807,8 +808,8 @@
         {
           "id": "opening-room-l1-AO3SRK-ba4i6",
           "point": [
-            42.99567462105492,
-            122.89999682812697
+            42.995666668770596,
+            122.89999684410327
           ],
           "width": 1,
           "kind": "door",
@@ -850,7 +851,7 @@
             43.9,
             120.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-AO3SRK"
@@ -865,7 +866,7 @@
       "polygon": [
         [
           45.6,
-          123.918
+          123.9
         ],
         [
           45.6,
@@ -877,7 +878,7 @@
         ],
         [
           48.7,
-          123.918
+          123.9
         ]
       ],
       "subtitle": "",
@@ -887,10 +888,10 @@
         {
           "id": "opening-room-l1-fiOnFF-sanso",
           "point": [
-            46.30000139118456,
-            123.918
+            46.300001418732755,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-2nqPbk"
@@ -901,7 +902,7 @@
             47.9,
             120.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-ftIAZ6"
@@ -941,7 +942,7 @@
             47.9,
             120.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-fiOnFF"
@@ -956,11 +957,11 @@
       "polygon": [
         [
           58.1,
-          123.917
+          123.9
         ],
         [
           52.2,
-          123.917
+          123.9
         ],
         [
           52.2,
@@ -990,14 +991,15 @@
           "id": "opening-room-l1-a9nwx_-RFofv",
           "point": [
             55.2,
-            123.917
+            123.9
           ],
           "width": 2.2,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-2nqPbk"
         }
-      ]
+      ],
+      "name": "Лестница"
     },
     {
       "id": "room-l1-fJbIrA",
@@ -1007,7 +1009,7 @@
       "polygon": [
         [
           48.7,
-          123.1
+          123
         ],
         [
           48.7,
@@ -1019,7 +1021,7 @@
         ],
         [
           52.2,
-          123.1
+          123
         ]
       ],
       "subtitle": "",
@@ -1030,7 +1032,7 @@
           "id": "opening-TOroIY-b",
           "point": [
             50.3,
-            123.1
+            123
           ],
           "width": 2,
           "kind": "door",
@@ -1058,7 +1060,7 @@
       "polygon": [
         [
           24.496,
-          123.92
+          123.9
         ],
         [
           24.497,
@@ -1070,7 +1072,7 @@
         ],
         [
           28.3,
-          123.92
+          123.9
         ]
       ],
       "subtitle": "",
@@ -1081,7 +1083,7 @@
           "id": "opening-hDdRCa-b",
           "point": [
             25.5,
-            123.92
+            123.9
           ],
           "width": 1.9,
           "kind": "door",
@@ -1098,7 +1100,7 @@
       "polygon": [
         [
           28.3,
-          123.92
+          123.9
         ],
         [
           28.3,
@@ -1110,7 +1112,7 @@
         ],
         [
           30.606,
-          123.919
+          123.9
         ]
       ],
       "subtitle": "",
@@ -1121,7 +1123,7 @@
           "id": "opening-room-l1-Uc3pwK-vwulG",
           "point": [
             29.400008466166454,
-            123.91952297984989
+            123.9
           ],
           "width": 1.3,
           "kind": "door",
@@ -1156,8 +1158,8 @@
           106.2
         ],
         [
-          31.151,
-          105.82
+          31.150766652434598,
+          105.82000342164639
         ],
         [
           31.7,
@@ -1171,12 +1173,13 @@
         {
           "id": "opening-uNTg5G-a",
           "point": [
-            31.296650844121842,
-            108.60036584043154
+            31.29884375276822,
+            108.64548281343461
           ],
           "width": 1.61515,
           "kind": "door",
-          "traversable": true
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
         }
       ]
     },
@@ -1199,8 +1202,8 @@
           110.926
         ],
         [
-          31.427,
-          111.099
+          31.42740427980933,
+          111.09856380255233
         ]
       ],
       "subtitle": "",
@@ -1221,8 +1224,8 @@
         {
           "id": "opening-IxsNrN-a",
           "point": [
-            33.20023191958366,
-            111.00578543844182
+            33.20022167943322,
+            111.0055945842941
           ],
           "width": 2,
           "kind": "door",
@@ -1232,15 +1235,16 @@
         {
           "id": "opening-room-l1-8PYnQq-U_6vb",
           "point": [
-            34.847685272600415,
-            113.397378209059
+            34.847686282435355,
+            113.39739745321835
           ],
           "width": 1.5,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-VdYP5U"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-t1PNL2",
@@ -1262,22 +1266,22 @@
         ],
         [
           34.996,
-          123.919
+          123.9
         ],
         [
           34.996,
-          123.919
+          123.9
         ],
         [
           35.5,
-          123.919
+          123.9
         ],
         [
-          35.5,
+          35.582,
           127.4
         ],
         [
-          35.5,
+          35.582,
           127.4
         ]
       ],
@@ -1299,8 +1303,8 @@
         {
           "id": "opening-room-l1-t1PNL2-Z3f8S",
           "point": [
-            30.604918917389142,
-            125.70000283008443
+            30.604918917385262,
+            125.70000283726029
           ],
           "width": 1.5,
           "kind": "door",
@@ -1310,8 +1314,8 @@
         {
           "id": "opening-CiTfca-b",
           "point": [
-            35.5,
-            125.3
+            35.53278090225803,
+            125.2991848524769
           ],
           "width": 2,
           "kind": "door",
@@ -1321,10 +1325,10 @@
         {
           "id": "opening-room-l1-t1PNL2-NsYjt",
           "point": [
-            34.996902481640134,
-            122.19999809595514
+            34.99689473552635,
+            122.20000249994769
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-Dmr5ni"
@@ -1332,7 +1336,7 @@
         {
           "id": "opening-room-l1-t1PNL2-PaAjt",
           "point": [
-            33.8,
+            33.799997806426965,
             127.4
           ],
           "width": 1,
@@ -1343,15 +1347,16 @@
         {
           "id": "opening-room-l1-t1PNL2-9KSXj",
           "point": [
-            34.99936999710236,
-            117.49999801927139
+            34.99936842261867,
+            117.4999970245264
           ],
           "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-wJ9zs3"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-VdYP5U",
@@ -1383,8 +1388,8 @@
         {
           "id": "opening-room-l1-VdYP5U-lp6yP",
           "point": [
-            34.847685272600415,
-            113.397378209059
+            34.847686282435355,
+            113.39739745321835
           ],
           "width": 1.5,
           "kind": "door",
@@ -1451,8 +1456,8 @@
       "number": "",
       "polygon": [
         [
-          31.427,
-          111.099
+          31.42740427980933,
+          111.09856380255233
         ],
         [
           30.382,
@@ -1474,8 +1479,8 @@
         {
           "id": "opening-kysrID-a",
           "point": [
-            34.06201019550203,
-            98.40193053632638
+            34.062015515158514,
+            98.40203209849517
           ],
           "width": 1.6,
           "kind": "door",
@@ -1485,8 +1490,8 @@
         {
           "id": "opening-R052Cx-a",
           "point": [
-            33.77912400549803,
-            93.00110529539823
+            33.77913101411435,
+            93.00123910296196
           ],
           "width": 1.5,
           "kind": "door",
@@ -1496,18 +1501,19 @@
         {
           "id": "opening-MJVkKX-a",
           "point": [
-            34.22421917345682,
-            101.49880261209273
+            34.22422362991761,
+            101.49888769424516
           ],
           "width": 1,
           "kind": "door",
-          "traversable": true
+          "traversable": true,
+          "connectsTo": "room-l1-vJnJdK"
         },
         {
           "id": "opening-IxsNrN-b",
           "point": [
-            33.20023191958366,
-            111.00578543844182
+            33.20022167943322,
+            111.0055945842941
           ],
           "width": 2,
           "kind": "door",
@@ -1517,8 +1523,8 @@
         {
           "id": "opening-aLnVzv-a",
           "point": [
-            32.102827671436444,
-            91.05563176041545
+            32.10282764570719,
+            91.0556317617367
           ],
           "width": 2.5,
           "kind": "door",
@@ -1528,8 +1534,8 @@
         {
           "id": "opening-room-l1-uwNtQK-tmjPG",
           "point": [
-            33.96771479918587,
-            96.60165546273416
+            33.96772061866046,
+            96.60176656736346
           ],
           "width": 0.5,
           "kind": "door",
@@ -1539,8 +1545,8 @@
         {
           "id": "opening-room-l1-uwNtQK-c6GB3",
           "point": [
-            31.065538868472125,
-            104.19664891900601
+            31.065785373975274,
+            104.19602124744537
           ],
           "width": 1.5141919191919,
           "kind": "door",
@@ -1550,8 +1556,8 @@
         {
           "id": "opening-room-l1-uwNtQK-MbMWN",
           "point": [
-            30.500142917787933,
-            93.40002098034279
+            30.499469810118413,
+            93.386251027812
           ],
           "width": 1.5,
           "kind": "door",
@@ -1561,8 +1567,8 @@
         {
           "id": "opening-room-l1-uwNtQK-57s2y",
           "point": [
-            30.77774842607402,
-            98.70109075818857
+            30.777891145338995,
+            98.70072735525181
           ],
           "width": 1.615,
           "kind": "door",
@@ -1572,14 +1578,27 @@
         {
           "id": "opening-room-l1-uwNtQK-R2k_G",
           "point": [
-            34.61707312377004,
-            108.99911760032151
+            34.61401847939608,
+            108.94079873916853
           ],
           "width": 1.5,
           "kind": "door",
-          "traversable": true
+          "traversable": true,
+          "connectsTo": "room-l1-UjgMHb"
+        },
+        {
+          "id": "opening-room-l1-uwNtQK-XFV2V",
+          "point": [
+            31.29888912528348,
+            108.64548043556185
+          ],
+          "width": 1.61515,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-zetWIZ"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-UjgMHb",
@@ -1592,8 +1611,8 @@
           110.926
         ],
         [
-          34.4,
-          104.2
+          34.366,
+          104.202
         ],
         [
           41.646,
@@ -1607,7 +1626,19 @@
       "subtitle": "",
       "department": "",
       "searchTokens": [],
-      "openings": []
+      "openings": [
+        {
+          "id": "opening-room-l1-UjgMHb-MmZSk",
+          "point": [
+            34.61407497242945,
+            108.94079578015796
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
     },
     {
       "id": "room-l1-vJnJdK",
@@ -1616,8 +1647,8 @@
       "number": "211а",
       "polygon": [
         [
-          34.4,
-          104.2
+          34.366,
+          104.202
         ],
         [
           34.166,
@@ -1635,7 +1666,19 @@
       "subtitle": "",
       "department": "",
       "searchTokens": [],
-      "openings": []
+      "openings": [
+        {
+          "id": "opening-room-l1-vJnJdK-LKt93",
+          "point": [
+            34.22440117311835,
+            101.49887839482935
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-uwNtQK"
+        }
+      ]
     },
     {
       "id": "room-l1-UNaMSg",
@@ -1656,8 +1699,8 @@
           100.557
         ],
         [
-          31.151,
-          105.82
+          31.150766652434598,
+          105.82000342164639
         ]
       ],
       "subtitle": "",
@@ -1665,10 +1708,10 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-room-l1-UNaMSg-i0cfZ",
+          "id": "opening-room-l1-UNaMSg-wKby0",
           "point": [
-            31.065868010201342,
-            104.19663165829591
+            31.065674834193075,
+            104.19602703942066
           ],
           "width": 1.5141919191919,
           "kind": "door",
@@ -1705,10 +1748,10 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-room-l1-S60XNk-WfyOw",
+          "id": "opening-room-l1-S60XNk-HAT-Q",
           "point": [
-            30.777692226305494,
-            98.70109370482136
+            30.777673616082296,
+            98.70073876061626
           ],
           "width": 1.615,
           "kind": "door",
@@ -1745,10 +1788,10 @@
       "searchTokens": [],
       "openings": [
         {
-          "id": "opening-room-l1-IauPcs-qHsDW",
+          "id": "opening-room-l1-IauPcs-ricYL",
           "point": [
-            30.500075254101958,
-            93.40002452170808
+            30.499354695706995,
+            93.38625705264162
           ],
           "width": 1.5,
           "kind": "door",
@@ -1790,7 +1833,7 @@
             28.799341973345516,
             85.98899140540077
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-9n4fyE"
@@ -1830,7 +1873,7 @@
             28.799341973345516,
             85.98899140540077
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-YinLOR"
@@ -1841,7 +1884,7 @@
             30.017729066063026,
             84.19905326586537
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-5-8vFi"
@@ -1912,7 +1955,7 @@
         ],
         [
           29.11,
-          66.873
+          66.872
         ],
         [
           29.144,
@@ -2061,7 +2104,7 @@
         {
           "id": "opening-0F4pso-a",
           "point": [
-            35.39999889282833,
+            35.39999843447909,
             50.9
           ],
           "width": 1.5,
@@ -2112,7 +2155,7 @@
         {
           "id": "opening-room-l1-Tz50o8-Mo2ut",
           "point": [
-            50.59999808599852,
+            50.59999694171697,
             50.9
           ],
           "width": 1.5,
@@ -2152,7 +2195,7 @@
         {
           "id": "opening-Rjjda0-b",
           "point": [
-            54.799996077128455,
+            54.79999529456876,
             50.9
           ],
           "width": 1.5,
@@ -2174,11 +2217,11 @@
         ],
         [
           33.988,
-          96.985
+          96.984
         ],
         [
-          35.6,
-          96.9
+          35.622,
+          96.899
         ],
         [
           35.8,
@@ -2192,18 +2235,19 @@
         {
           "id": "opening-u2uXpN-a",
           "point": [
-            35.67864598548385,
-            98.23698175322545
+            35.691990226427635,
+            98.23628516899096
           ],
           "width": 1.5,
           "kind": "door",
-          "traversable": true
+          "traversable": true,
+          "connectsTo": "room-l1-qC-VHk"
         },
         {
           "id": "opening-room-l1-3HZSZA-OPc1R",
           "point": [
-            34.06220177981771,
-            98.40192050337309
+            34.062237542205295,
+            98.40202046908993
           ],
           "width": 1.6,
           "kind": "door",
@@ -2220,19 +2264,19 @@
       "polygon": [
         [
           33.988,
-          96.985
+          96.984
         ],
         [
           33.862,
           94.579
         ],
         [
-          35.5,
+          35.496,
           94.493
         ],
         [
-          35.6,
-          96.9
+          35.622,
+          96.899
         ]
       ],
       "subtitle": "",
@@ -2242,8 +2286,8 @@
         {
           "id": "opening-room-l1-XuKJ6R-B09Pq",
           "point": [
-            33.96792402648271,
-            96.60164450569367
+            33.96797376996795,
+            96.60175330772152
           ],
           "width": 0.5,
           "kind": "door",
@@ -2263,7 +2307,7 @@
           100.3
         ],
         [
-          35.5,
+          35.496,
           94.493
         ],
         [
@@ -2278,7 +2322,19 @@
       "subtitle": "",
       "department": "",
       "searchTokens": [],
-      "openings": []
+      "openings": [
+        {
+          "id": "opening-room-l1-qC-VHk-ZN6u6",
+          "point": [
+            35.69196334066626,
+            98.236286576477
+          ],
+          "width": 1.5,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-3HZSZA"
+        }
+      ]
     },
     {
       "id": "room-l1-2Ik8A_",
@@ -2310,8 +2366,8 @@
         {
           "id": "opening-room-l1-2Ik8A_-s-B0q",
           "point": [
-            33.77925211738373,
-            93.00109857698914
+            33.77925913488561,
+            93.00123239221033
           ],
           "width": 1.5,
           "kind": "door",
@@ -2331,8 +2387,8 @@
           90.975
         ],
         [
-          32.8,
-          75.4
+          32.856,
+          75.398
         ],
         [
           40.136,
@@ -2350,8 +2406,8 @@
         {
           "id": "opening-Z111CU-a",
           "point": [
-            33.19796968719367,
-            82.5000892073785
+            33.22861203453269,
+            82.50225662413175
           ],
           "width": 1.5,
           "kind": "door",
@@ -2464,9 +2520,9 @@
           "id": "opening-FxYLaE-a",
           "point": [
             65.4,
-            63.385356473132205
+            63.338303080600895
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true
         }
@@ -2570,8 +2626,8 @@
         {
           "id": "opening-pdIgUj-a",
           "point": [
-            62.099339270319796,
-            50.9339867854064
+            62.0993457347917,
+            50.933986914695836
           ],
           "width": 1,
           "kind": "door",
@@ -2613,7 +2669,7 @@
             71.96644726291316,
             59.2
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-l3dJjg"
@@ -2653,7 +2709,7 @@
             73.5,
             56
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
@@ -2664,7 +2720,7 @@
             71.96644726291316,
             59.2
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-AUt3ba"
@@ -2744,7 +2800,7 @@
             78.2,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
@@ -2784,7 +2840,7 @@
             72.9,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
@@ -2824,7 +2880,7 @@
             68.3,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-IoYHX5"
@@ -2899,7 +2955,7 @@
             68.3,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-NVytyk"
@@ -2918,8 +2974,8 @@
         {
           "id": "opening-room-l1-IoYHX5-YbYJI",
           "point": [
-            62.099339270319796,
-            50.9339867854064
+            62.0993457347917,
+            50.933986914695836
           ],
           "width": 1,
           "kind": "door",
@@ -3122,7 +3178,7 @@
         {
           "id": "opening-room-l1-N48Uoe-VTjbx",
           "point": [
-            102.5,
+            102.50000000000001,
             52.5
           ],
           "width": 1.514,
@@ -3426,7 +3482,7 @@
         ],
         [
           105.5,
-          62.9
+          62.869
         ]
       ],
       "subtitle": "",
@@ -3465,7 +3521,7 @@
       "polygon": [
         [
           105.5,
-          62.9
+          62.869
         ],
         [
           105.5,
@@ -3891,7 +3947,7 @@
             138.5,
             47
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-4jL-Xs"
@@ -3993,7 +4049,7 @@
             163,
             59.1
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-DY0c8e"
@@ -4033,7 +4089,7 @@
             163,
             59.1
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-mEdCbW"
@@ -4092,10 +4148,10 @@
         {
           "id": "opening-5nywr3-a",
           "point": [
-            172.60081159338466,
-            61.50000141146723
+            172.6008115925664,
+            61.50000282293304
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-QwHwV8"
@@ -4144,9 +4200,9 @@
           "id": "opening-5nywr3-b",
           "point": [
             172.6,
-            61.50000094097831
+            61.5000023524446
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-OWPnrB"
@@ -4186,7 +4242,7 @@
             176.2,
             60.4
           ],
-          "width": 0.6,
+          "width": 0.8,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-TY8OL3"
@@ -4226,7 +4282,7 @@
             180.1,
             59.2
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1--ltf_P"
@@ -4266,7 +4322,7 @@
             180.1,
             59.2
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-bNC79l"
@@ -4277,7 +4333,7 @@
             180.9,
             56
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
@@ -4317,7 +4373,7 @@
             176.2,
             60.4
           ],
-          "width": 0.6,
+          "width": 0.8,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-v1dnC9"
@@ -4328,7 +4384,7 @@
             174.1,
             56
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
@@ -4368,7 +4424,7 @@
             187.8,
             63.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-nks07h"
@@ -4408,7 +4464,7 @@
             187.8,
             63.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-lGS8cZ"
@@ -4535,7 +4591,7 @@
         {
           "id": "opening-room-l1-lFj-2y-9Ms55",
           "point": [
-            190.9999794496809,
+            190.99997339298372,
             50.9
           ],
           "width": 1,
@@ -4547,7 +4603,7 @@
           "id": "opening-ZSPmji-b",
           "point": [
             182.1,
-            54.1
+            54.10000558365706
           ],
           "width": 2.6,
           "kind": "door",
@@ -4560,7 +4616,7 @@
             185,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-HPyGGL"
@@ -4579,15 +4635,16 @@
         {
           "id": "opening-room-l1-lFj-2y-FPxYu",
           "point": [
-            192.69454286115194,
-            52.59999532274157
+            192.69454286115186,
+            52.599995322840414
           ],
           "width": 2.2,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-qjBp4u"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-HPyGGL",
@@ -4626,7 +4683,7 @@
             185,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-lFj-2y"
@@ -4667,7 +4724,7 @@
           72.283
         ],
         [
-          32.4,
+          32.401,
           66.7
         ],
         [
@@ -4686,8 +4743,8 @@
         {
           "id": "opening-room-l1-vMisH9-d3rTk",
           "point": [
-            31.66537820998521,
-            64.19620406144237
+            31.665378208806928,
+            64.19620403865255
           ],
           "width": 1.6,
           "kind": "door",
@@ -4711,8 +4768,8 @@
           90.975
         ],
         [
-          32.8,
-          75.4
+          32.856,
+          75.398
         ],
         [
           40.136,
@@ -4727,7 +4784,7 @@
           72.283
         ],
         [
-          32.4,
+          32.401,
           66.7
         ],
         [
@@ -4748,7 +4805,7 @@
         ],
         [
           29.11,
-          66.873
+          66.872
         ],
         [
           29.144,
@@ -4770,8 +4827,8 @@
         {
           "id": "opening-Z111CU-b",
           "point": [
-            33.19796968719367,
-            82.5000892073785
+            33.22861203453269,
+            82.50225662413175
           ],
           "width": 1.5,
           "kind": "door",
@@ -4803,8 +4860,8 @@
         {
           "id": "opening-aLnVzv-b",
           "point": [
-            32.102827671436444,
-            91.05563176041545
+            32.10282764570719,
+            91.0556317617367
           ],
           "width": 2.5,
           "kind": "door",
@@ -4825,8 +4882,8 @@
         {
           "id": "opening-room-l1-5-8vFi-6FG11",
           "point": [
-            31.66537820998521,
-            64.19620406144237
+            31.665378208806928,
+            64.19620403865255
           ],
           "width": 1.6,
           "kind": "door",
@@ -4839,12 +4896,13 @@
             30.017729066063026,
             84.19905326586537
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-9n4fyE"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-U4iAPH",
@@ -5258,7 +5316,7 @@
             174.8,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-EpEsnx"
@@ -5346,7 +5404,7 @@
         {
           "id": "opening-room-l1-7GzER2-2rZK1",
           "point": [
-            190.9999794496809,
+            190.99997339298372,
             50.9
           ],
           "width": 1,
@@ -5405,7 +5463,7 @@
         {
           "id": "opening-room-l1-tE3iVk-GRXXm",
           "point": [
-            198.20024484951466,
+            198.2002950779078,
             50.9
           ],
           "width": 1.5,
@@ -5488,7 +5546,7 @@
             202.6,
             54.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-qjBp4u"
@@ -5667,7 +5725,7 @@
         {
           "id": "opening-room-l1-SgtWpv-Ev9BZ",
           "point": [
-            202.89997841899424,
+            202.89997212530048,
             50.9
           ],
           "width": 1.5,
@@ -5707,7 +5765,7 @@
         {
           "id": "opening-kFkLl2-a",
           "point": [
-            207.89998889848053,
+            207.89998240064864,
             50.9
           ],
           "width": 1.514,
@@ -5747,7 +5805,7 @@
         {
           "id": "opening-room-l1-hUZqfD-iWnku",
           "point": [
-            212.8999771861928,
+            212.89997048422367,
             50.9
           ],
           "width": 1.514141414141414,
@@ -5787,7 +5845,7 @@
         {
           "id": "opening-room-l1-mdQtQC-8QYsv",
           "point": [
-            217.9999853461869,
+            217.99997665649764,
             50.9
           ],
           "width": 1.5,
@@ -5827,7 +5885,7 @@
         {
           "id": "opening-room-l1-pNW6O8-_dTpK",
           "point": [
-            222.6999799355249,
+            222.69997401253664,
             50.9
           ],
           "width": 1.5,
@@ -5852,11 +5910,11 @@
           43.898
         ],
         [
-          231.5,
-          43.9
+          231.511,
+          43.899
         ],
         [
-          231.881,
+          231.878,
           50.9
         ]
       ],
@@ -5867,7 +5925,7 @@
         {
           "id": "opening-room-l1-wjGZVt-L6xs3",
           "point": [
-            226.79998100824565,
+            226.7999754244646,
             50.9
           ],
           "width": 1.6,
@@ -5892,7 +5950,7 @@
           50.9
         ],
         [
-          231.881,
+          231.878,
           50.9
         ],
         [
@@ -5936,8 +5994,8 @@
           54.4
         ],
         [
-          232.5,
-          62.1
+          232.465,
+          62.102
         ]
       ],
       "subtitle": "",
@@ -5947,8 +6005,8 @@
         {
           "id": "opening-3F6qHs-b",
           "point": [
-            228.7,
-            62.1
+            228.69999998255525,
+            62.10093418258529
           ],
           "width": 1.5,
           "kind": "door",
@@ -5964,20 +6022,20 @@
       "number": "265а",
       "polygon": [
         [
-          226.47550979845997,
-          66.70128347707691
+          226.489,
+          66.701
         ],
         [
           232.689,
           66.376
         ],
         [
-          232.5,
-          62.1
+          232.465,
+          62.102
         ],
         [
-          226.232,
-          62.1
+          226.248,
+          62.099
         ]
       ],
       "subtitle": "",
@@ -5987,8 +6045,8 @@
         {
           "id": "opening-3F6qHs-a",
           "point": [
-            228.7,
-            62.1
+            228.70000019514552,
+            62.10018320742889
           ],
           "width": 1.5,
           "kind": "door",
@@ -5998,10 +6056,10 @@
         {
           "id": "opening-v6OQ6j-b",
           "point": [
-            226.29521322633278,
-            63.29445696106347
+            226.32599690635607,
+            63.58838490892409
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-krsww0"
@@ -6009,10 +6067,10 @@
         {
           "id": "opening-room-l1-elozVX-m4hFa",
           "point": [
-            229.01010362749568,
-            66.56859452659268
+            229.01011674079805,
+            66.56884468697429
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-_af1Jz"
@@ -6026,20 +6084,20 @@
       "number": "265",
       "polygon": [
         [
-          226.779,
-          72.429
+          226.79,
+          72.428
         ],
         [
-          233,
-          72.1
+          232.989,
+          72.101
         ],
         [
           232.689,
           66.376
         ],
         [
-          226.47550979845997,
-          66.70128347707691
+          226.489,
+          66.701
         ]
       ],
       "subtitle": "",
@@ -6049,10 +6107,10 @@
         {
           "id": "opening-C7QIy8-a",
           "point": [
-            232.0025725184553,
-            72.15274933956408
+            232.00258751386775,
+            72.15303369623572
           ],
-          "width": 0.6,
+          "width": 0.8,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-LFj4Vt"
@@ -6060,10 +6118,10 @@
         {
           "id": "opening-room-l1-_af1Jz-9wA9Y",
           "point": [
-            229.01010362749568,
-            66.56859452659268
+            229.01011674079805,
+            66.56884468697429
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-elozVX"
@@ -6077,20 +6135,20 @@
       "number": "268",
       "polygon": [
         [
-          227.028,
+          227.036,
           77.132
         ],
         [
-          233.3,
-          76.8
+          233.235,
+          76.803
         ],
         [
-          233,
-          72.1
+          232.989,
+          72.101
         ],
         [
-          226.779,
-          72.429
+          226.79,
+          72.428
         ]
       ],
       "subtitle": "",
@@ -6100,20 +6158,21 @@
         {
           "id": "opening-q_ieex-b",
           "point": [
-            226.89923889822762,
-            74.70001822636381
+            226.90879115667795,
+            74.69951870330546
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
-          "traversable": true
+          "traversable": true,
+          "connectsTo": "room-l1-iP2nYA"
         },
         {
           "id": "opening-CFyiko-a",
           "point": [
-            232.20285469062594,
-            76.85807593155488
+            232.20283897723263,
+            76.85777996071793
           ],
-          "width": 0.6,
+          "width": 0.8,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-N_iq2n"
@@ -6121,10 +6180,10 @@
         {
           "id": "opening-C7QIy8-b",
           "point": [
-            232.0025725184553,
-            72.15274933956408
+            232.00258751386775,
+            72.15303369623572
           ],
-          "width": 0.6,
+          "width": 0.8,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-_af1Jz"
@@ -6146,12 +6205,12 @@
           62.1
         ],
         [
-          226.232,
-          62.1
+          226.248,
+          62.099
         ],
         [
-          226.53365974710002,
-          67.79822094359936
+          226.547,
+          67.798
         ]
       ],
       "subtitle": "",
@@ -6161,8 +6220,8 @@
         {
           "id": "opening-MfN0Wf-b",
           "point": [
-            224.26328516453165,
-            67.9183253245341
+            224.26329840050235,
+            67.91857558603472
           ],
           "width": 2,
           "kind": "door",
@@ -6172,10 +6231,10 @@
         {
           "id": "opening-room-l1-krsww0-Immuf",
           "point": [
-            221.57307026697433,
-            63.49301906398493
+            221.57448666022879,
+            63.520021330258714
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-tK1oSj"
@@ -6183,8 +6242,8 @@
         {
           "id": "opening-room-l1-krsww0-q93j7",
           "point": [
-            224,
-            62.1
+            223.99999988910332,
+            62.09947346253389
           ],
           "width": 1.6,
           "kind": "door",
@@ -6192,17 +6251,18 @@
           "connectsTo": "room-l1-qjBp4u"
         },
         {
-          "id": "opening-room-l1-krsww0-oPAa7",
+          "id": "opening-room-l1-krsww0-BslZ2",
           "point": [
-            226.29523364122662,
-            63.29445588031357
+            226.32614069698278,
+            63.58837736489928
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-elozVX"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-tK1oSj",
@@ -6234,8 +6294,8 @@
         {
           "id": "opening-room-l1-tK1oSj-33hB1",
           "point": [
-            218.29105111053354,
-            65.27338158283715
+            218.29105111052976,
+            65.27338158283735
           ],
           "width": 1.5,
           "kind": "door",
@@ -6243,12 +6303,12 @@
           "connectsTo": "room-l1-eowA50"
         },
         {
-          "id": "opening-room-l1-tK1oSj-vFS0I",
+          "id": "opening-room-l1-tK1oSj-21zN1",
           "point": [
-            221.57300521431443,
-            63.49302247325037
+            221.57442034658882,
+            63.52002480560932
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-krsww0"
@@ -6274,11 +6334,11 @@
           68.085
         ],
         [
-          226.53365974710002,
-          67.79822094359936
+          226.547,
+          67.798
         ],
         [
-          227.028,
+          227.036,
           77.132
         ],
         [
@@ -6293,8 +6353,8 @@
         {
           "id": "opening-O0lNEQ-a",
           "point": [
-            224.29844828919175,
-            77.27635962083818
+            224.29845768666286,
+            77.27653760894071
           ],
           "width": 1,
           "kind": "door",
@@ -6304,10 +6364,10 @@
         {
           "id": "opening-FFo4zS-a",
           "point": [
-            224.29844828919175,
-            77.27635962083818
+            224.29845768666286,
+            77.27653760894071
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-1e6znj"
@@ -6315,10 +6375,10 @@
         {
           "id": "opening-room-l1-iP2nYA-3tDzp",
           "point": [
-            222.18649497503017,
-            75.2006982950933
+            222.18649497131912,
+            75.20069822439815
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-InMjDL"
@@ -6326,15 +6386,27 @@
         {
           "id": "opening-room-l1-iP2nYA-roSND",
           "point": [
-            224.26328916857977,
-            67.9184010144383
+            224.26330398800133,
+            67.91868141326526
           ],
           "width": 2,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-krsww0"
+        },
+        {
+          "id": "opening-room-l1-iP2nYA-eXk7i",
+          "point": [
+            226.9085650779584,
+            74.6995305473695
+          ],
+          "width": 1,
+          "kind": "door",
+          "traversable": true,
+          "connectsTo": "room-l1-LFj4Vt"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-eowA50",
@@ -6374,8 +6446,8 @@
         {
           "id": "opening-room-l1-eowA50-kZCOI",
           "point": [
-            218.29105111053354,
-            65.27338158283715
+            218.29105111052976,
+            65.27338158283735
           ],
           "width": 1.5,
           "kind": "door",
@@ -6414,10 +6486,10 @@
         {
           "id": "opening-room-l1-InMjDL-zxqRn",
           "point": [
-            222.18678431703816,
-            75.20068308277402
+            222.18678431332134,
+            75.20068301207918
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-iP2nYA"
@@ -6447,11 +6519,11 @@
           77.382
         ],
         [
-          227.028,
+          227.036,
           77.132
         ],
         [
-          227.839,
+          227.838,
           92.428
         ]
       ],
@@ -6462,8 +6534,8 @@
         {
           "id": "opening-O0lNEQ-b",
           "point": [
-            224.29844828919175,
-            77.27635962083818
+            224.29845768666286,
+            77.27653760894071
           ],
           "width": 1,
           "kind": "door",
@@ -6473,10 +6545,10 @@
         {
           "id": "opening-84cDUa-b",
           "point": [
-            227.7155240892368,
-            90.09916210723328
+            227.71589333550492,
+            90.0991427180588
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-iYupHe"
@@ -6484,10 +6556,10 @@
         {
           "id": "opening-FFo4zS-b",
           "point": [
-            224.29844828919175,
-            77.27635962083818
+            224.29845768666286,
+            77.27653760894071
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-iP2nYA"
@@ -6495,8 +6567,8 @@
         {
           "id": "opening-DfQiWf-a",
           "point": [
-            225.60237239579146,
-            92.54530970470402
+            225.60239595618668,
+            92.54526616900813
           ],
           "width": 3.8,
           "kind": "door",
@@ -6513,20 +6585,20 @@
       "number": "269",
       "polygon": [
         [
-          227.839,
+          227.838,
           92.428
         ],
         [
-          227.574,
-          87.426
+          227.575,
+          87.415
         ],
         [
-          233.8,
-          87.1
+          233.775,
+          87.101
         ],
         [
-          234.1,
-          92.1
+          234.037,
+          92.103
         ]
       ],
       "subtitle": "",
@@ -6536,10 +6608,10 @@
         {
           "id": "opening-P9b2DN-a",
           "point": [
-            229.09722423968992,
-            87.34624235429828
+            229.09680365109438,
+            87.33792800863813
           ],
-          "width": 0.809,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-N_iq2n"
@@ -6547,10 +6619,10 @@
         {
           "id": "opening-room-l1-iYupHe-qT2Tf",
           "point": [
-            227.71562067200915,
-            90.0991569863763
+            227.71581997734498,
+            90.09914656437445
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-1e6znj"
@@ -6564,20 +6636,20 @@
       "number": "268а",
       "polygon": [
         [
-          227.574,
-          87.426
+          227.575,
+          87.415
         ],
         [
-          227.028,
+          227.036,
           77.132
         ],
         [
-          233.3,
-          76.8
+          233.235,
+          76.803
         ],
         [
-          233.8,
-          87.1
+          233.775,
+          87.101
         ]
       ],
       "subtitle": "",
@@ -6587,10 +6659,10 @@
         {
           "id": "opening-CFyiko-b",
           "point": [
-            232.20285469062594,
-            76.85807593155488
+            232.20283897723263,
+            76.85777996071793
           ],
-          "width": 0.6,
+          "width": 0.8,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-LFj4Vt"
@@ -6598,10 +6670,10 @@
         {
           "id": "opening-P9b2DN-b",
           "point": [
-            229.09722423968992,
-            87.34624235429828
+            229.09680365109438,
+            87.33792800863813
           ],
-          "width": 0.809,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-iYupHe"
@@ -6641,7 +6713,7 @@
             138.5,
             47
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-GxuULL"
@@ -6717,7 +6789,7 @@
         {
           "id": "opening-RoWZCN-a",
           "point": [
-            224,
+            223.99999988910332,
             62.1
           ],
           "width": 1.6,
@@ -6728,8 +6800,8 @@
         {
           "id": "opening-room-l1-qjBp4u-LOFOl",
           "point": [
-            192.69454286115194,
-            52.59999532274157
+            192.69454286115186,
+            52.599995322840414
           ],
           "width": 2.2,
           "kind": "door",
@@ -6742,7 +6814,7 @@
             202.6,
             54.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-ROXuyh"
@@ -6772,7 +6844,7 @@
         {
           "id": "opening-room-l1-qjBp4u-sCp1d",
           "point": [
-            198.20024484951466,
+            198.2002950779078,
             50.9
           ],
           "width": 1.5,
@@ -6781,9 +6853,9 @@
           "connectsTo": "room-l1-tE3iVk"
         },
         {
-          "id": "opening-room-l1-qjBp4u-OCF18",
+          "id": "opening-room-l1-qjBp4u-3f2NI",
           "point": [
-            202.89997841899424,
+            202.89997212530048,
             50.9
           ],
           "width": 1.5,
@@ -6792,9 +6864,9 @@
           "connectsTo": "room-l1-SgtWpv"
         },
         {
-          "id": "opening-room-l1-qjBp4u-ln_kR",
+          "id": "opening-room-l1-qjBp4u-s7pDj",
           "point": [
-            207.89998889848053,
+            207.89998240064864,
             50.9
           ],
           "width": 1.514,
@@ -6803,9 +6875,9 @@
           "connectsTo": "room-l1-8-BZjM"
         },
         {
-          "id": "opening-room-l1-qjBp4u-Twqcn",
+          "id": "opening-room-l1-qjBp4u-JsgTS",
           "point": [
-            212.8999771861928,
+            212.89997048422367,
             50.9
           ],
           "width": 1.514141414141414,
@@ -6814,9 +6886,9 @@
           "connectsTo": "room-l1-hUZqfD"
         },
         {
-          "id": "opening-room-l1-qjBp4u-he0iv",
+          "id": "opening-room-l1-qjBp4u-Vs3re",
           "point": [
-            217.9999853461869,
+            217.99997665649764,
             50.9
           ],
           "width": 1.5,
@@ -6825,9 +6897,9 @@
           "connectsTo": "room-l1-mdQtQC"
         },
         {
-          "id": "opening-room-l1-qjBp4u-MqneL",
+          "id": "opening-room-l1-qjBp4u-7TcHz",
           "point": [
-            222.6999799355249,
+            222.69997401253664,
             50.9
           ],
           "width": 1.5,
@@ -6836,9 +6908,9 @@
           "connectsTo": "room-l1-pNW6O8"
         },
         {
-          "id": "opening-room-l1-qjBp4u-rDZGB",
+          "id": "opening-room-l1-qjBp4u-ctvWe",
           "point": [
-            226.79998100824565,
+            226.7999754244646,
             50.9
           ],
           "width": 1.6,
@@ -6846,7 +6918,8 @@
           "traversable": true,
           "connectsTo": "room-l1-wjGZVt"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-JSLZxg",
@@ -6863,12 +6936,12 @@
           93.034
         ],
         [
-          234.1,
-          92.1
+          234.037,
+          92.103
         ],
         [
-          234.5,
-          101.2
+          234.514,
+          101.199
         ]
       ],
       "subtitle": "",
@@ -6878,8 +6951,8 @@
         {
           "id": "opening-98XvFb-a",
           "point": [
-            220.50175550475973,
-            101.93384258064111
+            220.50175257232442,
+            101.93378665963535
           ],
           "width": 2,
           "kind": "door",
@@ -6889,8 +6962,8 @@
         {
           "id": "opening-KzGmfT-a",
           "point": [
-            226.10206754590584,
-            101.64025237780764
+            226.1020602244738,
+            101.64011275943533
           ],
           "width": 2,
           "kind": "door",
@@ -6900,8 +6973,8 @@
         {
           "id": "opening-room-l1-JSLZxg-LMQcU",
           "point": [
-            225.6023829414366,
-            92.54551076804368
+            225.60240039785953,
+            92.54535084664222
           ],
           "width": 3.8,
           "kind": "door",
@@ -6926,11 +6999,11 @@
           102.13
         ],
         [
-          234.5,
-          101.2
+          234.514,
+          101.199
         ],
         [
-          235.3052407779283,
+          235.305,
           116.3
         ]
       ],
@@ -6941,8 +7014,8 @@
         {
           "id": "opening-room-l1-7RgXGL-1O6wo",
           "point": [
-            220.50175550475973,
-            101.93384258064111
+            220.50175257232442,
+            101.93378665963535
           ],
           "width": 2,
           "kind": "door",
@@ -6952,8 +7025,8 @@
         {
           "id": "opening-room-l1-7RgXGL-Cqa61",
           "point": [
-            226.10206754590584,
-            101.64025237780764
+            226.1020602244738,
+            101.64011275943533
           ],
           "width": 2,
           "kind": "door",
@@ -6963,7 +7036,7 @@
         {
           "id": "opening-room-l1-7RgXGL-M6V8_",
           "point": [
-            227.96555708761903,
+            227.9344738480095,
             116.3
           ],
           "width": 2.1,
@@ -7004,8 +7077,8 @@
         {
           "id": "opening-room-l1--JAUcu-zJXIV",
           "point": [
-            224.20058049845494,
-            130.79796251487963
+            224.20058049847412,
+            130.79796235950866
           ],
           "width": 1,
           "kind": "door",
@@ -7118,7 +7191,7 @@
           "id": "opening-room-l1-vZJGsS-0VpXD",
           "point": [
             224.201,
-            130.79796256666995
+            130.79796241129898
           ],
           "width": 1,
           "kind": "door",
@@ -7208,7 +7281,7 @@
             212.2,
             127.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-PPdsyu"
@@ -7234,7 +7307,7 @@
           116.3
         ],
         [
-          235.3052407779283,
+          235.305,
           116.3
         ]
       ],
@@ -7263,7 +7336,7 @@
       "polygon": [
         [
           226.7,
-          123.901
+          123.9
         ],
         [
           226.7,
@@ -7275,7 +7348,7 @@
         ],
         [
           229.2,
-          123.901
+          123.9
         ]
       ],
       "subtitle": "",
@@ -7286,9 +7359,9 @@
           "id": "opening-room-l1-xorxKl-uPmDR",
           "point": [
             227.9,
-            123.901
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-8H32ov"
@@ -7299,7 +7372,7 @@
             229.2,
             122.80048992574868
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-fBGo6k"
@@ -7321,15 +7394,15 @@
             226.7,
             118.04708368113228
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-9RAPp5"
         },
         {
-          "id": "opening-room-l1-xorxKl-GYTxi",
+          "id": "opening-room-l1-xorxKl-R9szl",
           "point": [
-            227.96555708761903,
+            227.9344738480095,
             116.3
           ],
           "width": 2.1,
@@ -7337,7 +7410,8 @@
           "traversable": true,
           "connectsTo": "room-l1-7RgXGL"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-fBGo6k",
@@ -7347,7 +7421,7 @@
       "polygon": [
         [
           229.2,
-          123.901
+          123.9
         ],
         [
           229.2,
@@ -7372,7 +7446,7 @@
             229.2,
             122.80048992574868
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-xorxKl"
@@ -7391,7 +7465,7 @@
         ],
         [
           229.2,
-          123.901
+          123.9
         ],
         [
           235.3,
@@ -7412,12 +7486,13 @@
             229.2,
             125.7
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-8H32ov"
         }
-      ]
+      ],
+      "name": ""
     },
     {
       "id": "room-l1-8H32ov",
@@ -7431,11 +7506,11 @@
         ],
         [
           226.7,
-          123.901
+          123.9
         ],
         [
           229.2,
-          123.901
+          123.9
         ],
         [
           229.2,
@@ -7450,9 +7525,9 @@
           "id": "opening-BhX31y-b",
           "point": [
             227.9,
-            123.901
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-xorxKl"
@@ -7463,7 +7538,7 @@
             229.2,
             125.7
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-eR1I1y"
@@ -7479,7 +7554,8 @@
           "traversable": true,
           "connectsTo": "room-l1-PPdsyu"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-PPdsyu",
@@ -7497,11 +7573,11 @@
         ],
         [
           209.19,
-          123.902
+          123.9
         ],
         [
           226.7,
-          123.901
+          123.9
         ]
       ],
       "subtitle": "",
@@ -7511,10 +7587,10 @@
         {
           "id": "opening-Z8Ha3y-b",
           "point": [
-            212.09999953651453,
-            123.90183380927833
+            212.09999892389843,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-VpHCJf"
@@ -7544,8 +7620,8 @@
         {
           "id": "opening-room-l1-PPdsyu-tfkG-",
           "point": [
-            209.19154203023484,
-            125.70000725383342
+            209.1915428633598,
+            125.70000725311931
           ],
           "width": 1.60909,
           "kind": "door",
@@ -7558,7 +7634,7 @@
             212.2,
             127.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-E3VjgJ"
@@ -7577,10 +7653,10 @@
         {
           "id": "opening-room-l1-PPdsyu-3_IiA",
           "point": [
-            215.80000126328727,
-            123.9016225013556
+            215.8000023920149,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-fbp02x"
@@ -7588,10 +7664,10 @@
         {
           "id": "opening-room-l1-PPdsyu-hgSDU",
           "point": [
-            218.4000001789833,
-            123.90147401483843
+            218.4000002892148,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-HC3e8j"
@@ -7599,10 +7675,10 @@
         {
           "id": "opening-room-l1-PPdsyu-BiX_U",
           "point": [
-            222.5000000982061,
-            123.90123986292986
+            222.50000011190474,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-BE7dVm"
@@ -7630,7 +7706,7 @@
         ],
         [
           217.3,
-          123.902
+          123.9
         ]
       ],
       "subtitle": "",
@@ -7640,10 +7716,10 @@
         {
           "id": "opening-room-l1-fbp02x-J5oNk",
           "point": [
-            215.80000122139054,
-            123.90088888979362
+            215.8000023920149,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-PPdsyu"
@@ -7658,7 +7734,7 @@
       "polygon": [
         [
           217.3,
-          123.902
+          123.9
         ],
         [
           217.3,
@@ -7670,7 +7746,7 @@
         ],
         [
           221.6,
-          123.901
+          123.9
         ]
       ],
       "subtitle": "",
@@ -7680,10 +7756,10 @@
         {
           "id": "opening-room-l1-HC3e8j-ogB7l",
           "point": [
-            218.40000019441283,
-            123.9017441860013
+            218.4000002892148,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-PPdsyu"
@@ -7723,7 +7799,7 @@
             214.6,
             118.1
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-VpHCJf"
@@ -7763,7 +7839,7 @@
             226.7,
             118.04708368113228
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-xorxKl"
@@ -7778,7 +7854,7 @@
       "polygon": [
         [
           221.6,
-          123.901
+          123.9
         ],
         [
           221.6,
@@ -7790,7 +7866,7 @@
         ],
         [
           226.7,
-          123.901
+          123.9
         ]
       ],
       "subtitle": "",
@@ -7800,10 +7876,10 @@
         {
           "id": "opening-room-l1-BE7dVm-3KtBV",
           "point": [
-            222.50000008450746,
-            123.901
+            222.50000011190474,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-PPdsyu"
@@ -7822,7 +7898,7 @@
         ],
         [
           207.5,
-          123.903
+          123.9
         ],
         [
           207.5,
@@ -7840,10 +7916,10 @@
         {
           "id": "opening-room-l1-VpHCJf-Zv151",
           "point": [
-            212.099999492113,
-            123.90105633824278
+            212.09999892389843,
+            123.9
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-PPdsyu"
@@ -7854,7 +7930,7 @@
             214.6,
             118.1
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-mIu7X4"
@@ -7869,11 +7945,11 @@
       "polygon": [
         [
           207.5,
-          123.903
+          123.9
         ],
         [
           201.6,
-          123.903
+          123.9
         ],
         [
           201.6,
@@ -7891,8 +7967,8 @@
         {
           "id": "opening-01L475-a",
           "point": [
-            204.59999989584796,
-            123.903
+            204.59999979169592,
+            123.9
           ],
           "width": 2.2,
           "kind": "door",
@@ -7917,11 +7993,11 @@
         ],
         [
           201.6,
-          123.903
+          123.9
         ],
         [
           209.19,
-          123.902
+          123.9
         ]
       ],
       "subtitle": "",
@@ -7931,8 +8007,8 @@
         {
           "id": "opening-01L475-b",
           "point": [
-            204.59999989584796,
-            123.90260474309673
+            204.59999979169592,
+            123.9
           ],
           "width": 2.2,
           "kind": "door",
@@ -7942,8 +8018,8 @@
         {
           "id": "opening-room-l1-IbxxxO-nXNhR",
           "point": [
-            209.19154203023484,
-            125.70000725383342
+            209.1915428633598,
+            125.70000725311931
           ],
           "width": 1.60909,
           "kind": "door",
@@ -7967,12 +8043,13 @@
             203.3,
             127.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-VIv5HT"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-RUvb05",
@@ -8047,7 +8124,7 @@
             203.3,
             127.4
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-IbxxxO"
@@ -8093,7 +8170,7 @@
         {
           "id": "opening-0F4pso-b",
           "point": [
-            35.39999889282833,
+            35.39999843447909,
             50.9
           ],
           "width": 1.5,
@@ -8320,7 +8397,7 @@
         {
           "id": "opening-room-l1-3i61wv-CgHhN",
           "point": [
-            50.59999808599852,
+            50.59999694171697,
             50.9
           ],
           "width": 1.5,
@@ -8353,7 +8430,7 @@
         {
           "id": "opening-room-l1-3i61wv-05TJJ",
           "point": [
-            54.799996077128455,
+            54.79999529456876,
             50.9
           ],
           "width": 1.5,
@@ -8372,7 +8449,8 @@
           "traversable": true,
           "connectsTo": "room-l1-tbWh_W"
         }
-      ]
+      ],
+      "name": "Коридор"
     },
     {
       "id": "room-l1-iwOpM0",
@@ -8469,6 +8547,10 @@
           52.5
         ],
         [
+          123.77,
+          52.5
+        ],
+        [
           70.996,
           52.5
         ],
@@ -8485,7 +8567,7 @@
           "id": "opening-room-l1-EpEsnx-PxLwf",
           "point": [
             182.1,
-            54.1
+            54.10000558365706
           ],
           "width": 2.6,
           "kind": "door",
@@ -8608,7 +8690,7 @@
             180.9,
             56
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1--ltf_P"
@@ -8619,7 +8701,7 @@
             174.1,
             56
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-TY8OL3"
@@ -8630,7 +8712,7 @@
             78.2,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-36BPGF"
@@ -8641,7 +8723,7 @@
             72.9,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-MHZw1J"
@@ -8671,7 +8753,7 @@
         {
           "id": "opening-room-l1-EpEsnx-Z3F4M",
           "point": [
-            102.5,
+            102.50000000000001,
             52.5
           ],
           "width": 1.514,
@@ -8740,7 +8822,7 @@
             174.8,
             52.5
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-qmG5w9"
@@ -8839,7 +8921,7 @@
             73.5,
             56
           ],
-          "width": 0.8,
+          "width": 1,
           "kind": "door",
           "traversable": true,
           "connectsTo": "room-l1-l3dJjg"
@@ -8866,7 +8948,8 @@
           "traversable": true,
           "connectsTo": "room-l1-_t5sMy"
         }
-      ]
+      ],
+      "name": "Коридор"
     }
   ],
   "pois": [],
@@ -8902,7 +8985,7 @@
         235.3,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-G_xp0n",
@@ -8910,7 +8993,7 @@
         235.3,
         116.2
       ],
-      "angle": 267
+      "angle": 87
     },
     {
       "id": "guide-m_CEW_",
@@ -8918,7 +9001,7 @@
         231.5,
         43.9
       ],
-      "angle": 180.01475554423035
+      "angle": 0.01475554423035419
     },
     {
       "id": "guide-ToPGZ3",
@@ -8934,7 +9017,7 @@
         192.7,
         64.5
       ],
-      "angle": 180.0086588754839
+      "angle": 0.00865887548388855
     },
     {
       "id": "guide-7cfbnx",
@@ -8950,7 +9033,7 @@
         217.5,
         116.3
       ],
-      "angle": 267.009969839837
+      "angle": 87.00996983983703
     },
     {
       "id": "guide-9FVJ9S",
@@ -8958,7 +9041,7 @@
         232.5,
         62.1
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-69ZGcy",
@@ -8966,7 +9049,7 @@
         183.3,
         64.5
       ],
-      "angle": 270.036
+      "angle": 90.036
     },
     {
       "id": "guide-rN3tV_",
@@ -8974,7 +9057,7 @@
         183.3,
         62.9
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-HrjEWy",
@@ -8982,7 +9065,7 @@
         60.4,
         64.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-1Jt7KC",
@@ -9006,7 +9089,7 @@
         42.3,
         116.3
       ],
-      "angle": 266.9994236357446
+      "angle": 87
     },
     {
       "id": "guide-cjZ20K",
@@ -9014,7 +9097,7 @@
         201.6,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-NQ27Be",
@@ -9022,7 +9105,7 @@
         31.7,
         116.3
       ],
-      "angle": 267
+      "angle": 87
     },
     {
       "id": "guide-8yt_iG",
@@ -9030,7 +9113,7 @@
         35,
         116.3
       ],
-      "angle": 266.99966626762114
+      "angle": 87
     },
     {
       "id": "guide-w2G6gB",
@@ -9054,7 +9137,7 @@
         30.6,
         135.5
       ],
-      "angle": 270.02977950849987
+      "angle": 90.02977950849987
     },
     {
       "id": "guide-uId6ho",
@@ -9070,7 +9153,7 @@
         235.3,
         123.9
       ],
-      "angle": 179.9945655146219
+      "angle": 0
     },
     {
       "id": "guide-mK7hLZ",
@@ -9086,7 +9169,7 @@
         60.4,
         54.4
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-CQVxsL",
@@ -9094,7 +9177,7 @@
         227.7,
         89.8
       ],
-      "angle": 266.9655235164563
+      "angle": 87
     },
     {
       "id": "guide-qFKewY",
@@ -9102,7 +9185,7 @@
         226.7,
         123
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-cke5nZ",
@@ -9118,7 +9201,7 @@
         58.1,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-soLxFs",
@@ -9126,7 +9209,7 @@
         31.4,
         111.1
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-J3XCEu",
@@ -9142,7 +9225,7 @@
         35.8,
         100.3
       ],
-      "angle": 267.00816925403103
+      "angle": 87
     },
     {
       "id": "guide-HZRuEA",
@@ -9150,7 +9233,7 @@
         32.8,
         75.4
       ],
-      "angle": 357.0160893352315
+      "angle": 177.01608933523153
     },
     {
       "id": "guide-d9ZP9G",
@@ -9158,7 +9241,7 @@
         69.9,
         64.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-VS0Wvy",
@@ -9190,7 +9273,7 @@
         75.1,
         63
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-OzMZgW",
@@ -9198,7 +9281,7 @@
         80.6,
         63
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-C_PLGn",
@@ -9206,7 +9289,7 @@
         182.1,
         56
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-SfqRYo",
@@ -9214,7 +9297,7 @@
         85.5,
         52.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-yFnhgy",
@@ -9230,7 +9313,7 @@
         110.5,
         62.9
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-cLN2Tm",
@@ -9238,7 +9321,7 @@
         122.2,
         64.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-TgQNci",
@@ -9246,7 +9329,7 @@
         131,
         64.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-Ucu-1n",
@@ -9254,7 +9337,7 @@
         142.6,
         62.9
       ],
-      "angle": 270.0327404418724
+      "angle": 90.03274044187242
     },
     {
       "id": "guide-dpjtn5",
@@ -9262,7 +9345,7 @@
         172.6,
         62.9
       ],
-      "angle": 270.036
+      "angle": 90.036
     },
     {
       "id": "guide-pEE6el",
@@ -9278,7 +9361,7 @@
         178.1,
         62.9
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-aVK_aW",
@@ -9294,7 +9377,7 @@
         225.4,
         62.1
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-DAYV3e",
@@ -9342,7 +9425,7 @@
         226.7,
         120
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-ZyUum2",
@@ -9358,7 +9441,7 @@
         224.2,
         135.5
       ],
-      "angle": 270.01
+      "angle": 90.00999999999999
     },
     {
       "id": "guide-E3SDvb",
@@ -9366,7 +9449,7 @@
         219.2,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-7eLiUA",
@@ -9374,7 +9457,7 @@
         209.2,
         135.5
       ],
-      "angle": 269.950776833834
+      "angle": 89.95077683383403
     },
     {
       "id": "guide-SkKbjH",
@@ -9382,7 +9465,7 @@
         214.6,
         123.9
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-r6jFPJ",
@@ -9390,7 +9473,7 @@
         32.4,
         66.7
       ],
-      "angle": 176.98721249581678
+      "angle": 177
     },
     {
       "id": "guide-H8T_RA",
@@ -9414,7 +9497,7 @@
         35.5,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-Bjo78f",
@@ -9430,7 +9513,7 @@
         214.2,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-qIp-3e",
@@ -9438,7 +9521,7 @@
         21.9,
         67.9
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-HlXpQo",
@@ -9446,7 +9529,7 @@
         221.3,
         71.6
       ],
-      "angle": 267
+      "angle": 87
     },
     {
       "id": "guide-l9sv4Q",
@@ -9454,7 +9537,7 @@
         27.8,
         62.1
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-umCmJs",
@@ -9494,7 +9577,7 @@
         226.5,
         66.7
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-37SLVD",
@@ -9502,7 +9585,7 @@
         215.5,
         76.7
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-QIBPGm",
@@ -9518,7 +9601,7 @@
         233.8,
         87.1
       ],
-      "angle": 177
+      "angle": 177.1
     },
     {
       "id": "guide-wS6rl_",
@@ -9574,7 +9657,7 @@
         132.8,
         50.5
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-VCsrel",
@@ -9694,7 +9777,7 @@
         23.9,
         106.2
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-z419aa",
@@ -9702,7 +9785,7 @@
         34.4,
         104.2
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-q8sTqG",
@@ -9734,7 +9817,7 @@
         24.5,
         97.2
       ],
-      "angle": 357
+      "angle": 177
     },
     {
       "id": "guide-FmnVnU",
@@ -9750,7 +9833,7 @@
         22.9,
         86.3
       ],
-      "angle": 356.97885912373505
+      "angle": 176.97885912373505
     },
     {
       "id": "guide-ya4NS5",
@@ -9782,7 +9865,7 @@
         163,
         62.9
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-mbUMl-",
@@ -9806,7 +9889,7 @@
         195.6,
         47.6
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-UXCTvK",
@@ -9814,7 +9897,7 @@
         187.8,
         56.8
       ],
-      "angle": 180
+      "angle": 0
     },
     {
       "id": "guide-eOvLwz",
@@ -9854,7 +9937,7 @@
         40.6,
         135.5
       ],
-      "angle": 270
+      "angle": 90
     },
     {
       "id": "guide-tyx5ne",
@@ -9894,7 +9977,7 @@
         31.8,
         66.8
       ],
-      "angle": 267.036
+      "angle": 87.036
     },
     {
       "id": "guide-We98Gd",
@@ -9910,7 +9993,7 @@
         37.7,
         116.3
       ],
-      "angle": 267.0268
+      "angle": 87.02679999999998
     },
     {
       "id": "guide-iv_OTp",
@@ -9926,7 +10009,63 @@
         195.5,
         50.9
       ],
-      "angle": 270
+      "angle": 90.00999999999999
+    },
+    {
+      "id": "guide-T86ohR",
+      "point": [
+        151.8,
+        45.414
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide--ryQhM",
+      "point": [
+        151.8,
+        40.726
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-x_qoRo",
+      "point": [
+        152.6,
+        62.9
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-HQ3mNY",
+      "point": [
+        147.2,
+        62.9
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-v42P1b",
+      "point": [
+        175.3,
+        60.4
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-Y9EFX0",
+      "point": [
+        90.6,
+        56
+      ],
+      "angle": 90
+    },
+    {
+      "id": "guide-jQ3-Tu",
+      "point": [
+        24.497,
+        123
+      ],
+      "angle": 0
     }
   ]
 }

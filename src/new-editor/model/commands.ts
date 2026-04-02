@@ -93,11 +93,16 @@ export const normalizeAngle = (angle: number) => {
   return normalized < 0 ? normalized + 360 : normalized;
 };
 
+export const normalizeGuideAngle = (angle: number) => {
+  const normalized = angle % 180;
+  return normalized < 0 ? normalized + 180 : normalized;
+};
+
 export const guideAngleFromPoints = (point: Point, through: Point) =>
-  normalizeAngle((Math.atan2(through[1] - point[1], through[0] - point[0]) * 180) / Math.PI);
+  normalizeGuideAngle((Math.atan2(through[1] - point[1], through[0] - point[0]) * 180) / Math.PI);
 
 export const guideDirection = (guide: Pick<EditorGuide, "angle">): Point => {
-  const radians = (guide.angle * Math.PI) / 180;
+  const radians = (normalizeGuideAngle(guide.angle) * Math.PI) / 180;
   return [Math.cos(radians), Math.sin(radians)];
 };
 

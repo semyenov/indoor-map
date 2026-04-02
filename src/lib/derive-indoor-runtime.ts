@@ -412,7 +412,6 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
         level,
         kind,
         name: displayName,
-        number: properties.number,
         focusPoint: properties.focusPoint ?? point((x1 + x2) / 2, (y1 + y2) / 2),
         searchTokens: properties.searchTokens ?? normalizedSearchTokens(resolvedName),
         subtitle: properties.subtitle,
@@ -434,7 +433,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     kind: OfficeFeatureProperties["kind"],
     name: string | undefined,
     localPts: [number, number][],
-    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "number" | "focusPoint" | "searchTokens"> & {
+    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> & {
       focusPoint?: Coordinate;
       searchTokens?: string[];
     } = {},
@@ -511,7 +510,7 @@ export const deriveIndoorRuntimeDataset = (_source: CanonicalIndoorDataset): Ind
     kind: OfficeFeatureProperties["kind"],
     name: string | undefined,
     coordinates: Coordinate[],
-    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "number" | "focusPoint" | "searchTokens"> & {
+    properties: Omit<OfficeFeatureProperties, "featureId" | "level" | "kind" | "name" | "focusPoint" | "searchTokens"> & {
       focusPoint?: Coordinate;
       searchTokens?: string[];
     } = {},

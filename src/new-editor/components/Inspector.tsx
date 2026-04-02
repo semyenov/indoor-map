@@ -1,7 +1,7 @@
 import type { CanonicalOpening, CanonicalRoom } from "../../lib/types";
 import { useRef, useState } from "react";
 import { useNewEditorStore } from "../state/editorStore";
-import { normalizeAngle } from "../model/commands";
+import { normalizeGuideAngle } from "../model/commands";
 import { prepareReferenceImage } from "../model/referenceImage";
 
 interface Props {
@@ -35,12 +35,12 @@ export const Inspector = ({ selectedRoom, selectedOpening }: Props) => {
   const selectedGuide = selectedGuideId ? guides.find((guide) => guide.id === selectedGuideId) ?? null : null;
   const selectedGuideAngle =
     selectedGuide
-      ? normalizeAngle(selectedGuide.angle)
+      ? normalizeGuideAngle(selectedGuide.angle)
       : 0;
 
   const applyGuideAngle = (nextAngle: number) => {
     if (!selectedGuide || !Number.isFinite(nextAngle)) return;
-    updateGuide(selectedGuide.id, selectedGuide.point, normalizeAngle(nextAngle));
+    updateGuide(selectedGuide.id, selectedGuide.point, normalizeGuideAngle(nextAngle));
   };
 
   const handleReferenceFile = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -18,6 +18,7 @@ const SMOOTHING_EPSILON = 0.00000005;
 // Push corridor turns toward a more guided spline-like shape without drifting off the route graph.
 const MAX_CORNER_RADIUS = 1.5;
 const CORNER_RADIUS_FACTOR = 0.5;
+const ZIGZAG_RADIUS_FACTOR = 0.18;
 const MIN_CURVE_STEPS = 18;
 const MAX_CURVE_STEPS = 36;
 
@@ -39,6 +40,21 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const isCollinear = (left: Coordinate, pivot: Coordinate, right: Coordinate, epsilon = EPSILON) =>
   (nearlyEqual(left[0], pivot[0], epsilon) && nearlyEqual(pivot[0], right[0], epsilon)) ||
   (nearlyEqual(left[1], pivot[1], epsilon) && nearlyEqual(pivot[1], right[1], epsilon));
+
+const signedTurn = (left: Coordinate, pivot: Coordinate, right: Coordinate) =>
+  (pivot[0] - left[0]) * (right[1] - pivot[1]) - (pivot[1] - left[1]) * (right[0] - pivot[0]);
+
+const pointToSegmentDistance = (point: Coordinate, start: Coordinate, end: Coordinate) => {
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared <= EPSILON) {
+    return coordinateDistance(point, start);
+  }
+  const t = clamp(((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / lengthSquared, 0, 1);
+  const projection: Coordinate = [start[0] + dx * t, start[1] + dy * t];
+  return coordinateDistance(point, projection);
+};
 
 const pointTowards = (from: Coordinate, to: Coordinate, distance: number): Coordinate => {
   const fullDistance = coordinateDistance(from, to);
@@ -129,8 +145,66 @@ const normalizeCoordinates = (
   return normalized;
 };
 
+const collapseAlternatingZigzags = (
+  coordinates: Coordinate[],
+  protectedCoordinates: ReadonlySet<string> = new Set(),
+): Coordinate[] => {
+  if (coordinates.length < 4) {
+    return coordinates;
+  }
+
+  const collapsed = [...coordinates];
+  let changed = true;
+
+  while (changed && collapsed.length >= 4) {
+    changed = false;
+
+    for (let index = 0; index <= collapsed.length - 4; index += 1) {
+      const start = collapsed[index]!;
+      const left = collapsed[index + 1]!;
+      const right = collapsed[index + 2]!;
+      const end = collapsed[index + 3]!;
+
+      if (protectedCoordinates.has(coordinateKey(left)) || protectedCoordinates.has(coordinateKey(right))) {
+        continue;
+      }
+
+      const firstTurn = signedTurn(start, left, right);
+      const secondTurn = signedTurn(left, right, end);
+
+      if (Math.abs(firstTurn) <= EPSILON || Math.abs(secondTurn) <= EPSILON || firstTurn * secondTurn >= 0) {
+        continue;
+      }
+
+      const directLength = coordinateDistance(start, end);
+      const chainLength =
+        coordinateDistance(start, left) +
+        coordinateDistance(left, right) +
+        coordinateDistance(right, end);
+
+      if (directLength <= EPSILON || chainLength <= directLength * 1.03) {
+        continue;
+      }
+
+      const maxDeviation = Math.max(0.35, directLength * 0.12);
+      if (
+        pointToSegmentDistance(left, start, end) > maxDeviation ||
+        pointToSegmentDistance(right, start, end) > maxDeviation
+      ) {
+        continue;
+      }
+
+      collapsed.splice(index + 1, 2);
+      changed = true;
+      break;
+    }
+  }
+
+  return collapsed;
+};
+
 const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: ReadonlySet<string> = new Set()): Coordinate[] => {
-  const normalized = normalizeCoordinates(coordinates, protectedCoordinates);
+  const normalized = collapseAlternatingZigzags(normalizeCoordinates(coordinates, protectedCoordinates), protectedCoordinates);
 
   if (normalized.length <= 2) {
     return normalized;
@@ -145,9 +219,11 @@ const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: Read
   const smoothed: Coordinate[] = [firstCoordinate];
 
   for (let index = 1; index < normalized.length - 1; index += 1) {
+    const beforePrevious = index > 1 ? normalized[index - 2] : undefined;
     const previous = normalized[index - 1];
     const current = normalized[index];
     const next = normalized[index + 1];
+    const afterNext = index + 2 < normalized.length ? normalized[index + 2] : undefined;
 
     if (!previous || !current || !next) {
       continue;
@@ -165,7 +241,24 @@ const smoothCoordinates = (coordinates: Coordinate[], protectedCoordinates: Read
 
     const incomingLength = coordinateDistance(previous, current);
     const outgoingLength = coordinateDistance(current, next);
-    const radius = Math.min(MAX_CORNER_RADIUS, incomingLength * CORNER_RADIUS_FACTOR, outgoingLength * CORNER_RADIUS_FACTOR);
+    let radiusFactor = CORNER_RADIUS_FACTOR;
+    const currentTurn = signedTurn(previous, current, next);
+
+    if (beforePrevious) {
+      const previousTurn = signedTurn(beforePrevious, previous, current);
+      if (Math.abs(previousTurn) > EPSILON && Math.abs(currentTurn) > EPSILON && previousTurn * currentTurn < 0) {
+        radiusFactor = Math.min(radiusFactor, ZIGZAG_RADIUS_FACTOR);
+      }
+    }
+
+    if (afterNext) {
+      const nextTurn = signedTurn(current, next, afterNext);
+      if (Math.abs(nextTurn) > EPSILON && Math.abs(currentTurn) > EPSILON && nextTurn * currentTurn < 0) {
+        radiusFactor = Math.min(radiusFactor, ZIGZAG_RADIUS_FACTOR);
+      }
+    }
+
+    const radius = Math.min(MAX_CORNER_RADIUS, incomingLength * radiusFactor, outgoingLength * radiusFactor);
 
     if (radius <= EPSILON) {
       appendUniqueCoordinate(smoothed, current, SMOOTHING_EPSILON);

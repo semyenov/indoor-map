@@ -1,6 +1,14 @@
 import { nanoid } from "nanoid";
 import { create } from "zustand";
-import type { CanonicalGuide, CanonicalIndoorDataset, CanonicalOpening, CanonicalRoom, LevelId } from "../../lib/types";
+import type {
+  CanonicalGuide,
+  CanonicalIndoorDataset,
+  CanonicalLineStructure,
+  CanonicalOpening,
+  CanonicalRoom,
+  CanonicalStructure,
+  LevelId,
+} from "../../lib/types";
 import {
   appendDraftPoint,
   createRoomFromDraft,
@@ -11,6 +19,7 @@ import {
   localUnitsFromScreenPixels,
   localPointToScreenPoint,
   normalizeAngle,
+  normalizeGuideAngle,
   screenPointToLocalPoint,
   shouldCloseDraftPolygon,
 } from "../model/commands";
@@ -66,7 +75,7 @@ const normalizeGuide = (guide: CanonicalGuide | { id: string; a: [number, number
     ? {
         id: guide.id,
         point: [guide.point[0], guide.point[1]] as Point,
-        angle: normalizeAngle(guide.angle),
+        angle: normalizeGuideAngle(guide.angle),
       }
     : {
         id: guide.id,
@@ -590,13 +599,13 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
   addGuide: (point, angle) =>
     set((state) => {
       const normalizedPoint: Point = [Number(point[0].toFixed(3)), Number(point[1].toFixed(3))];
-      const normalizedGuideAngle = normalizeAngle(angle);
+      const normalizedGuideAngle = normalizeGuideAngle(angle);
       const duplicate = state.guides.some(
         (guide) =>
           Math.hypot(guide.point[0] - normalizedPoint[0], guide.point[1] - normalizedPoint[1]) <= 0.05 &&
           Math.min(
-            Math.abs(normalizeAngle(guide.angle) - normalizedGuideAngle),
-            360 - Math.abs(normalizeAngle(guide.angle) - normalizedGuideAngle),
+            Math.abs(normalizeGuideAngle(guide.angle) - normalizedGuideAngle),
+            180 - Math.abs(normalizeGuideAngle(guide.angle) - normalizedGuideAngle),
           ) <= 0.5,
       );
       if (duplicate) return {};
@@ -608,7 +617,7 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
   updateGuide: (guideId, point, angle) =>
     set((state) => {
       const normalizedPoint: Point = [Number(point[0].toFixed(3)), Number(point[1].toFixed(3))];
-      const normalizedGuideAngle = normalizeAngle(angle);
+      const normalizedGuideAngle = normalizeGuideAngle(angle);
 
       const guide = state.guides.find((entry) => entry.id === guideId);
       if (!guide) return {};
@@ -980,9 +989,10 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
             point: roundedPoint,
           };
         });
-        const focusPoint = room.focusPoint ? roundPoint(room.focusPoint, safeDecimals) : room.focusPoint;
+        const focusPoint = room.focusPoint ? roundPoint(room.focusPoint, safeDecimals) : undefined;
         if (
           room.focusPoint &&
+          focusPoint &&
           (focusPoint[0] !== room.focusPoint[0] || focusPoint[1] !== room.focusPoint[1])
         ) {
           changed = true;
@@ -997,42 +1007,61 @@ export const useNewEditorStore = create<NewEditorState>((set, get) => ({
 
       const pois = state.dataset.pois.map((poi) => {
         const point = roundPoint(poi.point, safeDecimals);
-        const roomApproach = poi.accessPath?.roomApproach ? roundPoint(poi.accessPath.roomApproach, safeDecimals) : poi.accessPath?.roomApproach;
-        const threshold = poi.accessPath?.threshold ? roundPoint(poi.accessPath.threshold, safeDecimals) : poi.accessPath?.threshold;
-        const interiorApproach = poi.accessPath?.interiorApproach ? roundPoint(poi.accessPath.interiorApproach, safeDecimals) : poi.accessPath?.interiorApproach;
+        const roomApproach = poi.accessPath?.roomApproach ? roundPoint(poi.accessPath.roomApproach, safeDecimals) : undefined;
+        const threshold = poi.accessPath?.threshold ? roundPoint(poi.accessPath.threshold, safeDecimals) : undefined;
+        const interiorApproach = poi.accessPath?.interiorApproach ? roundPoint(poi.accessPath.interiorApproach, safeDecimals) : undefined;
         if (point[0] !== poi.point[0] || point[1] !== poi.point[1]) changed = true;
-        if (poi.accessPath?.roomApproach && (roomApproach[0] !== poi.accessPath.roomApproach[0] || roomApproach[1] !== poi.accessPath.roomApproach[1])) changed = true;
-        if (poi.accessPath?.threshold && (threshold[0] !== poi.accessPath.threshold[0] || threshold[1] !== poi.accessPath.threshold[1])) changed = true;
-        if (poi.accessPath?.interiorApproach && (interiorApproach[0] !== poi.accessPath.interiorApproach[0] || interiorApproach[1] !== poi.accessPath.interiorApproach[1])) changed = true;
+        if (
+          poi.accessPath?.roomApproach &&
+          roomApproach &&
+          (roomApproach[0] !== poi.accessPath.roomApproach[0] || roomApproach[1] !== poi.accessPath.roomApproach[1])
+        ) {
+          changed = true;
+        }
+        if (
+          poi.accessPath?.threshold &&
+          threshold &&
+          (threshold[0] !== poi.accessPath.threshold[0] || threshold[1] !== poi.accessPath.threshold[1])
+        ) {
+          changed = true;
+        }
+        if (
+          poi.accessPath?.interiorApproach &&
+          interiorApproach &&
+          (interiorApproach[0] !== poi.accessPath.interiorApproach[0] || interiorApproach[1] !== poi.accessPath.interiorApproach[1])
+        ) {
+          changed = true;
+        }
         return {
           ...poi,
           point,
           accessPath: poi.accessPath
             ? {
                 roomApproach,
-                threshold,
+                threshold: threshold ?? poi.accessPath.threshold,
                 interiorApproach,
               }
             : poi.accessPath,
         };
       });
 
-      const structures = state.dataset.structures.map((structure) => {
-        if (structure.geometry.type !== "line") {
-          return structure;
+      const structures = state.dataset.structures.map((structure): CanonicalStructure => {
+        if (structure.geometry.type === "line") {
+          const lineStructure = structure as CanonicalLineStructure;
+          const coordinates = lineStructure.geometry.coordinates.map((point) => {
+            const rounded = roundPoint(point, safeDecimals);
+            if (rounded[0] !== point[0] || rounded[1] !== point[1]) changed = true;
+            return rounded;
+          });
+          return {
+            ...lineStructure,
+            geometry: {
+              ...lineStructure.geometry,
+              coordinates,
+            },
+          };
         }
-        const coordinates = structure.geometry.coordinates.map((point) => {
-          const rounded = roundPoint(point, safeDecimals);
-          if (rounded[0] !== point[0] || rounded[1] !== point[1]) changed = true;
-          return rounded;
-        });
-        return {
-          ...structure,
-          geometry: {
-            ...structure.geometry,
-            coordinates,
-          },
-        };
+        return structure;
       });
 
       const guides = state.guides.map((guide) => {
